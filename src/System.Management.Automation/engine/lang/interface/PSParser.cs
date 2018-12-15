@@ -1,8 +1,8 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 /********************************************************************++
-    Copyright (C) Microsoft Corporation, 2003
 
     Project:     PowerShell
-
 
     Contents:    PowerShell parser interface for syntax editors
 
@@ -33,7 +33,6 @@ namespace System.Management.Automation
     ///
     /// These three classes are provided for exposing interfaces only. They
     /// should not be used in PowerShell engine code.
-    ///
     /// </remarks>
     //
     //  1. Design

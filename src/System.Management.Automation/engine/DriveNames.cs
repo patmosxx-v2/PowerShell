@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 namespace System.Management.Automation
 {
@@ -8,7 +7,6 @@ namespace System.Management.Automation
     /// Holds the strings used as the default drive names for all the
     /// default providers
     /// </summary>
-    ///
     internal static class DriveNames
     {
         /// <summary>

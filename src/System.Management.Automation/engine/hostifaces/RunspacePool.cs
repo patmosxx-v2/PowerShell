@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Threading;
 using PSHost = System.Management.Automation.Host.PSHost;
@@ -73,7 +72,6 @@ namespace System.Management.Automation.Runspaces
             _expectedState = expectedState;
             _currentState = currentState;
         }
-
 
         #region ISerializable Members
 
@@ -260,7 +258,6 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="stateInfo"></param>
         internal RunspacePoolStateChangedEventArgs(RunspacePoolStateInfo stateInfo)
@@ -528,29 +525,23 @@ namespace System.Management.Automation.Runspaces
         /// The maximum number of Runspaces that can exist in this pool.
         /// Should be greater than or equal to 1.
         /// </param>
-        /// <param name="runspaceConfiguration">
-        /// RunspaceConfiguration to use when creating a new Runspace.
-        /// </param>
         /// <param name="host">
         /// The explicit PSHost implementation.
         /// </param>
         /// <exception cref="ArgumentNullException">
-        /// RunspaceConfiguration is null.
         /// Host is null.
         /// </exception>
         /// <exception cref="ArgumentException">
         /// Maximum runspaces is less than 1.
         /// Minimum runspaces is less than 1.
         /// </exception>
-        internal RunspacePool(int minRunspaces, int maxRunspaces,
-            RunspaceConfiguration runspaceConfiguration, PSHost host)
+        internal RunspacePool(int minRunspaces, int maxRunspaces, PSHost host)
         {
             // Currently we support only Local Runspace Pool..
             // this needs to be changed once remote runspace pool
             // is implemented
 
-            _internalPool = new RunspacePoolInternal(minRunspaces,
-                maxRunspaces, runspaceConfiguration, host);
+            _internalPool = new RunspacePoolInternal(minRunspaces, maxRunspaces, host);
         }
 
         /// <summary>
@@ -746,7 +737,7 @@ namespace System.Management.Automation.Runspaces
             {
                 lock (_syncObject)
                 {
-                    bool firstEntry = (null == InternalStateChanged);
+                    bool firstEntry = (InternalStateChanged == null);
                     InternalStateChanged += value;
                     if (firstEntry)
                     {
@@ -764,7 +755,7 @@ namespace System.Management.Automation.Runspaces
                 lock (_syncObject)
                 {
                     InternalStateChanged -= value;
-                    if (null == InternalStateChanged)
+                    if (InternalStateChanged == null)
                     {
                         _internalPool.StateChanged -=
                             new EventHandler<RunspacePoolStateChangedEventArgs>(OnStateChanged);
@@ -861,7 +852,7 @@ namespace System.Management.Automation.Runspaces
             {
                 lock (_syncObject)
                 {
-                    bool firstEntry = (null == InternalRunspaceCreated);
+                    bool firstEntry = (InternalRunspaceCreated == null);
                     InternalRunspaceCreated += value;
                     if (firstEntry)
                     {
@@ -878,7 +869,7 @@ namespace System.Management.Automation.Runspaces
                 lock (_syncObject)
                 {
                     InternalRunspaceCreated -= value;
-                    if (null == InternalRunspaceCreated)
+                    if (InternalRunspaceCreated == null)
                     {
                         _internalPool.RunspaceCreated -= OnRunspaceCreated;
                     }

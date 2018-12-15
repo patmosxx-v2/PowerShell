@@ -1,8 +1,7 @@
-#pragma warning disable 1634, 1691
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+#pragma warning disable 1634, 1691
 
 using System.Collections.Generic;
 using System.Transactions;
@@ -34,13 +33,11 @@ namespace System.Management.Automation
     /// <summary>
     /// Represents an active transaction
     /// </summary>
-    ///
     public sealed class PSTransaction : IDisposable
     {
         /// <summary>
         /// Initializes a new instance of the PSTransaction class
         /// </summary>
-        ///
         internal PSTransaction(RollbackSeverity rollbackPreference, TimeSpan timeout)
         {
             _transaction = new CommittableTransaction(timeout);
@@ -51,7 +48,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Initializes a new instance of the PSTransaction class using a CommittableTransaction
         /// </summary>
-        ///
         internal PSTransaction(CommittableTransaction transaction, RollbackSeverity severity)
         {
             _transaction = transaction;
@@ -64,13 +60,11 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets the rollback preference for this transaction
         /// </summary>
-        ///
         public RollbackSeverity RollbackPreference { get; }
 
         /// <summary>
         /// Gets the number of subscribers to this transaction
         /// </summary>
-        ///
         public int SubscriberCount
         {
             get
@@ -90,7 +84,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Returns the status of this transaction.
         /// </summary>
-        ///
         public PSTransactionStatus Status
         {
             get
@@ -113,7 +106,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Activates the transaction held by this PSTransaction
         /// </summary>
-        ///
         internal void Activate()
         {
             Transaction.Current = _transaction;
@@ -122,7 +114,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Commits the transaction held by this PSTransaction
         /// </summary>
-        ///
         internal void Commit()
         {
             _transaction.Commit();
@@ -132,7 +123,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Rolls back the transaction held by this PSTransaction
         /// </summary>
-        ///
         internal void Rollback()
         {
             _transaction.Rollback();
@@ -143,7 +133,6 @@ namespace System.Management.Automation
         /// Determines whether this PSTransaction has been
         /// rolled back or not.
         /// </summary>
-        ///
         internal bool IsRolledBack
         {
             get
@@ -170,13 +159,11 @@ namespace System.Management.Automation
         /// Determines whether this PSTransaction
         /// has been committed or not.
         /// </summary>
-        ///
         internal bool IsCommitted { get; set; } = false;
 
         /// <summary>
         /// Destructor for the PSTransaction class
         /// </summary>
-        ///
         ~PSTransaction()
         {
             Dispose(false);
@@ -185,7 +172,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Disposes the PSTransaction object.
         /// </summary>
-        ///
         public void Dispose()
         {
             Dispose(true);
@@ -195,12 +181,10 @@ namespace System.Management.Automation
         /// <summary>
         /// Disposes the PSTransaction object, which disposes the
         /// underlying transaction.
-        ///
         /// <param name="disposing">
         /// Whether to actually dispose the object.
         /// </param>
         /// </summary>
-        ///
         public void Dispose(bool disposing)
         {
             if (disposing)
@@ -216,13 +200,11 @@ namespace System.Management.Automation
     /// <summary>
     /// Supports the transaction management infrastructure for the PowerShell engine
     /// </summary>
-    ///
     public sealed class PSTransactionContext : IDisposable
     {
         /// <summary>
         /// Initializes a new instance of the PSTransactionManager class
         /// </summary>
-        ///
         internal PSTransactionContext(PSTransactionManager transactionManager)
         {
             _transactionManager = transactionManager;
@@ -233,7 +215,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Destructor for the PSTransactionManager class
         /// </summary>
-        ///
         ~PSTransactionContext()
         {
             Dispose(false);
@@ -242,7 +223,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Disposes the PSTransactionContext object.
         /// </summary>
-        ///
         public void Dispose()
         {
             Dispose(true);
@@ -252,12 +232,10 @@ namespace System.Management.Automation
         /// <summary>
         /// Disposes the PSTransactionContext object, which resets the
         /// active PSTransaction.
-        ///
         /// <param name="disposing">
         /// Whether to actually dispose the object.
         /// </param>
         /// </summary>
-        ///
         private void Dispose(bool disposing)
         {
             if (disposing)
@@ -295,13 +273,11 @@ namespace System.Management.Automation.Internal
     /// <summary>
     /// Supports the transaction management infrastructure for the PowerShell engine
     /// </summary>
-    ///
     internal sealed class PSTransactionManager : IDisposable
     {
         /// <summary>
         /// Initializes a new instance of the PSTransactionManager class
         /// </summary>
-        ///
         internal PSTransactionManager()
         {
             _transactionStack = new Stack<PSTransaction>();
@@ -312,7 +288,6 @@ namespace System.Management.Automation.Internal
         /// Called by engine APIs to ensure they are protected from
         /// ambient transactions.
         /// </summary>
-        ///
         internal static IDisposable GetEngineProtectionScope()
         {
             if (s_engineProtectionEnabled && (Transaction.Current != null))
@@ -331,7 +306,6 @@ namespace System.Management.Automation.Internal
         /// protection the first time a transaction is activated.
         /// Engine protection APIs remain protected from this point on.
         /// </summary>
-        ///
         internal static void EnableEngineProtection()
         {
             s_engineProtectionEnabled = true;
@@ -341,7 +315,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Gets the rollback preference for the active transaction
         /// </summary>
-        ///
         internal RollbackSeverity RollbackPreference
         {
             get
@@ -366,7 +339,6 @@ namespace System.Management.Automation.Internal
         /// Creates a new Transaction if none are active. Otherwise, increments
         /// the subscriber count for the active transaction.
         /// </summary>
-        ///
         internal void CreateOrJoin()
         {
             CreateOrJoin(RollbackSeverity.Error, TimeSpan.FromMinutes(1));
@@ -376,7 +348,6 @@ namespace System.Management.Automation.Internal
         /// Creates a new Transaction if none are active. Otherwise, increments
         /// the subscriber count for the active transaction.
         /// </summary>
-        ///
         internal void CreateOrJoin(RollbackSeverity rollbackPreference, TimeSpan timeout)
         {
             PSTransaction currentTransaction = _transactionStack.Peek();
@@ -411,7 +382,6 @@ namespace System.Management.Automation.Internal
         /// Creates a new Transaction that should be managed independently of
         /// any parent transactions.
         /// </summary>
-        ///
         internal void CreateNew()
         {
             CreateNew(RollbackSeverity.Error, TimeSpan.FromMinutes(1));
@@ -421,7 +391,6 @@ namespace System.Management.Automation.Internal
         /// Creates a new Transaction that should be managed independently of
         /// any parent transactions.
         /// </summary>
-        ///
         internal void CreateNew(RollbackSeverity rollbackPreference, TimeSpan timeout)
         {
             _transactionStack.Push(new PSTransaction(rollbackPreference, timeout));
@@ -431,7 +400,6 @@ namespace System.Management.Automation.Internal
         /// Completes the current transaction. If only one subscriber is active, this
         /// commits the transaction. Otherwise, it reduces the subscriber count by one.
         /// </summary>
-        ///
         internal void Commit()
         {
             PSTransaction currentTransaction = _transactionStack.Peek();
@@ -478,7 +446,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Aborts the current transaction, no matter how many subscribers are part of it.
         /// </summary>
-        ///
         internal void Rollback()
         {
             Rollback(false);
@@ -487,7 +454,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Aborts the current transaction, no matter how many subscribers are part of it.
         /// </summary>
-        ///
         internal void Rollback(bool suppressErrors)
         {
             PSTransaction currentTransaction = _transactionStack.Peek();
@@ -535,7 +501,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Sets the base transaction; any transactions created thereafter will be nested to this instance
         /// </summary>
-        ///
         internal void SetBaseTransaction(CommittableTransaction transaction, RollbackSeverity severity)
         {
             if (this.HasTransaction)
@@ -559,7 +524,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Removes the transaction added by SetBaseTransaction
         /// </summary>
-        ///
         internal void ClearBaseTransaction()
         {
             if (_baseTransaction == null)
@@ -582,7 +546,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Returns the current engine transaction
         /// </summary>
-        ///
         internal PSTransaction GetCurrent()
         {
             return _transactionStack.Peek();
@@ -591,7 +554,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Activates the current transaction, both in the engine, and in the Ambient.
         /// </summary>
-        ///
         internal void SetActive()
         {
             PSTransactionManager.EnableEngineProtection();
@@ -622,7 +584,6 @@ namespace System.Management.Automation.Internal
         /// Deactivates the current transaction in the engine, and restores the
         /// ambient transaction.
         /// </summary>
-        ///
         internal void ResetActive()
         {
             // Even if you are in a transaction that has been aborted, you
@@ -635,7 +596,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Determines if you have a transaction that you can set active and work on.
         /// </summary>
-        ///
         internal bool HasTransaction
         {
             get
@@ -698,7 +658,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Destructor for the PSTransactionManager class
         /// </summary>
-        ///
         ~PSTransactionManager()
         {
             Dispose(false);
@@ -707,7 +666,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Disposes the PSTransactionManager object.
         /// </summary>
-        ///
         public void Dispose()
         {
             Dispose(true);
@@ -717,12 +675,10 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Disposes the PSTransactionContext object, which resets the
         /// active PSTransaction.
-        ///
         /// <param name="disposing">
         /// Whether to actually dispose the object.
         /// </param>
         /// </summary>
-        ///
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2213:DisposableFieldsShouldBeDisposed", MessageId = "baseTransaction", Justification = "baseTransaction should not be disposed since we do not own it - it belongs to the caller")]
         public void Dispose(bool disposing)
         {
@@ -743,5 +699,4 @@ namespace System.Management.Automation.Internal
         }
     }
 }
-
 

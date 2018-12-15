@@ -1,14 +1,15 @@
 @{
 GUID="EEFCB906-B326-4E99-9F54-8B4BB6EF3C6D"
-Author="Microsoft Corporation"
+Author="PowerShell"
 CompanyName="Microsoft Corporation"
-Copyright="© Microsoft Corporation. All rights reserved."
-ModuleVersion="3.1.0.0"
+Copyright="Copyright (c) Microsoft Corporation. All rights reserved."
+ModuleVersion="6.1.0.0"
+CompatiblePSEditions = @("Core")
 PowerShellVersion="3.0"
 NestedModules="Microsoft.PowerShell.Commands.Management.dll"
-HelpInfoURI = 'https://go.microsoft.com/fwlink/?linkid=390785'
-AliasesToExport = @("gtz") 
+HelpInfoURI = 'https://go.microsoft.com/fwlink/?linkid=855958'
 FunctionsToExport = @()
+AliasesToExport = @("gtz")
 CmdletsToExport=@("Add-Content",
     "Clear-Content",
     "Clear-ItemProperty",
@@ -45,6 +46,7 @@ CmdletsToExport=@("Add-Content",
     "Wait-Process",
     "Debug-Process",
     "Start-Process",
+    "Test-Connection",
     "Remove-ItemProperty",
     "Rename-ItemProperty",
     "Resolve-Path",

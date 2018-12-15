@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Management.Automation;
 using Dbg = System.Management.Automation;
@@ -62,7 +61,7 @@ namespace Microsoft.PowerShell.Commands
                             pathNotFound));
                 }
             }
-        } // ProcessRecord
+        }
         #endregion Command code
 
         /// <summary>
@@ -77,22 +76,18 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-
         /// <summary>
         /// A virtual method for retrieving the dynamic parameters for a cmdlet. Derived cmdlets
         /// that require dynamic parameters should override this method and return the
         /// dynamic parameter object.
         /// </summary>
-        ///
         /// <param name="context">
         /// The context under which the command is running.
         /// </param>
-        ///
         /// <returns>
         /// An object representing the dynamic parameters for the cmdlet or null if there
         /// are none.
         /// </returns>
-        ///
         internal override object GetDynamicParameters(CmdletProviderContext context)
         {
             if (Path != null && Path.Length > 0)
@@ -102,7 +97,7 @@ namespace Microsoft.PowerShell.Commands
             }
 
             return InvokeProvider.Content.ClearContentDynamicParameters(".", context);
-        } // GetDynamicParameters
-    } // ClearContentCommand
-} // namespace Microsoft.PowerShell.Commands
+        }
+    }
+}
 

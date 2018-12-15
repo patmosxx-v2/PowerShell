@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -12,7 +11,9 @@ using System.Management.Automation.Internal;
 using System.Management.Automation.Host;
 using System.Collections.ObjectModel;
 using System.Management.Automation.Remoting.Client;
+#if LEGACYTELEMETRY
 using Microsoft.PowerShell.Telemetry.Internal;
+#endif
 
 namespace System.Management.Automation.Runspaces.Internal
 {
@@ -361,7 +362,7 @@ namespace System.Management.Automation.Runspaces.Internal
                 callId = DispatchTable.CreateNewCallId();
 
                 DataStructureHandler.SendSetMaxRunspacesToServer(maxRunspaces, callId);
-            } // lock ...
+            }
 
             // this call blocks until the response is received
             object response = DispatchTable.GetResponse(callId, false);
@@ -424,7 +425,7 @@ namespace System.Management.Automation.Runspaces.Internal
                 callId = DispatchTable.CreateNewCallId();
 
                 DataStructureHandler.SendSetMinRunspacesToServer(minRunspaces, callId);
-            } // lock ...
+            }
 
             // this call blocks until the response is received
             object response = DispatchTable.GetResponse(callId, false);
@@ -475,7 +476,7 @@ namespace System.Management.Automation.Runspaces.Internal
                 }
 
                 DataStructureHandler.SendGetAvailableRunspacesToServer(callId);
-            } // lock ...
+            }
 
             // this call blocks until the response is received
             object response = DispatchTable.GetResponse(callId, 0);
@@ -584,7 +585,7 @@ namespace System.Management.Automation.Runspaces.Internal
                     // if closeAsyncResult is null, BeginClose is not called. That means
                     // we are getting close event from server, in this case release the
                     // local resources
-                    if (null == _closeAsyncResult)
+                    if (_closeAsyncResult == null)
                     {
                         // Close the local resources.
                         DataStructureHandler.CloseRunspacePoolAsync();
@@ -593,7 +594,7 @@ namespace System.Management.Automation.Runspaces.Internal
                     // Delay notifying upper layers of finished state change event
                     // until after transport close ack is received (HandleSessionClosed handler).
                 }
-            } // else if ...
+            }
         }
 
         /// <summary>
@@ -705,7 +706,6 @@ namespace System.Management.Automation.Runspaces.Internal
         internal event EventHandler<CreateCompleteEventArgs> SessionCreateCompleted;
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="shell"></param>
         internal void CreatePowerShellOnServerAndInvoke(ClientRemotePowerShell shell)
@@ -850,7 +850,9 @@ namespace System.Management.Automation.Runspaces.Internal
             PSEtwLog.LogOperationalVerbose(PSEventId.RunspacePoolOpen, PSOpcode.Open,
                             PSTask.CreateRunspace, PSKeyword.UseAlwaysOperational);
 
+#if LEGACYTELEMETRY
             TelemetryAPI.ReportRemoteSessionCreated(_connectionInfo);
+#endif
 
             lock (syncObject)
             {
@@ -868,7 +870,6 @@ namespace System.Management.Automation.Runspaces.Internal
                     instanceId, callback, asyncState, true);
 
             _openAsyncResult = asyncResult;
-
 
             // send a message using the data structure handler to open the RunspacePool
             // on the remote server
@@ -1064,14 +1065,14 @@ namespace System.Management.Automation.Runspaces.Internal
         /// <param name="asyncResult">IAsyncResult object.</param>
         public override void EndDisconnect(IAsyncResult asyncResult)
         {
-            if (null == asyncResult)
+            if (asyncResult == null)
             {
                 throw PSTraceSource.NewArgumentNullException("asyncResult");
             }
 
             RunspacePoolAsyncResult rsAsyncResult = asyncResult as RunspacePoolAsyncResult;
 
-            if ((null == rsAsyncResult) ||
+            if ((rsAsyncResult == null) ||
                 (rsAsyncResult.OwnerId != instanceId) ||
                 (rsAsyncResult.IsAssociatedWithAsyncOpen))
             {
@@ -1174,14 +1175,14 @@ namespace System.Management.Automation.Runspaces.Internal
         /// <param name="asyncResult">IAsyncResult object.</param>
         public override void EndConnect(IAsyncResult asyncResult)
         {
-            if (null == asyncResult)
+            if (asyncResult == null)
             {
                 throw PSTraceSource.NewArgumentNullException("asyncResult");
             }
 
             RunspacePoolAsyncResult rsAsyncResult = asyncResult as RunspacePoolAsyncResult;
 
-            if ((null == rsAsyncResult) ||
+            if ((rsAsyncResult == null) ||
                 (rsAsyncResult.OwnerId != instanceId) ||
                 (rsAsyncResult.IsAssociatedWithAsyncOpen))
             {
@@ -1236,7 +1237,7 @@ namespace System.Management.Automation.Runspaces.Internal
             return returnCaps;
         }
 
-        #endregion  Public Methods
+        #endregion Public Methods
 
         #region Static methods
 
@@ -1505,7 +1506,7 @@ namespace System.Management.Automation.Runspaces.Internal
         {
             if (timeString != null)
             {
-                string timeoutString = timeString.Replace("PT", "").Replace("S", "");
+                string timeoutString = timeString.Replace("PT", string.Empty).Replace("S", string.Empty);
                 try
                 {
                     // Convert time from seconds to milliseconds.
@@ -1765,7 +1766,7 @@ namespace System.Management.Automation.Runspaces.Internal
         private void HandleURIDirectionReported(object sender, RemoteDataEventArgs<Uri> eventArgs)
         {
             WSManConnectionInfo wsmanConnectionInfo = _connectionInfo as WSManConnectionInfo;
-            if (null != wsmanConnectionInfo)
+            if (wsmanConnectionInfo != null)
             {
                 wsmanConnectionInfo.ConnectionUri = eventArgs.Data;
                 URIRedirectionReported.SafeInvoke(this, eventArgs);

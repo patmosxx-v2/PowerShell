@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Text;
 using System.Security;
@@ -138,7 +137,6 @@ namespace System.Management.Automation.Internal
             ref int pdwDataLen,
             int dwBufLen);
 
-
         /// Return Type: BOOL->int
         ///hKey: HCRYPTKEY->ULONG_PTR->unsigned int
         ///hHash: HCRYPTHASH->ULONG_PTR->unsigned int
@@ -171,7 +169,6 @@ namespace System.Management.Automation.Internal
             byte[] pbData,
             ref uint pdwDataLen);
 
-
         /// Return Type: BOOL->int
         ///hProv: HCRYPTPROV->ULONG_PTR->unsigned int
         ///pbData: BYTE*
@@ -187,7 +184,6 @@ namespace System.Management.Automation.Internal
             PSSafeCryptKey hPubKey,
             uint dwFlags,
             ref PSSafeCryptKey phKey);
-
 
         /// Return Type: BOOL->int
         ///hKey: HCRYPTKEY->ULONG_PTR->unsigned int
@@ -259,7 +255,6 @@ namespace System.Management.Automation.Internal
         public const int ALG_TYPE_RSA = (2) << (9);
 
         /// <summary>
-        ///
         /// </summary>
         public const int ALG_SID_RSA_ANY = 0;
 
@@ -863,7 +858,7 @@ namespace System.Management.Automation.Internal
         {
             if (disposing)
             {
-                if (null != _hSessionKey)
+                if (_hSessionKey != null)
                 {
                     if (!_hSessionKey.IsInvalid)
                     {
@@ -877,9 +872,9 @@ namespace System.Management.Automation.Internal
                 // since otherwise, these are just references
                 // to the static members
 
-                if (null == s_hStaticRSAKey)
+                if (s_hStaticRSAKey == null)
                 {
-                    if (null != _hRSAKey)
+                    if (_hRSAKey != null)
                     {
                         if (!_hRSAKey.IsInvalid)
                         {
@@ -889,9 +884,9 @@ namespace System.Management.Automation.Internal
                     }
                 }
 
-                if (null == s_hStaticProv)
+                if (s_hStaticProv == null)
                 {
-                    if (null != _hProv)
+                    if (_hProv != null)
                     {
                         if (!_hProv.IsInvalid)
                         {
@@ -948,7 +943,6 @@ namespace System.Management.Automation.Internal
         private bool _keyExchangeStarted = false;
 
         /// <summary>
-        ///
         /// </summary>
         protected void RunKeyExchangeIfRequired()
         {
@@ -1018,8 +1012,8 @@ namespace System.Management.Automation.Internal
                             data[j] = 0;
                         }
                     }
-                } // if (ptr ...
-            } // if (rsa != null...
+                }
+            }
             else
             {
                 Dbg.Assert(false, "Session key not available to encrypt secure string");
@@ -1101,7 +1095,6 @@ namespace System.Management.Automation.Internal
 
         #region Internal Methods
 
-
         /// <summary>
         /// Encrypt a secure string
         /// </summary>
@@ -1125,7 +1118,6 @@ namespace System.Management.Automation.Internal
         internal abstract RemoteSession Session { get; set; }
 
         /// <summary>
-        ///
         /// </summary>
         public void Dispose()
         {
@@ -1134,7 +1126,6 @@ namespace System.Management.Automation.Internal
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="disposing"></param>
         public void Dispose(bool disposing)
@@ -1263,7 +1254,6 @@ namespace System.Management.Automation.Internal
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="encryptedSessionKey"></param>
         /// <returns></returns>
@@ -1380,7 +1370,6 @@ namespace System.Management.Automation.Internal
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="encryptedSessionKey"></param>
         /// <returns></returns>

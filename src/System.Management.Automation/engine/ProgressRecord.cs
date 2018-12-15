@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Runtime.Serialization;
 using Dbg = System.Management.Automation.Diagnostics;
@@ -8,15 +7,11 @@ using Dbg = System.Management.Automation.Diagnostics;
 namespace System.Management.Automation
 {
     /// <summary>
-    ///
     /// Defines a data structure used to represent the status of an ongoing operation at a point in time.
-    ///
     /// </summary>
     /// <remarks>
-    ///
     /// ProgressRecords are passed to <see cref="System.Management.Automation.Cmdlet.WriteProgress(ProgressRecord)"/>,
     /// which, according to user preference, forwards that information on to the host for rendering to the user.
-    ///
     /// </remarks>
     /// <seealso cref="System.Management.Automation.Cmdlet.WriteProgress(ProgressRecord)"/>
 
@@ -27,25 +22,17 @@ namespace System.Management.Automation
         #region Public API
 
         /// <summary>
-        ///
         /// Initializes a new instance of the ProgressRecord class and defines the activity Id,
         /// activity description, and status description.
-        ///
         /// </summary>
         /// <param name="activityId">
-        ///
         /// A unique numeric key that identifies the activity to which this record applies.
-        ///
         /// </param>
         /// <param name="activity">
-        ///
         /// A description of the activity for which progress is being reported.
-        ///
         /// </param>
         /// <param name="statusDescription">
-        ///
         /// A description of the status of the activity.
-        ///
         /// </param>
 
         public
@@ -66,9 +53,9 @@ namespace System.Management.Automation
                 throw PSTraceSource.NewArgumentException("activity", ProgressRecordStrings.ArgMayNotBeNullOrEmpty, "statusDescription");
             }
 
-            _id = activityId;
-            _activity = activity;
-            _status = statusDescription;
+            this.id = activityId;
+            this.activity = activity;
+            this.status = statusDescription;
         }
 
         /// <summary>
@@ -77,27 +64,19 @@ namespace System.Management.Automation
         /// <param name="other"></param>
         internal ProgressRecord(ProgressRecord other)
         {
-            _activity = other._activity;
-            _currentOperation = other._currentOperation;
-            _id = other._id;
-            _parentId = other._parentId;
-            _percent = other._percent;
-            _secondsRemaining = other._secondsRemaining;
-            _status = other._status;
-            _type = other._type;
+            this.activity = other.activity;
+            this.currentOperation = other.currentOperation;
+            this.id = other.id;
+            this.parentId = other.parentId;
+            this.percent = other.percent;
+            this.secondsRemaining = other.secondsRemaining;
+            this.status = other.status;
+            this.type = other.type;
         }
 
         /// <summary>
-        /// Added to enable ClrFacade.GetUninitializedObject to instantiate an uninitialized version of this class.
-        /// </summary>
-        internal ProgressRecord()
-        { }
-
-        /// <summary>
-        ///
         /// Gets the Id of the activity to which this record corresponds.  Used as a 'key' for the
         /// linking of subordinate activities.
-        ///
         /// </summary>
 
         public
@@ -106,19 +85,14 @@ namespace System.Management.Automation
         {
             get
             {
-                return _id;
+                return id;
             }
         }
 
-
-
         /// <summary>
-        ///
         /// Gets and sets the Id of the activity for which this record is a subordinate.
-        ///
         /// </summary>
         /// <remarks>
-        ///
         /// Used to allow chaining of progress records (such as when one installation invokes a child installation). UI:
         /// normally not directly visible except as already displayed as its own activity. Usually a sub-activity will be
         /// positioned below and to the right of its parent.
@@ -126,11 +100,9 @@ namespace System.Management.Automation
         /// A negative value (the default) indicates that the activity is not a subordinate.
         ///
         /// May not be the same as ActivityId.
-        ///
         /// <!--NTRAID#Windows OS Bugs-1161549 the default value for this should be picked up from a variable in the
         /// shell so that a script can set that variable, and have all subsequent calls to WriteProgress (the API) be
         /// subordinate to the "current parent id".-->
-        ///
         /// </remarks>
 
         public
@@ -139,7 +111,7 @@ namespace System.Management.Automation
         {
             get
             {
-                return _parentId;
+                return parentId;
             }
             set
             {
@@ -147,22 +119,16 @@ namespace System.Management.Automation
                 {
                     throw PSTraceSource.NewArgumentException("value", ProgressRecordStrings.ParentActivityIdCantBeActivityId);
                 }
-                _parentId = value;
+                parentId = value;
             }
         }
 
-
-
         /// <summary>
-        ///
         /// Gets and sets the description of the activity for which progress is being reported.
-        ///
         /// </summary>
         /// <remarks>
-        ///
         /// States the overall intent of whats being accomplished, such as "Recursively removing item c:\temp." Typically
         /// displayed in conjunction with a progress bar.
-        ///
         /// </remarks>
 
         public
@@ -171,7 +137,7 @@ namespace System.Management.Automation
         {
             get
             {
-                return _activity;
+                return activity;
             }
             set
             {
@@ -179,16 +145,12 @@ namespace System.Management.Automation
                 {
                     throw PSTraceSource.NewArgumentException("value", ProgressRecordStrings.ArgMayNotBeNullOrEmpty, "value");
                 }
-                _activity = value;
+                activity = value;
             }
         }
 
-
-
         /// <summary>
-        ///
         /// Gets and sets the current status of the operation, e.g., "35 of 50 items Copied." or "95% completed." or "100 files purged."
-        ///
         /// </summary>
 
         public
@@ -197,7 +159,7 @@ namespace System.Management.Automation
         {
             get
             {
-                return _status;
+                return status;
             }
             set
             {
@@ -205,18 +167,14 @@ namespace System.Management.Automation
                 {
                     throw PSTraceSource.NewArgumentException("value", ProgressRecordStrings.ArgMayNotBeNullOrEmpty, "value");
                 }
-                _status = value;
+                status = value;
             }
         }
 
-
-
         /// <summary>
-        ///
         /// Gets and sets the current operation of the many required to accomplish the activity (such as "copying foo.txt"). Normally displayed
         /// below its associated progress bar, e.g., "deleting file foo.bar"
         /// Set to null or empty in the case a sub-activity will be used to show the current operation.
-        ///
         /// </summary>
 
         public
@@ -225,23 +183,19 @@ namespace System.Management.Automation
         {
             get
             {
-                return _currentOperation;
+                return currentOperation;
             }
             set
             {
                 // null or empty string is allowed
 
-                _currentOperation = value;
+                currentOperation = value;
             }
         }
 
-
-
         /// <summary>
-        ///
         /// Gets and sets the estimate of the percentage of total work for the activity that is completed.  Typically displayed as a progress bar.
         /// Set to a negative value to indicate that the percentage completed should not be displayed.
-        ///
         /// </summary>
 
         public
@@ -250,7 +204,7 @@ namespace System.Management.Automation
         {
             get
             {
-                return _percent;
+                return percent;
             }
             set
             {
@@ -263,24 +217,18 @@ namespace System.Management.Automation
                             "value", value, ProgressRecordStrings.PercentMayNotBeMoreThan100, "PercentComplete");
                 }
 
-                _percent = value;
+                percent = value;
             }
         }
 
-
-
         /// <summary>
-        ///
         /// Gets and sets the estimate of time remaining until this activity is completed.  This can be based upon a measurement of time since
         /// started and the percent complete or another approach deemed appropriate by the caller.
         ///
         /// Normally displayed beside the progress bar, as "N seconds remaining."
-        ///
         /// </summary>
         ///<remarks>
-        ///
         /// A value less than 0 means "don't display a time remaining."
-        ///
         /// </remarks>
 
         public
@@ -289,22 +237,18 @@ namespace System.Management.Automation
         {
             get
             {
-                return _secondsRemaining;
+                return secondsRemaining;
             }
             set
             {
                 // negative values are allowed
 
-                _secondsRemaining = value;
+                secondsRemaining = value;
             }
         }
 
-
-
         /// <summary>
-        ///
         /// Gets and sets the type of record represented by this instance.
-        ///
         /// </summary>
 
         public
@@ -313,7 +257,7 @@ namespace System.Management.Automation
         {
             get
             {
-                return _type;
+                return type;
             }
             set
             {
@@ -322,23 +266,17 @@ namespace System.Management.Automation
                     throw PSTraceSource.NewArgumentException("value");
                 }
 
-                _type = value;
+                type = value;
             }
         }
 
-
-
         /// <summary>
-        ///
         /// Overrides <see cref="System.Object.ToString"/>
-        ///
         /// </summary>
         /// <returns>
-        ///
         /// "parent = a id = b act = c stat = d cur = e pct = f sec = g type = h" where
         /// a, b, c, d, e, f, and g are the values of ParentActivityId, ActivityId, Activity, StatusDescription,
         /// CurrentOperation, PercentComplete, SecondsRemaining and RecordType properties.
-        ///
         /// </returns>
 
         public override
@@ -349,14 +287,14 @@ namespace System.Management.Automation
                 String.Format(
                     System.Globalization.CultureInfo.CurrentCulture,
                     "parent = {0} id = {1} act = {2} stat = {3} cur = {4} pct = {5} sec = {6} type = {7}",
-                    _parentId,
-                    _id,
-                    _activity,
-                    _status,
-                    _currentOperation,
-                    _percent,
-                    _secondsRemaining,
-                    _type);
+                    parentId,
+                    id,
+                    activity,
+                    status,
+                    currentOperation,
+                    percent,
+                    secondsRemaining,
+                    type);
         }
 
         #endregion
@@ -473,32 +411,35 @@ namespace System.Management.Automation
 
         #endregion
 
-        [DataMemberAttribute()]
-        private int _id;
+        #region DO NOT REMOVE OR RENAME THESE FIELDS - it will break remoting compatibility with Windows PowerShell
 
         [DataMemberAttribute()]
-        private int _parentId = -1;
+        private int id;
 
         [DataMemberAttribute()]
-        private string _activity;
+        private int parentId = -1;
 
         [DataMemberAttribute()]
-        private string _status;
+        private string activity;
 
         [DataMemberAttribute()]
-        private string _currentOperation;
+        private string status;
 
         [DataMemberAttribute()]
-        private int _percent = -1;
+        private string currentOperation;
 
         [DataMemberAttribute()]
-        private int _secondsRemaining = -1;
+        private int percent = -1;
 
         [DataMemberAttribute()]
-        private ProgressRecordType _type = ProgressRecordType.Processing;
+        private int secondsRemaining = -1;
+
+        [DataMemberAttribute()]
+        private ProgressRecordType type = ProgressRecordType.Processing;
+
+        #endregion
 
         #region Serialization / deserialization for remoting
-
 
         /// <summary>
         /// Creates a ProgressRecord object from a PSObject property bag.
@@ -561,12 +502,8 @@ namespace System.Management.Automation
         #endregion
     } //ProgressRecord
 
-
-
     /// <summary>
-    ///
     /// Defines two types of progress record that refer to the beginning (or middle) and end of an operation.
-    ///
     /// </summary>
 
     public

@@ -1,6 +1,5 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 namespace System.Management.Automation.Language
 {
@@ -156,13 +155,13 @@ namespace System.Management.Automation.Language
 /*        P */ CharTraits.IdentifierStart | CharTraits.VarNameFirst | CharTraits.MultiplierStart,
 /*        Q */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
 /*        R */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
-/*        S */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
+/*        S */ CharTraits.IdentifierStart | CharTraits.VarNameFirst | CharTraits.TypeSuffix,
 /*        T */ CharTraits.IdentifierStart | CharTraits.VarNameFirst | CharTraits.MultiplierStart,
-/*        U */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
+/*        U */ CharTraits.IdentifierStart | CharTraits.VarNameFirst | CharTraits.TypeSuffix,
 /*        V */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
 /*        W */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
 /*        X */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
-/*        Y */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
+/*        Y */ CharTraits.IdentifierStart | CharTraits.VarNameFirst | CharTraits.TypeSuffix,
 /*        Z */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
 /*        [ */ CharTraits.None,
 /*        \ */ CharTraits.None,
@@ -188,13 +187,13 @@ namespace System.Management.Automation.Language
 /*        p */ CharTraits.IdentifierStart | CharTraits.VarNameFirst | CharTraits.MultiplierStart,
 /*        q */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
 /*        r */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
-/*        s */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
+/*        s */ CharTraits.IdentifierStart | CharTraits.VarNameFirst | CharTraits.TypeSuffix,
 /*        t */ CharTraits.IdentifierStart | CharTraits.VarNameFirst | CharTraits.MultiplierStart,
-/*        u */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
+/*        u */ CharTraits.IdentifierStart | CharTraits.VarNameFirst | CharTraits.TypeSuffix,
 /*        v */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
 /*        w */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
 /*        x */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
-/*        y */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
+/*        y */ CharTraits.IdentifierStart | CharTraits.VarNameFirst | CharTraits.TypeSuffix,
 /*        z */ CharTraits.IdentifierStart | CharTraits.VarNameFirst,
 /*        { */ CharTraits.ForceStartNewToken,
 /*        | */ CharTraits.ForceStartNewToken,

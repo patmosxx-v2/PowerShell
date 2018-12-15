@@ -1,7 +1,5 @@
-#if CORECLR
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Globalization;
@@ -16,24 +14,6 @@ using Microsoft.Win32;
 // We use the stubs in this namespace to reduce #if/def in the code as much as possible.
 namespace Microsoft.PowerShell.CoreClr.Stubs
 {
-    #region Misc_Types
-
-    /// <summary>
-    /// Stub for SecurityZone
-    /// </summary>
-    public enum SecurityZone
-    {
-        MyComputer = 0,
-        Intranet = 1,
-        Trusted = 2,
-        Internet = 3,
-        Untrusted = 4,
-
-        NoZone = -1,
-    }
-
-    #endregion Misc_Types
-
     #region SystemManagementStubs
 
     // Summary:
@@ -708,11 +688,12 @@ namespace System.Management.Automation
     #endregion
 }
 
+#if UNIX
+
 namespace System.Management.Automation.Security
 {
     /// <summary>
-    /// We don't need Windows Lockdown Policy related types on CSS because CSS is
-    /// amd64 only and is used internally.
+    /// Application white listing security policies only affect Windows OSs.
     /// </summary>
     internal sealed class SystemPolicy
     {
@@ -758,9 +739,6 @@ namespace System.Management.Automation.Security
     }
 }
 
-
-#if UNIX
-
 // Porting note: Tracing is absolutely not available on Linux
 namespace System.Management.Automation.Tracing
 {
@@ -768,13 +746,11 @@ namespace System.Management.Automation.Tracing
     using System.Management.Automation.Internal;
 
     /// <summary>
-    ///
     /// </summary>
     [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
     public abstract class EtwActivity
     {
         /// <summary>
-        ///
         /// </summary>
         /// <param name="activityId"></param>
         /// <returns></returns>
@@ -784,7 +760,6 @@ namespace System.Management.Automation.Tracing
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <returns></returns>
         public static Guid CreateActivityId()
@@ -793,36 +768,12 @@ namespace System.Management.Automation.Tracing
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <returns></returns>
         public static Guid GetActivityId()
         {
             return Guid.Empty;
         }
-    }
-
-    internal static class PSEtwLog
-    {
-        static internal void LogAnalyticError(PSEventId id, PSOpcode opcode, PSTask task, PSKeyword keyword, params object[] args) { }
-        static internal void LogAnalyticWarning(PSEventId id, PSOpcode opcode, PSTask task, PSKeyword keyword, params object[] args) { }
-        static internal void LogAnalyticVerbose(PSEventId id, PSOpcode opcode, PSTask task, PSKeyword keyword,
-            Int64 objectId,
-            Int64 fragmentId,
-            int isStartFragment,
-            int isEndFragment,
-            UInt32 fragmentLength,
-            PSETWBinaryBlob fragmentData)
-        { }
-        static internal void LogAnalyticVerbose(PSEventId id, PSOpcode opcode, PSTask task, PSKeyword keyword, params object[] args) { }
-        static internal void SetActivityIdForCurrentThread(Guid newActivityId) { }
-        static internal void LogOperationalVerbose(PSEventId id, PSOpcode opcode, PSTask task, PSKeyword keyword, params object[] args) { }
-        static internal void LogOperationalWarning(PSEventId id, PSOpcode opcode, PSTask task, PSKeyword keyword, params object[] args) { }
-        static internal void ReplaceActivityIdForCurrentThread(Guid newActivityId, PSEventId eventForOperationalChannel, PSEventId eventForAnalyticChannel, PSKeyword keyword, PSTask task) { }
-        static internal void LogOperationalError(PSEventId id, PSOpcode opcode, PSTask task, PSKeyword keyword, params object[] args) { }
-        static internal void LogOperationalError(PSEventId id, PSOpcode opcode, PSTask task, LogContext logContext, string payLoad) { }
-        static internal void LogAnalyticInformational(PSEventId id, PSOpcode opcode, PSTask task, PSKeyword keyword, params object[] args) { }
-        static internal void LogOperationalInformation(PSEventId id, PSOpcode opcode, PSTask task, PSKeyword keyword, params object[] args) { }
     }
 
     public enum PowerShellTraceTask
@@ -911,17 +862,14 @@ namespace System.Management.Automation.Tracing
         ManagedPlugIn = 0x100,
 
         /// <summary>
-        ///
         /// </summary>
         UseAlwaysDebug = 0x2000000000000000,
 
         /// <summary>
-        ///
         /// </summary>
         UseAlwaysOperational = 0x8000000000000000,
 
         /// <summary>
-        ///
         /// </summary>
         UseAlwaysAnalytic = 0x4000000000000000,
     }
@@ -999,7 +947,6 @@ namespace System.Management.Automation.Tracing
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="message1"></param>
         /// <param name="message2"></param>
@@ -1010,7 +957,6 @@ namespace System.Management.Automation.Tracing
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="message"></param>
         /// <param name="instanceId"></param>
@@ -1020,9 +966,7 @@ namespace System.Management.Automation.Tracing
             return false;
         }
 
-
         /// <summary>
-        ///
         /// </summary>
         /// <param name="className"></param>
         /// <param name="methodName"></param>
@@ -1036,7 +980,6 @@ namespace System.Management.Automation.Tracing
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="className"></param>
         /// <param name="methodName"></param>
@@ -1131,5 +1074,3 @@ namespace Microsoft.PowerShell
 #endregion TEMPORARY
 
 #pragma warning restore 1591, 1572, 1571, 1573, 1587, 1570, 0067
-
-#endif

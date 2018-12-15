@@ -1,7 +1,16 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+Describe 'Native pipeline should have proper encoding' -tags 'CI' {
+    It '$OutputEncoding should be set to UTF8 without BOM' {
+        $OutputEncoding.BodyName | Should -Be "utf-8"
+        $OutputEncoding.GetPreamble().Length | Should -Be 0
+    }
+}
+
 Describe 'native commands with pipeline' -tags 'Feature' {
 
     BeforeAll {
-        $powershell = Join-Path -Path $PsHome -ChildPath "powershell"
+        $powershell = Join-Path -Path $PsHome -ChildPath "pwsh"
     }
 
     It "native | ps | native doesn't block" {
@@ -14,26 +23,24 @@ Describe 'native commands with pipeline' -tags 'Feature' {
 
         $ps.AddScript("& $powershell -noprofile -command '100;
             Start-Sleep -Seconds 100' |
-            %{ if (`$_ -eq 100) { 'foo'; exit; }}").BeginInvoke()
+            ForEach-Object { if (`$_ -eq 100) { 'foo'; exit; }}").BeginInvoke()
 
         # waiting 30 seconds, because powershell startup time could be long on the slow machines,
         # such as CI
-        Wait-UntilTrue { $rs.RunspaceAvailability -eq 'Available' } -timeout 30000 -interval 100 | Should Be $true
+        Wait-UntilTrue { $rs.RunspaceAvailability -eq 'Available' } -timeout 30000 -interval 100 | Should -BeTrue
 
         $ps.Stop()
         $rs.ResetRunspaceState()
     }
 
-    # Make this test pending because of too many regressions in the latest .NET Core
-    # and thus we have to get back to an older .NET Core.
-    It "native | native | native should work fine" -Pending {
+    It "native | native | native should work fine" {
 
         if ($IsWindows) {
             $result = @(ping.exe | findstr.exe count | findstr.exe ping)
-            $result[0] | Should Match "Usage: ping"
+            $result[0] | Should -Match "Usage: ping"
         } else {
-            $result = @(ps aux | grep powershell | grep -v grep)
-            $result[0] | Should Match "powershell"
+            $result = @(ps aux | grep pwsh | grep -v grep)
+            $result[0] | Should -Match "pwsh"
         }
     }
 }
@@ -53,10 +60,10 @@ Describe "Native Command Processor" -tags "Feature" {
         $ps.AddArgument("-createchildprocess")
         $ps.AddArgument($numToCreate)
         $async = $ps.BeginInvoke()
-        $ps.InvocationStateInfo.State | Should Be "Running"
+        $ps.InvocationStateInfo.State | Should -Be "Running"
 
         [bool] $childrenCreated = $false
-        while (-not $childrenCreated)
+        while (-Not $childrenCreated)
         {
             $childprocesses = Get-Process testexe -ErrorAction SilentlyContinue
             if ($childprocesses.count -eq $numToCreate+1)
@@ -78,13 +85,13 @@ Describe "Native Command Processor" -tags "Feature" {
         $childprocesses = Get-Process testexe
         $count = $childprocesses.count
         $childprocesses | Stop-Process
-        $count | Should Be 0
+        $count | Should -Be 0
     }
 
     It "Should not block running Windows executables" -Skip:(!$IsWindows -or !(Get-Command notepad.exe)) {
         function FindNewNotepad
         {
-            Get-Process -Name notepad -ErrorAction Ignore | Where-Object { $_.Id -notin $dontKill }
+            Get-Process -Name notepad -ErrorAction Ignore | Where-Object { $_.Id -NotIn $dontKill }
         }
 
         # We need to kill the windows process we start and can't know the process id, so get a list of
@@ -106,11 +113,11 @@ Describe "Native Command Processor" -tags "Feature" {
 
             # Stop the new instance of notepad
             $newNotepad = FindNewNotepad
-            $newNotepad | Should Not Be $null
+            $newNotepad | Should -Not -BeNullOrEmpty
             $newNotepad | Stop-Process
 
-            $async.IsCompleted | Should Be $true
-            $ps.EndInvoke($async) | Should Be "ran notepad"
+            $async.IsCompleted | Should -BeTrue
+            $ps.EndInvoke($async) | Should -Be "ran notepad"
         }
         finally
         {
@@ -121,5 +128,96 @@ Describe "Native Command Processor" -tags "Feature" {
             $ps.Dispose()
         }
     }
+}
 
+Describe "Open a text file with NativeCommandProcessor" -tags @("Feature", "RequireAdminOnWindows") {
+    BeforeAll {
+        if ($IsWindows) {
+            $TestFile = Join-Path -Path $TestDrive -ChildPath "TextFileTest.foo"
+        } else {
+            $TestFile = Join-Path -Path $TestDrive -ChildPath "TextFileTest.txt"
+        }
+        Set-Content -Path $TestFile -Value "Hello" -Force
+        $supportedEnvironment = $true
+
+        if ($IsLinux) {
+            $appFolder = "$HOME/.local/share/applications"
+            $supportedEnvironment = Test-Path $appFolder
+            if ($supportedEnvironment) {
+                $mimeDefault = xdg-mime query default text/plain
+                Remove-Item $HOME/nativeCommandProcessor.Success -Force -ErrorAction SilentlyContinue
+                Set-Content -Path "$appFolder/nativeCommandProcessor.desktop" -Force -Value @"
+[Desktop Entry]
+Version=1.0
+Name=nativeCommandProcessor
+Comment=Validate_native_command_processor_open_text_file
+Exec=/bin/sh -c 'echo %u > ~/nativeCommandProcessor.Success'
+Icon=utilities-terminal
+Terminal=true
+Type=Application
+Categories=Application;
+"@
+                xdg-mime default nativeCommandProcessor.desktop text/plain
+            }
+        }
+        elseif ($IsWindows) {
+            $supportedEnvironment = [System.Management.Automation.Platform]::IsWindowsDesktop
+            if ($supportedEnvironment) {
+                cmd /c assoc .foo=foofile
+                cmd /c ftype foofile=cmd /c echo %1^> $TestDrive\foo.txt
+                Remove-Item $TestDrive\foo.txt -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+
+    AfterAll {
+        Remove-Item -Path $TestFile -Force -ErrorAction SilentlyContinue
+
+        if ($IsLinux -and $supportedEnvironment) {
+            xdg-mime default $mimeDefault text/plain
+            Remove-Item $appFolder/nativeCommandProcessor.desktop -Force -ErrorAction SilentlyContinue
+            Remove-Item $HOME/nativeCommandProcessor.Success -Force -ErrorAction SilentlyContinue
+        }
+        elseif ($IsWindows -and $supportedEnvironment) {
+            cmd /c assoc .foo=
+            cmd /c ftype foofile=
+        }
+    }
+
+    It "Should open text file without error" -Skip:(!$supportedEnvironment) {
+        if ($IsMacOS) {
+            $expectedTitle = Split-Path $TestFile -Leaf
+            open -F -a TextEdit
+            $beforeCount = [int]('tell application "TextEdit" to count of windows' | osascript)
+            & $TestFile
+            $startTime = Get-Date
+            $title = [String]::Empty
+            while (((Get-Date) - $startTime).TotalSeconds -lt 30 -and ($title -ne $expectedTitle)) {
+                Start-Sleep -Milliseconds 100
+                $title = 'tell application "TextEdit" to get name of front window' | osascript
+            }
+            $afterCount = [int]('tell application "TextEdit" to count of windows' | osascript)
+            $afterCount | Should -Be ($beforeCount + 1)
+            $title | Should -BeExactly $expectedTitle
+            "tell application ""TextEdit"" to close window ""$expectedTitle""" | osascript
+            'tell application "TextEdit" to quit' | osascript
+        }
+        elseif ($IsLinux) {
+            # Validate on Linux by reassociating default app for text file
+            & $TestFile
+            # It may take time for handler to start
+            Wait-FileToBePresent -File "$HOME/nativeCommandProcessor.Success" -TimeoutInSeconds 10 -IntervalInMilliseconds 100
+            Get-Content $HOME/nativeCommandProcessor.Success | Should -BeExactly $TestFile
+        }
+        else {
+            & $TestFile
+            Wait-FileToBePresent -File $TestDrive\foo.txt -TimeoutInSeconds 10 -IntervalInMilliseconds 100
+            "$TestDrive\foo.txt" | Should -Exist
+            Get-Content $TestDrive\foo.txt | Should -BeExactly $TestFile
+        }
+    }
+
+    It "Opening a file with an unregistered extension on Windows should fail" -Skip:(!$IsWindows) {
+        { $dllFile = "$PSHOME\System.Management.Automation.dll"; & $dllFile } | Should -Throw -ErrorId "NativeCommandFailed"
+    }
 }

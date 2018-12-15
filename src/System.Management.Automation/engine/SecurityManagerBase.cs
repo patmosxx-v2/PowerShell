@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using Dbg = System.Management.Automation;
 using System.Management.Automation.Host;
@@ -62,22 +61,16 @@ namespace System.Management.Automation
         /// <summary>
         /// determine if we should run the specified file
         /// </summary>
-        ///
         /// <param name="commandInfo"> info on entity to be run </param>
-        ///
         /// <param name="origin"> the dispatch origin of a command  </param>
-        ///
         /// <param name="host"> allows access to the host. </param>
-        ///
         /// <remarks>
         /// This method throws SecurityException in case running is not allowed.
         /// </remarks>
-        ///
         /// <exception cref="System.Management.Automation.PSSecurityException">
         /// If the derived security manager threw an exception or returned
         /// false with a reason.
         /// </exception>
-        ///
         internal void ShouldRunInternal(CommandInfo commandInfo,
                                         CommandOrigin origin,
                                         PSHost host)
@@ -90,7 +83,6 @@ namespace System.Management.Automation
             // PlatformNotSupportedException
             return;
 #else
-
 
 #if DEBUG
             // If we are debugging, let the unit tests swap the file from beneath us
@@ -168,17 +160,11 @@ namespace System.Management.Automation
         /// Determines if the host should run the command a specified by the CommandInfo parameter.
         /// The default implementation gives permission to run every command.
         /// </summary>
-        ///
         /// <param name="commandInfo"> Information about the command to be run </param>
-        ///
         /// <param name="origin"> The origin of the command </param>
-        ///
         /// <param name="host"> The host running the command </param>
-        ///
         /// <param name="reason"> The reason for preventing execution, if applicable </param>
-        ///
         /// <returns> True if the host should run the command.  False otherwise </returns>
-        ///
         protected internal virtual bool ShouldRun(CommandInfo commandInfo,
                                                   CommandOrigin origin,
                                                   PSHost host,

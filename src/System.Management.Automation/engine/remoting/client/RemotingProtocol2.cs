@@ -1,6 +1,5 @@
-/********************************************************************++
- * Copyright (c) Microsoft Corporation.  All rights reserved.
- * --********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Management.Automation.Tracing;
 using System.Collections.ObjectModel;
@@ -197,8 +196,8 @@ namespace System.Management.Automation.Internal
                         PSEventArgsReceived.SafeInvoke(this, new RemoteDataEventArgs<PSEventArgs>(psEventArgs));
                     }
                     break;
-            } // switch ...
-        } // ProcessReceivedData
+            }
+        }
 
         /// <summary>
         /// Creates a PowerShell data structure handler instance associated
@@ -379,12 +378,10 @@ namespace System.Management.Automation.Internal
         internal event EventHandler<RemoteDataEventArgs<Exception>> SessionClosed;
 
         /// <summary>
-        ///
         /// </summary>
         internal event EventHandler<RemoteDataEventArgs<Exception>> SessionDisconnected;
 
         /// <summary>
-        ///
         /// </summary>
         internal event EventHandler<RemoteDataEventArgs<Exception>> SessionReconnected;
 
@@ -592,7 +589,7 @@ namespace System.Management.Automation.Internal
                     _closingReason = e.SessionStateInfo.Reason;
                 }
             }
-        } // HandleClientRemoteSessionStateChanged
+        }
 
         /// <summary>
         /// Session is reporting that URI is getting redirected.
@@ -644,7 +641,7 @@ namespace System.Management.Automation.Internal
                     {
                         dsHandler.SetStateToFailed(stateInfo.Reason);
                     }
-                } // if ...
+                }
                 else if (stateInfo.State == RunspacePoolState.Closed)
                 {
                     foreach (ClientPowerShellDataStructureHandler dsHandler in dsHandlers)
@@ -1185,7 +1182,7 @@ namespace System.Management.Automation.Internal
                     inputstream.DataReady += new EventHandler(HandleInputDataReady);
                     WriteInput(inputstream);
                 }
-            } // else ...
+            }
         }
 
         /// <summary>
@@ -1318,8 +1315,8 @@ namespace System.Management.Automation.Internal
                         Dbg.Assert(false, "we should not be encountering this");
                     }
                     break;
-            } // switch ...
-        } // ProcessReceivedData
+            }
+        }
 
         /// <summary>
         /// Set the state of the associated powershell to stopped
@@ -1360,7 +1357,7 @@ namespace System.Management.Automation.Internal
             // wait for the close to complete and then dispose the transport manager
             TransportManager.CloseCompleted += delegate (object source, EventArgs args)
             {
-                if (null != CloseCompleted)
+                if (CloseCompleted != null)
                 {
                     // If the provided event args are empty then call CloseCompleted with
                     // RemoteSessionStateEventArgs containing session closed reason exception.
@@ -1534,7 +1531,6 @@ namespace System.Management.Automation.Internal
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <remarks>This method doesn't lock and its the responsibility
         /// of the caller to actually do the locking</remarks>

@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.Generic;
 using System.Management.Automation.Tracing;
@@ -31,7 +30,6 @@ namespace System.Management.Automation.Runspaces.Internal
         // pool services on this queue.
         protected Queue<GetRunspaceAsyncResult> ultimateRequestQueue;
         protected RunspacePoolStateInfo stateInfo;
-        protected RunspaceConfiguration rsConfig;
         protected InitialSessionState _initialSessionState;
         protected PSHost host;
         protected Guid instanceId;
@@ -52,9 +50,6 @@ namespace System.Management.Automation.Runspaces.Internal
         /// supplied <paramref name="configuration"/>, <paramref name="minRunspaces"/>
         /// and <paramref name="maxRunspaces"/>
         /// </summary>
-        /// <param name="runspaceConfiguration">
-        /// RunspaceConfiguration to use when creating a new Runspace.
-        /// </param>
         /// <param name="maxRunspaces">
         /// The maximum number of Runspaces that can exist in this pool.
         /// Should be greater than or equal to 1.
@@ -67,7 +62,6 @@ namespace System.Management.Automation.Runspaces.Internal
         /// The explicit PSHost implementation.
         /// </param>
         /// <exception cref="ArgumentNullException">
-        /// RunspaceConfiguration is null.
         /// Host is null.
         /// </exception>
         /// <exception cref="ArgumentException">
@@ -76,25 +70,19 @@ namespace System.Management.Automation.Runspaces.Internal
         /// </exception>
         public RunspacePoolInternal(int minRunspaces,
                 int maxRunspaces,
-                RunspaceConfiguration runspaceConfiguration,
                 PSHost host)
             : this(minRunspaces, maxRunspaces)
         {
-            if (runspaceConfiguration == null)
-            {
-                throw PSTraceSource.NewArgumentNullException("runspaceConfiguration");
-            }
-
             if (host == null)
             {
                 throw PSTraceSource.NewArgumentNullException("host");
             }
 
-            rsConfig = runspaceConfiguration;
             this.host = host;
             pool = new Stack<Runspace>();
             runspaceRequestQueue = new Queue<GetRunspaceAsyncResult>();
             ultimateRequestQueue = new Queue<GetRunspaceAsyncResult>();
+            _initialSessionState = InitialSessionState.CreateDefault();
         }
 
         /// <summary>
@@ -261,18 +249,6 @@ namespace System.Management.Automation.Runspaces.Internal
         }
 
         private PSPrimitiveDictionary _applicationPrivateData;
-
-        /// <summary>
-        /// Gets the RunspaceConfiguration object that this pool uses
-        /// to create the runspaces.
-        /// </summary>
-        public RunspaceConfiguration RunspaceConfiguration
-        {
-            get
-            {
-                return rsConfig;
-            }
-        }
 
         /// <summary>
         /// Gets the InitialSessionState object that this pool uses
@@ -641,14 +617,14 @@ namespace System.Management.Automation.Runspaces.Internal
         /// </remarks>
         public void EndOpen(IAsyncResult asyncResult)
         {
-            if (null == asyncResult)
+            if (asyncResult == null)
             {
                 throw PSTraceSource.NewArgumentNullException("asyncResult");
             }
 
             RunspacePoolAsyncResult rsAsyncResult = asyncResult as RunspacePoolAsyncResult;
 
-            if ((null == rsAsyncResult) ||
+            if ((rsAsyncResult == null) ||
                 (rsAsyncResult.OwnerId != instanceId) ||
                 (!rsAsyncResult.IsAssociatedWithAsyncOpen))
             {
@@ -708,14 +684,14 @@ namespace System.Management.Automation.Runspaces.Internal
         /// </remarks>
         public virtual void EndClose(IAsyncResult asyncResult)
         {
-            if (null == asyncResult)
+            if (asyncResult == null)
             {
                 throw PSTraceSource.NewArgumentNullException("asyncResult");
             }
 
             RunspacePoolAsyncResult rsAsyncResult = asyncResult as RunspacePoolAsyncResult;
 
-            if ((null == rsAsyncResult) ||
+            if ((rsAsyncResult == null) ||
                 (rsAsyncResult.OwnerId != instanceId) ||
                 (rsAsyncResult.IsAssociatedWithAsyncOpen))
             {
@@ -750,7 +726,7 @@ namespace System.Management.Automation.Runspaces.Internal
 
             // throw the exception that occurred while
             // processing the async operation
-            if (null != asyncResult.Exception)
+            if (asyncResult.Exception != null)
             {
                 throw asyncResult.Exception;
             }
@@ -777,7 +753,7 @@ namespace System.Management.Automation.Runspaces.Internal
         /// </exception>
         public void ReleaseRunspace(Runspace runspace)
         {
-            if (null == runspace)
+            if (runspace == null)
             {
                 throw PSTraceSource.NewArgumentNullException("runspace");
             }
@@ -917,7 +893,7 @@ namespace System.Management.Automation.Runspaces.Internal
         /// </param>
         internal void CancelGetRunspace(IAsyncResult asyncResult)
         {
-            if (null == asyncResult)
+            if (asyncResult == null)
             {
                 throw PSTraceSource.NewArgumentNullException("asyncResult");
             }
@@ -925,7 +901,7 @@ namespace System.Management.Automation.Runspaces.Internal
             GetRunspaceAsyncResult grsAsyncResult =
                 asyncResult as GetRunspaceAsyncResult;
 
-            if ((null == grsAsyncResult) || (grsAsyncResult.OwnerId != instanceId))
+            if ((grsAsyncResult == null) || (grsAsyncResult.OwnerId != instanceId))
             {
                 throw PSTraceSource.NewArgumentException("asyncResult",
                                                          RunspacePoolStrings.AsyncResultNotOwned,
@@ -956,7 +932,7 @@ namespace System.Management.Automation.Runspaces.Internal
         /// </remarks>
         internal Runspace EndGetRunspace(IAsyncResult asyncResult)
         {
-            if (null == asyncResult)
+            if (asyncResult == null)
             {
                 throw PSTraceSource.NewArgumentNullException("asyncResult");
             }
@@ -964,7 +940,7 @@ namespace System.Management.Automation.Runspaces.Internal
             GetRunspaceAsyncResult grsAsyncResult =
                 asyncResult as GetRunspaceAsyncResult;
 
-            if ((null == grsAsyncResult) || (grsAsyncResult.OwnerId != instanceId))
+            if ((grsAsyncResult == null) || (grsAsyncResult.OwnerId != instanceId))
             {
                 throw PSTraceSource.NewArgumentException("asyncResult",
                                                          RunspacePoolStrings.AsyncResultNotOwned,
@@ -1272,21 +1248,10 @@ namespace System.Management.Automation.Runspaces.Internal
         /// </remarks>
         protected Runspace CreateRunspace()
         {
+            Dbg.Assert(_initialSessionState != null, "_initialSessionState should not be null");
             // TODO: exceptions thrown here need to be documented
             // runspace.Open() did not document all the exceptions.
-            Runspace result = null;
-
-            // if host is null we are already throwing an
-            // exception, hence a check is not required at this
-            // point
-            if (rsConfig != null)
-            {
-                result = RunspaceFactory.CreateRunspace(host, rsConfig);
-            }
-            else
-            {
-                result = RunspaceFactory.CreateRunspaceFromSessionStateNoClone(host, _initialSessionState);
-            }
+            Runspace result = RunspaceFactory.CreateRunspaceFromSessionStateNoClone(host, _initialSessionState);
 
             result.ThreadOptions = this.ThreadOptions == PSThreadOptions.Default ? PSThreadOptions.ReuseThread : this.ThreadOptions;
 #if !CORECLR // No ApartmentState In CoreCLR
@@ -1298,10 +1263,7 @@ namespace System.Management.Automation.Runspaces.Internal
             result.Open();
 
             // Enforce the system lockdown policy if one is defined.
-            if (SystemPolicy.GetSystemLockdownPolicy() == SystemEnforcementMode.Enforce)
-            {
-                result.ExecutionContext.LanguageMode = PSLanguageMode.ConstrainedLanguage;
-            }
+            Utils.EnforceSystemLockDownLanguageMode(result.ExecutionContext);
 
             result.Events.ForwardEvent += OnRunspaceForwardEvent; // this must be done after open since open initializes the ExecutionContext
 
@@ -1331,7 +1293,7 @@ namespace System.Management.Automation.Runspaces.Internal
         /// </param>
         protected void DestroyRunspace(Runspace runspace)
         {
-            Dbg.Assert(null != runspace, "Runspace cannot be null");
+            Dbg.Assert(runspace != null, "Runspace cannot be null");
             runspace.Events.ForwardEvent -= OnRunspaceForwardEvent; // this must be done after open since open initializes the ExecutionContext
             runspace.Close();
             runspace.Dispose();
@@ -1617,7 +1579,7 @@ namespace System.Management.Automation.Runspaces.Internal
                                 ThreadPool.QueueUserWorkItem(new WaitCallback(runspaceRequester.DoComplete));
                             }
                         }
-                    } // end lock(ultimateRequestQueue)
+                    }
 
                     lock (runspaceRequestQueue)
                     {
@@ -1646,7 +1608,7 @@ namespace System.Management.Automation.Runspaces.Internal
                 }
             }
 
-            if ((useCallingThread) && (null != runspaceRequester))
+            if ((useCallingThread) && (runspaceRequester != null))
             {
                 // call DoComplete outside of the lock and finally..as the
                 // DoComplete handler may handle the runspace in the same
@@ -1675,7 +1637,7 @@ namespace System.Management.Automation.Runspaces.Internal
                     );
                 throw e;
             }
-        } // AssertIfStateIsBeforeOpen
+        }
 
         /// <summary>
         /// Raises the ForwardEvent event

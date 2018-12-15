@@ -1,8 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 // ----------------------------------------------------------------------
-//
-//  Microsoft Windows NT
-//  Copyright (C) Microsoft Corporation, 2007.
-//
 //  Contents:  Entry points for managed PowerShell plugin worker used to
 //  host powershell in a WSMan service.
 // ----------------------------------------------------------------------
@@ -27,7 +25,6 @@ namespace System.Management.Automation.Remoting
     // pointers (otherwise we end up storing the delegate into a GCRoot).
 
     /// <summary>
-    ///
     /// </summary>
     /// <param name="pluginContext">PVOID</param>
     /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
@@ -44,7 +41,6 @@ namespace System.Management.Automation.Remoting
         IntPtr inboundShellInformation);
 
     /// <summary>
-    ///
     /// </summary>
     /// <param name="pluginContext">PVOID</param>
     /// <param name="shellContext">PVOID</param>
@@ -53,7 +49,6 @@ namespace System.Management.Automation.Remoting
         IntPtr shellContext);
 
     /// <summary>
-    ///
     /// </summary>
     /// <param name="pluginContext">PVOID</param>
     /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
@@ -70,7 +65,6 @@ namespace System.Management.Automation.Remoting
         IntPtr inboundConnectInformation);
 
     /// <summary>
-    ///
     /// </summary>
     /// <param name="pluginContext">PVOID</param>
     /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
@@ -94,7 +88,6 @@ namespace System.Management.Automation.Remoting
            IntPtr shutdownContext);
 
     /// <summary>
-    ///
     /// </summary>
     /// <param name="pluginContext">PVOID</param>
     /// <param name="shellContext">PVOID</param>
@@ -105,7 +98,6 @@ namespace System.Management.Automation.Remoting
         IntPtr commandContext);
 
     /// <summary>
-    ///
     /// </summary>
     /// <param name="pluginContext">PVOID</param>
     /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
@@ -124,7 +116,6 @@ namespace System.Management.Automation.Remoting
         IntPtr inboundData);
 
     /// <summary>
-    ///
     /// </summary>
     /// <param name="pluginContext">PVOID</param>
     /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
@@ -141,7 +132,6 @@ namespace System.Management.Automation.Remoting
         IntPtr streamSet);
 
     /// <summary>
-    ///
     /// </summary>
     /// <param name="pluginContext">PVOID</param>
     /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
@@ -167,14 +157,12 @@ namespace System.Management.Automation.Remoting
         bool timedOut);
 
     /// <summary>
-    ///
     /// </summary>
     /// <param name="pluginContext">PVOID</param>
     internal delegate void WSMShutdownPluginDelegate(
         IntPtr pluginContext);
 
     /// <summary>
-    ///
     /// </summary>
     internal sealed class WSManPluginEntryDelegates : IDisposable
     {
@@ -324,12 +312,11 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
         private void CleanUpDelegates()
         {
             // Free GCHandles so that the memory they point to may be unpinned (garbage collected)
-            if (null != _pluginShellGCHandle)
+            if (_pluginShellGCHandle != null)
             {
                 _pluginShellGCHandle.Free();
                 _pluginReleaseShellContextGCHandle.Free();
@@ -468,7 +455,7 @@ namespace System.Management.Automation.Remoting
                 // If there are any non-critical exceptions (e.g. we are running on CLR prior to 4.6.2), we won't be able to use long paths
             }
 #endif
-            ClrFacade.StructureToPtr<WSManPluginEntryDelegates.WSManPluginEntryDelegatesInternal>(workerPtrs.UnmanagedStruct, wkrPtrs, false);
+            Marshal.StructureToPtr<WSManPluginEntryDelegates.WSManPluginEntryDelegatesInternal>(workerPtrs.UnmanagedStruct, wkrPtrs, false);
             return WSManPluginConstants.ExitCodeSuccess;
         }
 
@@ -481,14 +468,13 @@ namespace System.Management.Automation.Remoting
         {
             WSManPluginInstance.PerformShutdown(pluginContext);
 
-            if (null != workerPtrs)
+            if (workerPtrs != null)
             {
                 workerPtrs.Dispose();
             }
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="pluginContext">PVOID</param>
         /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
@@ -521,7 +507,6 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="pluginContext">PVOID</param>
         /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
@@ -566,7 +551,6 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="pluginContext">PVOID</param>
         /// <param name="shellContext">PVOID</param>
@@ -579,7 +563,6 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="pluginContext">PVOID</param>
         /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
@@ -625,7 +608,6 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="pluginContext">PVOID</param>
         /// <param name="shellContext">PVOID</param>
@@ -640,7 +622,6 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="pluginContext">PVOID</param>
         /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
@@ -675,7 +656,6 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="pluginContext">PVOID</param>
         /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
@@ -708,7 +688,6 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="pluginContext">PVOID</param>
         /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
@@ -752,7 +731,7 @@ namespace System.Management.Automation.Remoting
             object operationContext,
             bool timedOut)
         {
-            if (null == operationContext)
+            if (operationContext == null)
             {
                 return;
             }
@@ -845,4 +824,4 @@ namespace System.Management.Automation.Remoting
 
         #endregion
     }
-} // namespace System.Management.Automation.Remoting
+}

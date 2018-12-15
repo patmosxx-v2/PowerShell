@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using Dbg = System.Management.Automation.Diagnostics;
 
@@ -9,6 +8,7 @@ namespace System.Management.Automation.Internal
     /// <summary>
     /// Defines enumerations for the keywords
     /// </summary>
+    [Flags]
     internal enum PSKeyword : ulong
     {
         Runspace = 0x1,
@@ -159,6 +159,10 @@ namespace System.Management.Automation.Internal
         Settings = 0x1F04,
         Engine_Trace = 0x1F06,
 
+        // Experimental Features
+        ExperimentalFeature_InvalidName = 0x3001,
+        ExperimentalFeature_ReadConfig_Error = 0x3002,
+
         // Scheduled Jobs
         ScheduledJob_Start = 0xD001,
         ScheduledJob_Complete = 0xD002,
@@ -194,11 +198,26 @@ namespace System.Management.Automation.Internal
     /// <summary>
     /// Defines enumerations for channels
     /// </summary>
+    /// <remarks>
+    /// On Windows, PSChannel is the numeric channel id value.
+    /// On Non-Windows, PSChannel is used to filter events and
+    /// the underlying channel bitmask values are used instead.
+    /// The bit values are the same as used on Windows.
+    /// </remarks>
+#if UNIX
+    [Flags]
+    internal enum PSChannel : byte
+    {
+        Operational = 0x80,
+        Analytic = 0x40
+    }
+#else
     internal enum PSChannel : byte
     {
         Operational = 0x10,
         Analytic = 0x11
     }
+#endif
 
     /// <summary>
     /// Defines enumerations for tasks
@@ -217,6 +236,7 @@ namespace System.Management.Automation.Internal
         ProviderStart = 0x68,
         ProviderStop = 0x69,
         ExecutePipeline = 0x6A,
+        ExperimentalFeature = 0x6B,
         ScheduledJob = 0x6E,
         NamedPipe = 0x6F,
         ISEOperation = 0x78

@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -65,7 +64,6 @@ namespace System.Management.Automation.Language
             typeof(CharOps).GetMethod(nameof(CharOps.CompareStringIeq), staticFlags);
         internal static readonly MethodInfo CharOps_CompareStringIne =
             typeof(CharOps).GetMethod(nameof(CharOps.CompareStringIne), staticFlags);
-
         internal static readonly MethodInfo CommandParameterInternal_CreateArgument =
             typeof(CommandParameterInternal).GetMethod(nameof(CommandParameterInternal.CreateArgument), staticFlags);
         internal static readonly MethodInfo CommandParameterInternal_CreateParameter =
@@ -181,6 +179,8 @@ namespace System.Management.Automation.Language
 
         internal static readonly MethodInfo FileRedirection_BindForExpression =
             typeof(FileRedirection).GetMethod(nameof(FileRedirection.BindForExpression), instanceFlags);
+        internal static readonly MethodInfo FileRedirection_CallDoCompleteForExpression =
+            typeof(FileRedirection).GetMethod(nameof(FileRedirection.CallDoCompleteForExpression), instanceFlags);
         internal static readonly ConstructorInfo FileRedirection_ctor =
             typeof(FileRedirection).GetConstructor(instanceFlags, null, CallingConventions.Standard,
                                                    new Type[] { typeof(RedirectionStream), typeof(bool), typeof(string) }, null);
@@ -206,8 +206,6 @@ namespace System.Management.Automation.Language
 
         internal static readonly MethodInfo FunctionOps_DefineFunction =
             typeof(FunctionOps).GetMethod(nameof(FunctionOps.DefineFunction), staticFlags);
-        internal static readonly MethodInfo FunctionOps_DefineWorkflows =
-            typeof(FunctionOps).GetMethod(nameof(FunctionOps.DefineWorkflows), staticFlags);
 
         internal static readonly ConstructorInfo Hashtable_ctor =
             typeof(Hashtable).GetConstructor(BindingFlags.Instance | BindingFlags.Public, null,
@@ -245,9 +243,6 @@ namespace System.Management.Automation.Language
             typeof(InterpreterError).GetMethod(nameof(InterpreterError.NewInterpreterException), staticFlags);
         internal static readonly MethodInfo InterpreterError_NewInterpreterExceptionWithInnerException =
             typeof(InterpreterError).GetMethod(nameof(InterpreterError.NewInterpreterExceptionWithInnerException), staticFlags);
-
-        internal static readonly MethodInfo IntOps_Range =
-            typeof(IntOps).GetMethod(nameof(IntOps.Range), staticFlags);
 
         internal static readonly MethodInfo LanguagePrimitives_GetInvalidCastMessages =
             typeof(LanguagePrimitives).GetMethod(nameof(LanguagePrimitives.GetInvalidCastMessages), staticFlags);
@@ -290,6 +285,10 @@ namespace System.Management.Automation.Language
             typeof(ParserOps).GetMethod(nameof(ParserOps.LikeOperator), staticFlags);
         internal static readonly MethodInfo ParserOps_MatchOperator =
             typeof(ParserOps).GetMethod(nameof(ParserOps.MatchOperator), staticFlags);
+        internal static readonly MethodInfo ParserOps_RangeOperator =
+            typeof(ParserOps).GetMethod(nameof(ParserOps.RangeOperator), staticFlags);
+        internal static readonly MethodInfo ParserOps_GetRangeEnumerator =
+            typeof(ParserOps).GetMethod(nameof(ParserOps.GetRangeEnumerator), staticFlags);
         internal static readonly MethodInfo ParserOps_ReplaceOperator =
             typeof(ParserOps).GetMethod(nameof(ParserOps.ReplaceOperator), staticFlags);
         internal static readonly MethodInfo ParserOps_SplitOperator =
@@ -369,7 +368,7 @@ namespace System.Management.Automation.Language
         internal static readonly FieldInfo PSObject_isDeserialized =
             typeof(PSObject).GetField(nameof(PSObject.isDeserialized), instanceFlags);
         internal static readonly MethodInfo PSObject_ToStringParser =
-            typeof(PSObject).GetMethod(nameof(PSObject.ToStringParser), staticFlags);
+            typeof(PSObject).GetMethod(nameof(PSObject.ToStringParser), staticFlags, null, new[]{typeof(ExecutionContext), typeof(object)}, null);
 
         internal static readonly PropertyInfo PSReference_Value =
             typeof(PSReference).GetProperty(nameof(PSReference.Value));
@@ -392,11 +391,10 @@ namespace System.Management.Automation.Language
 
         internal static readonly MethodInfo PSCreateInstanceBinder_IsTargetTypeNonPublic =
             typeof(PSCreateInstanceBinder).GetMethod(nameof(PSCreateInstanceBinder.IsTargetTypeNonPublic), staticFlags);
+        internal static readonly MethodInfo PSCreateInstanceBinder_IsTargetTypeByRefLike =
+            typeof(PSCreateInstanceBinder).GetMethod(nameof(PSCreateInstanceBinder.IsTargetTypeByRefLike), staticFlags);
         internal static readonly MethodInfo PSCreateInstanceBinder_GetTargetTypeName =
             typeof(PSCreateInstanceBinder).GetMethod(nameof(PSCreateInstanceBinder.GetTargetTypeName), staticFlags);
-
-        internal static readonly ConstructorInfo RangeEnumerator_ctor =
-            typeof(RangeEnumerator).GetConstructor(new Type[] { typeof(int), typeof(int) });
 
         internal static readonly MethodInfo ReservedNameMembers_GeneratePSAdaptedMemberSet =
             typeof(ReservedNameMembers).GetMethod(nameof(ReservedNameMembers.GeneratePSAdaptedMemberSet), staticFlags);
@@ -416,8 +414,6 @@ namespace System.Management.Automation.Language
 
         internal static readonly MethodInfo RestrictedLanguageChecker_EnsureUtilityModuleLoaded =
             typeof(RestrictedLanguageChecker).GetMethod(nameof(RestrictedLanguageChecker.EnsureUtilityModuleLoaded), staticFlags);
-
-
 
         internal static readonly ConstructorInfo ReturnException_ctor =
             typeof(ReturnException).GetConstructor(instanceFlags, null, CallingConventions.Standard, new Type[] { typeof(object) }, null);
@@ -504,6 +500,9 @@ namespace System.Management.Automation.Language
         internal static readonly MethodInfo VariableOps_SetVariableValue =
             typeof(VariableOps).GetMethod(nameof(VariableOps.SetVariableValue), staticFlags);
 
+        internal static readonly MethodInfo Utils_IsComObject =
+            typeof(Utils).GetMethod(nameof(Utils.IsComObject), staticFlags);
+
         internal static readonly MethodInfo ClassOps_ValidateSetProperty =
             typeof(ClassOps).GetMethod(nameof(ClassOps.ValidateSetProperty), staticPublicFlags);
         internal static readonly MethodInfo ClassOps_CallBaseCtor =
@@ -534,7 +533,7 @@ namespace System.Management.Automation.Language
         internal static readonly Expression NullType = Expression.Constant(null, typeof(Type));
         internal static readonly Expression NullDelegateArray = Expression.Constant(null, typeof(Action<FunctionContext>[]));
         internal static readonly Expression NullPipe = Expression.Constant(new Pipe { NullPipe = true });
-        internal static readonly Expression ConstEmptyString = Expression.Constant("");
+        internal static readonly Expression ConstEmptyString = Expression.Constant(string.Empty);
         internal static readonly Expression CompareOptionsIgnoreCase = Expression.Constant(CompareOptions.IgnoreCase);
         internal static readonly Expression CompareOptionsNone = Expression.Constant(CompareOptions.None);
         internal static readonly Expression Ordinal = Expression.Constant(StringComparison.Ordinal);
@@ -599,7 +598,7 @@ namespace System.Management.Automation.Language
                 return Expression.Convert(expr, type);
             }
 
-            if (type.GetTypeInfo().ContainsGenericParameters)
+            if (type.ContainsGenericParameters || type.IsByRefLike)
             {
                 return Expression.Call(
                     CachedReflectionInfo.LanguagePrimitives_ThrowInvalidCastException,
@@ -617,7 +616,7 @@ namespace System.Management.Automation.Language
                 return expr;
             }
 
-            if ((expr.Type.IsFloating() || expr.Type == typeof(Decimal)) && type.GetTypeInfo().IsPrimitive)
+            if ((expr.Type.IsFloating() || expr.Type == typeof(Decimal)) && type.IsPrimitive)
             {
                 // Convert correctly handles most "primitive" conversions for PowerShell,
                 // but it does not correctly handle floating point.
@@ -736,6 +735,7 @@ namespace System.Management.Automation.Language
             }
 
             s_builtinAttributeGenerator.Add(typeof(CmdletBindingAttribute), NewCmdletBindingAttribute);
+            s_builtinAttributeGenerator.Add(typeof(ExperimentalAttribute), NewExperimentalAttribute);
             s_builtinAttributeGenerator.Add(typeof(ParameterAttribute), NewParameterAttribute);
             s_builtinAttributeGenerator.Add(typeof(OutputTypeAttribute), NewOutputTypeAttribute);
             s_builtinAttributeGenerator.Add(typeof(AliasAttribute), NewAliasAttribute);
@@ -745,14 +745,16 @@ namespace System.Management.Automation.Language
             s_builtinAttributeGenerator.Add(typeof(ValidateNotNullOrEmptyAttribute), NewValidateNotNullOrEmptyAttribute);
         }
 
-        private Compiler(List<IScriptExtent> sequencePoints)
+        private Compiler(List<IScriptExtent> sequencePoints, Dictionary<IScriptExtent, int> sequencePointIndexMap)
         {
             _sequencePoints = sequencePoints;
+            _sequencePointIndexMap = sequencePointIndexMap;
         }
 
         internal Compiler()
         {
             _sequencePoints = new List<IScriptExtent>();
+            _sequencePointIndexMap = new Dictionary<IScriptExtent, int>();
         }
 
         internal bool CompilingConstantExpression { get; set; }
@@ -768,6 +770,7 @@ namespace System.Management.Automation.Language
         private int _switchTupleIndex = VariableAnalysis.Unanalyzed;
         private int _foreachTupleIndex = VariableAnalysis.Unanalyzed;
         private readonly List<IScriptExtent> _sequencePoints;
+        private readonly Dictionary<IScriptExtent, int> _sequencePointIndexMap;
         private int _stmtCount;
 
         internal bool CompilingMemberFunction { get; set; }
@@ -905,17 +908,31 @@ namespace System.Management.Automation.Language
                                    ExpressionCache.Constant(version));
         }
 
-        internal Expression UpdatePosition(Ast ast)
+        private int AddSequencePoint(IScriptExtent extent)
         {
-            _sequencePoints.Add(ast.Extent);
+            // Make sure we don't add the same extent to the sequence point list twice.
+            if (!_sequencePointIndexMap.TryGetValue(extent, out int index))
+            {
+                _sequencePoints.Add(extent);
+                index = _sequencePoints.Count - 1;
+                _sequencePointIndexMap.Add(extent, index);
+            }
+
+            return index;
+        }
+
+        private Expression UpdatePosition(Ast ast)
+        {
+            IScriptExtent extent = ast.Extent;
+            int index = AddSequencePoint(extent);
 
             // If we just added the first sequence point, then we don't want to check for breakpoints - we'll do that
             // in EnterScriptFunction.
             // Except for while/do loops, in this case we want to check breakpoints on the first sequence point since it
             // will be executed multiple times.
-            return ((_sequencePoints.Count == 1) && !_generatingWhileOrDoLoop)
+            return (index == 0 && !_generatingWhileOrDoLoop)
                        ? ExpressionCache.Empty
-                       : new UpdatePositionExpr(ast.Extent, _sequencePoints.Count - 1, _debugSymbolDocument, !_compilingSingleExpression);
+                       : new UpdatePositionExpr(extent, index, _debugSymbolDocument, !_compilingSingleExpression);
         }
 
         private int _tempCounter;
@@ -1003,24 +1020,26 @@ namespace System.Management.Automation.Language
 
         internal static RuntimeDefinedParameterDictionary GetParameterMetaData(ReadOnlyCollection<ParameterAst> parameters, bool automaticPositions, ref bool usesCmdletBinding)
         {
-            var md = new RuntimeDefinedParameterDictionary();
-            var listMd = new List<RuntimeDefinedParameter>();
+            var runtimeDefinedParamDict = new RuntimeDefinedParameterDictionary();
+            var runtimeDefinedParamList = new List<RuntimeDefinedParameter>(parameters.Count);
             var customParameterSet = false;
             for (int index = 0; index < parameters.Count; index++)
             {
                 var param = parameters[index];
                 var rdp = GetRuntimeDefinedParameter(param, ref customParameterSet, ref usesCmdletBinding);
-
-                listMd.Add(rdp);
-                md.Add(param.Name.VariablePath.UserPath, rdp);
+                if (rdp != null)
+                {
+                    runtimeDefinedParamList.Add(rdp);
+                    runtimeDefinedParamDict.Add(param.Name.VariablePath.UserPath, rdp);
+                }
             }
 
             int pos = 0;
             if (automaticPositions && !customParameterSet)
             {
-                for (int index = 0; index < listMd.Count; index++)
+                for (int index = 0; index < runtimeDefinedParamList.Count; index++)
                 {
-                    var rdp = listMd[index];
+                    var rdp = runtimeDefinedParamList[index];
                     var paramAttribute = (ParameterAttribute)rdp.Attributes.First(attr => attr is ParameterAttribute);
                     if (!(rdp.ParameterType == typeof(SwitchParameter)))
                     {
@@ -1029,8 +1048,8 @@ namespace System.Management.Automation.Language
                 }
             }
 
-            md.Data = listMd.ToArray();
-            return md;
+            runtimeDefinedParamDict.Data = runtimeDefinedParamList.ToArray();
+            return runtimeDefinedParamDict;
         }
 
         private static readonly Dictionary<CallInfo, Delegate> s_attributeGeneratorCache = new Dictionary<CallInfo, Delegate>();
@@ -1070,14 +1089,22 @@ namespace System.Management.Automation.Language
             CallSite<Func<CallSite, object, ConfirmImpact>>.Create(PSConvertBinder.Get(typeof(ConfirmImpact)));
         private static readonly CallSite<Func<CallSite, object, RemotingCapability>> s_attrArgToRemotingCapabilityConverter =
             CallSite<Func<CallSite, object, RemotingCapability>>.Create(PSConvertBinder.Get(typeof(RemotingCapability)));
+        private static readonly CallSite<Func<CallSite, object, ExperimentAction>> s_attrArgToExperimentActionConverter =
+            CallSite<Func<CallSite, object, ExperimentAction>>.Create(PSConvertBinder.Get(typeof(ExperimentAction)));
+        private static readonly ConstantValueVisitor s_cvv = new ConstantValueVisitor { AttributeArgument = true };
 
         private static void CheckNoPositionalArgs(AttributeAst ast)
         {
             var positionalArgCount = ast.PositionalArguments.Count;
             if (positionalArgCount > 0)
             {
-                throw InterpreterError.NewInterpreterException(null, typeof(MethodException), ast.Extent,
-                    "MethodCountCouldNotFindBest", ExtendedTypeSystem.MethodArgumentCountException, ".ctor",
+                throw InterpreterError.NewInterpreterException(
+                    null,
+                    typeof(MethodException),
+                    ast.Extent,
+                    "MethodCountCouldNotFindBest",
+                    ExtendedTypeSystem.MethodArgumentCountException,
+                    ".ctor",
                     positionalArgCount);
             }
         }
@@ -1088,23 +1115,36 @@ namespace System.Management.Automation.Language
             {
                 var namedArg = ast.NamedArguments[0];
                 var argumentName = namedArg.ArgumentName;
-                throw InterpreterError.NewInterpreterException(namedArg, typeof(RuntimeException), namedArg.Extent,
-                    "PropertyNotFoundForType", ParserStrings.PropertyNotFoundForType, argumentName,
+                throw InterpreterError.NewInterpreterException(
+                    namedArg,
+                    typeof(RuntimeException),
+                    namedArg.Extent,
+                    "PropertyNotFoundForType",
+                    ParserStrings.PropertyNotFoundForType,
+                    argumentName,
                     typeof(CmdletBindingAttribute));
             }
+        }
+
+        private static (string, ExperimentAction) GetFeatureNameAndAction(AttributeAst ast)
+        {
+            var argValue0 = ast.PositionalArguments[0].Accept(s_cvv);
+            var argValue1 = ast.PositionalArguments[1].Accept(s_cvv);
+
+            var featureName = _attrArgToStringConverter.Target(_attrArgToStringConverter, argValue0);
+            var action = s_attrArgToExperimentActionConverter.Target(s_attrArgToExperimentActionConverter, argValue1);
+            return (featureName, action);
         }
 
         private static Attribute NewCmdletBindingAttribute(AttributeAst ast)
         {
             CheckNoPositionalArgs(ast);
 
-            var cvv = new ConstantValueVisitor { AttributeArgument = true };
-
             var result = new CmdletBindingAttribute();
 
             foreach (var namedArg in ast.NamedArguments)
             {
-                var argValue = namedArg.Argument.Accept(cvv);
+                var argValue = namedArg.Argument.Accept(s_cvv);
                 var argumentName = namedArg.ArgumentName;
                 if (argumentName.Equals("DefaultParameterSetName", StringComparison.OrdinalIgnoreCase))
                 {
@@ -1140,8 +1180,13 @@ namespace System.Management.Automation.Language
                 }
                 else
                 {
-                    throw InterpreterError.NewInterpreterException(namedArg, typeof(RuntimeException), namedArg.Extent,
-                        "PropertyNotFoundForType", ParserStrings.PropertyNotFoundForType, argumentName,
+                    throw InterpreterError.NewInterpreterException(
+                        namedArg,
+                        typeof(RuntimeException),
+                        namedArg.Extent,
+                        "PropertyNotFoundForType",
+                        ParserStrings.PropertyNotFoundForType,
+                        argumentName,
                         typeof(CmdletBindingAttribute));
                 }
             }
@@ -1149,17 +1194,40 @@ namespace System.Management.Automation.Language
             return result;
         }
 
+        private static Attribute NewExperimentalAttribute(AttributeAst ast)
+        {
+            int positionalArgCount = ast.PositionalArguments.Count;
+            if (positionalArgCount != 2)
+            {
+                throw InterpreterError.NewInterpreterException(targetObject: null, typeof(MethodException), ast.Extent,
+                    "MethodCountCouldNotFindBest", ExtendedTypeSystem.MethodArgumentCountException, ".ctor", positionalArgCount);
+            }
+
+            (string name, ExperimentAction action) = GetFeatureNameAndAction(ast);
+            return new ExperimentalAttribute(name, action);
+        }
+
         private static Attribute NewParameterAttribute(AttributeAst ast)
         {
-            CheckNoPositionalArgs(ast);
-
-            var cvv = new ConstantValueVisitor { AttributeArgument = true };
-
-            var result = new ParameterAttribute();
+            ParameterAttribute result;
+            int positionalArgCount = ast.PositionalArguments.Count;
+            switch (positionalArgCount)
+            {
+                case 0:
+                    result = new ParameterAttribute();
+                    break;
+                case 2:
+                    (string name, ExperimentAction action) = GetFeatureNameAndAction(ast);
+                    result = new ParameterAttribute(name, action);
+                    break;
+                default:
+                    throw InterpreterError.NewInterpreterException(targetObject: null, typeof(MethodException), ast.Extent,
+                        "MethodCountCouldNotFindBest", ExtendedTypeSystem.MethodArgumentCountException, ".ctor", positionalArgCount);
+            }
 
             foreach (var namedArg in ast.NamedArguments)
             {
-                var argValue = namedArg.Argument.Accept(cvv);
+                var argValue = namedArg.Argument.Accept(s_cvv);
                 var argumentName = namedArg.ArgumentName;
 
                 if (argumentName.Equals("Position", StringComparison.OrdinalIgnoreCase))
@@ -1204,8 +1272,13 @@ namespace System.Management.Automation.Language
                 }
                 else
                 {
-                    throw InterpreterError.NewInterpreterException(namedArg, typeof(RuntimeException), namedArg.Extent,
-                        "PropertyNotFoundForType", ParserStrings.PropertyNotFoundForType, argumentName,
+                    throw InterpreterError.NewInterpreterException(
+                        namedArg,
+                        typeof(RuntimeException),
+                        namedArg.Extent,
+                        "PropertyNotFoundForType",
+                        ParserStrings.PropertyNotFoundForType,
+                        argumentName,
                         typeof(CmdletBindingAttribute));
                 }
             }
@@ -1215,8 +1288,6 @@ namespace System.Management.Automation.Language
 
         private static Attribute NewOutputTypeAttribute(AttributeAst ast)
         {
-            var cvv = new ConstantValueVisitor { AttributeArgument = true };
-
             OutputTypeAttribute result;
             if (ast.PositionalArguments.Count == 0)
             {
@@ -1232,7 +1303,7 @@ namespace System.Management.Automation.Language
                 }
                 else
                 {
-                    var argValue = ast.PositionalArguments[0].Accept(cvv);
+                    var argValue = ast.PositionalArguments[0].Accept(s_cvv);
                     result = new OutputTypeAttribute(_attrArgToStringConverter.Target(_attrArgToStringConverter, argValue));
                 }
             }
@@ -1245,7 +1316,7 @@ namespace System.Management.Automation.Language
                     var typeArg = positionalArgument as TypeExpressionAst;
                     args[i] = typeArg != null
                         ? TypeOps.ResolveTypeName(typeArg.TypeName, typeArg.Extent)
-                        : positionalArgument.Accept(cvv);
+                        : positionalArgument.Accept(s_cvv);
                 }
 
                 if (args[0] is Type)
@@ -1260,7 +1331,7 @@ namespace System.Management.Automation.Language
 
             foreach (var namedArg in ast.NamedArguments)
             {
-                var argValue = namedArg.Argument.Accept(cvv);
+                var argValue = namedArg.Argument.Accept(s_cvv);
                 var argumentName = namedArg.ArgumentName;
 
                 if (argumentName.Equals("ParameterSetName", StringComparison.OrdinalIgnoreCase))
@@ -1273,8 +1344,13 @@ namespace System.Management.Automation.Language
                 }
                 else
                 {
-                    throw InterpreterError.NewInterpreterException(namedArg, typeof(RuntimeException), namedArg.Extent,
-                        "PropertyNotFoundForType", ParserStrings.PropertyNotFoundForType, argumentName,
+                    throw InterpreterError.NewInterpreterException(
+                        namedArg,
+                        typeof(RuntimeException),
+                        namedArg.Extent,
+                        "PropertyNotFoundForType",
+                        ParserStrings.PropertyNotFoundForType,
+                        argumentName,
                         typeof(CmdletBindingAttribute));
                 }
             }
@@ -1286,30 +1362,50 @@ namespace System.Management.Automation.Language
         {
             CheckNoNamedArgs(ast);
 
-            var cvv = new ConstantValueVisitor { AttributeArgument = true };
             var args = new string[ast.PositionalArguments.Count];
             for (int i = 0; i < ast.PositionalArguments.Count; i++)
             {
                 args[i] = _attrArgToStringConverter.Target(_attrArgToStringConverter,
-                    ast.PositionalArguments[i].Accept(cvv));
+                    ast.PositionalArguments[i].Accept(s_cvv));
             }
             return new AliasAttribute(args);
         }
 
         private static Attribute NewValidateSetAttribute(AttributeAst ast)
         {
-            var cvv = new ConstantValueVisitor { AttributeArgument = true };
-            var args = new string[ast.PositionalArguments.Count];
-            for (int i = 0; i < ast.PositionalArguments.Count; i++)
+            ValidateSetAttribute result;
+
+            // 'ValidateSet([CustomGeneratorType], IgnoreCase=$false)' is supported in scripts.
+            if (ast.PositionalArguments.Count == 1 && ast.PositionalArguments[0] is TypeExpressionAst generatorTypeAst)
             {
-                args[i] = _attrArgToStringConverter.Target(_attrArgToStringConverter,
-                    ast.PositionalArguments[i].Accept(cvv));
+                var generatorType = TypeResolver.ResolveITypeName(generatorTypeAst.TypeName, out Exception exception);
+                if (generatorType != null)
+                {
+                    result = new ValidateSetAttribute(generatorType);
+                }
+                else
+                {
+                    throw InterpreterError.NewInterpreterExceptionWithInnerException(
+                        ast, typeof(RuntimeException), ast.Extent, "TypeNotFound", ParserStrings.TypeNotFound, exception,
+                        generatorTypeAst.TypeName.FullName, typeof(System.Management.Automation.IValidateSetValuesGenerator).FullName);
+                }
+            }
+            else
+            {
+                // 'ValidateSet("value1","value2", IgnoreCase=$false)' is supported in scripts.
+                var args = new string[ast.PositionalArguments.Count];
+                for (int i = 0; i < ast.PositionalArguments.Count; i++)
+                {
+                    args[i] = _attrArgToStringConverter.Target(_attrArgToStringConverter,
+                        ast.PositionalArguments[i].Accept(s_cvv));
+                }
+
+                result = new ValidateSetAttribute(args);
             }
 
-            var result = new ValidateSetAttribute(args);
             foreach (var namedArg in ast.NamedArguments)
             {
-                var argValue = namedArg.Argument.Accept(cvv);
+                var argValue = namedArg.Argument.Accept(s_cvv);
                 var argumentName = namedArg.ArgumentName;
                 if (argumentName.Equals("IgnoreCase", StringComparison.OrdinalIgnoreCase))
                 {
@@ -1374,17 +1470,16 @@ namespace System.Management.Automation.Language
             var delegateArgs = new object[totalArgCount + 1];
             delegateArgs[0] = attributeType;
 
-            var cvv = new ConstantValueVisitor { AttributeArgument = true };
             int i = 1;
             for (int index = 0; index < attributeAst.PositionalArguments.Count; index++)
             {
                 var posArg = attributeAst.PositionalArguments[index];
-                delegateArgs[i++] = posArg.Accept(cvv);
+                delegateArgs[i++] = posArg.Accept(s_cvv);
             }
             for (int index = 0; index < attributeAst.NamedArguments.Count; index++)
             {
                 var namedArg = attributeAst.NamedArguments[index];
-                delegateArgs[i++] = namedArg.Argument.Accept(cvv);
+                delegateArgs[i++] = namedArg.Argument.Accept(s_cvv);
             }
 
             try
@@ -1428,27 +1523,46 @@ namespace System.Management.Automation.Language
 
         private static RuntimeDefinedParameter GetRuntimeDefinedParameter(ParameterAst parameterAst, ref bool customParameterSet, ref bool usesCmdletBinding)
         {
-            List<Attribute> attributes = new List<Attribute>();
+            var attributes = new List<Attribute>(parameterAst.Attributes.Count);
             bool hasParameterAttribute = false;
+            bool hasEnabledParamAttribute = false;
+            bool hasSeenExpAttribute = false;
+
             for (int index = 0; index < parameterAst.Attributes.Count; index++)
             {
                 var attributeAst = parameterAst.Attributes[index];
                 var attribute = attributeAst.GetAttribute();
-                attributes.Add(attribute);
 
-                var parameterAttribute = attribute as ParameterAttribute;
-                if (parameterAttribute != null)
+                if (attribute is ExperimentalAttribute expAttribute)
+                {
+                    // Only honor the first seen experimental attribute, ignore the others.
+                    if (!hasSeenExpAttribute && expAttribute.ToHide) { return null; }
+
+                    // Do not add experimental attributes to the attribute list.
+                    hasSeenExpAttribute = true;
+                    continue;
+                }
+                else if (attribute is ParameterAttribute paramAttribute)
                 {
                     hasParameterAttribute = true;
+                    if (paramAttribute.ToHide) { continue; }
+
+                    hasEnabledParamAttribute = true;
                     usesCmdletBinding = true;
-                    if (parameterAttribute.Position != int.MinValue ||
-                        !parameterAttribute.ParameterSetName.Equals(ParameterAttribute.AllParameterSets,
-                                                                    StringComparison.OrdinalIgnoreCase))
+                    if (paramAttribute.Position != int.MinValue ||
+                        !paramAttribute.ParameterSetName.Equals(ParameterAttribute.AllParameterSets,
+                                                                StringComparison.OrdinalIgnoreCase))
                     {
                         customParameterSet = true;
                     }
                 }
+
+                attributes.Add(attribute);
             }
+
+            // If all 'ParameterAttribute' declared for the parameter are hidden due to
+            // an experimental feature, then the parameter should be ignored.
+            if (hasParameterAttribute && !hasEnabledParamAttribute) { return null; }
 
             attributes.Reverse();
             if (!hasParameterAttribute)
@@ -1457,7 +1571,7 @@ namespace System.Management.Automation.Language
             }
 
             var result = new RuntimeDefinedParameter(parameterAst.Name.VariablePath.UserPath, parameterAst.StaticType,
-                                                     new Collection<Attribute>(attributes.ToArray()));
+                                                     new Collection<Attribute>(attributes));
 
             if (parameterAst.DefaultValue != null)
             {
@@ -1494,7 +1608,7 @@ namespace System.Management.Automation.Language
                 return true;
             }
 
-            if (type.GetTypeInfo().IsClass)
+            if (type.IsClass)
             {
                 value = null;
                 return true;
@@ -1512,7 +1626,7 @@ namespace System.Management.Automation.Language
                 return true;
             }
 
-            if (LanguagePrimitives.IsNumeric(LanguagePrimitives.GetTypeCode(type)) && !type.GetTypeInfo().IsEnum)
+            if (LanguagePrimitives.IsNumeric(LanguagePrimitives.GetTypeCode(type)) && !type.IsEnum)
             {
                 value = 0;
                 return true;
@@ -1613,7 +1727,7 @@ namespace System.Management.Automation.Language
                 // on this sequence point, but it makes it safe to access the CurrentPosition
                 // property in FunctionContext (which can happen if there are exceptions
                 // defining the functions.)
-                _sequencePoints.Add(ast.Extent);
+                AddSequencePoint(ast.Extent);
             }
 
             var compileInterpretChoice = (_stmtCount > 300) ? CompileInterpretChoice.NeverCompile : CompileInterpretChoice.CompileOnDemand;
@@ -1783,8 +1897,8 @@ namespace System.Management.Automation.Language
             var exprs = new List<Expression>();
             var temps = new List<ParameterExpression> { _executionContextParameter, LocalVariablesParameter };
             GenerateFunctionProlog(exprs, temps, null);
-            _sequencePoints.Add(expressionAst.Extent);
-            exprs.Add(new UpdatePositionExpr(expressionAst.Extent, _sequencePoints.Count - 1, _debugSymbolDocument, checkBreakpoints: true));
+            int index = AddSequencePoint(expressionAst.Extent);
+            exprs.Add(new UpdatePositionExpr(expressionAst.Extent, index, _debugSymbolDocument, checkBreakpoints: true));
             var result = Compile(expressionAst).Cast(typeof(object));
             exprs.Add(Expression.Label(_returnTarget, result));
             var body = Expression.Block(new[] { _executionContextParameter, LocalVariablesParameter }, exprs);
@@ -2073,7 +2187,7 @@ namespace System.Management.Automation.Language
 
         private Tuple<Action<FunctionContext>, Type> CompileTrap(TrapStatementAst trap)
         {
-            var compiler = new Compiler(_sequencePoints) { _compilingTrap = true };
+            var compiler = new Compiler(_sequencePoints, _sequencePointIndexMap) { _compilingTrap = true };
             string funcName = _currentFunctionName + "<trap>";
             if (trap.TrapType != null)
             {
@@ -2174,7 +2288,7 @@ namespace System.Management.Automation.Language
             // We don't postpone load assemblies, import modules from 'using' to the moment, when enclosed scriptblock is executed.
             // We do loading, when root of the script is compiled.
             // This allow us to avoid creating 10 different classes in this situation:
-            // 1..10 | % { class C {} }
+            // 1..10 | ForEach-Object { class C {} }
             // But it's possible that we are loading something from the codepaths that we never execute.
 
             // If Parent of rootForDefiningTypesAndUsings is not null, then we already defined all types, when Visit a parent ScriptBlock
@@ -2406,7 +2520,13 @@ namespace System.Management.Automation.Language
                 .AddParameter("Name", modulePath)
                 .AddParameter("PassThru");
             var moduleInfo = ps.Invoke<PSModuleInfo>();
-            if (ps.HadErrors)
+
+            // It's possible that 'ps.HadErrors == true' while the error stream is empty. That would happen if
+            // one or more non-terminating errors happen when running the module script and ErrorAction is set
+            // to 'SilentlyContinue'. In such case, the errors would not be written to the error stream.
+            // It's OK to treat the module loading as successful in this case because the non-terminating errors
+            // are explicitly handled with 'SilentlyContinue' action, which means they don't block the loading.
+            if (ps.HadErrors && ps.Streams.Error.Count > 0)
             {
                 var errorRecord = ps.Streams.Error[0];
                 throw InterpreterError.NewInterpreterException(modulePath, typeof(RuntimeException), null,
@@ -2441,8 +2561,8 @@ namespace System.Management.Automation.Language
 
                 if (entryExtent != null)
                 {
-                    _sequencePoints.Add(entryExtent);
-                    exprs.Add(new UpdatePositionExpr(entryExtent, _sequencePoints.Count - 1, _debugSymbolDocument, checkBreakpoints: false));
+                    int index = AddSequencePoint(entryExtent);
+                    exprs.Add(new UpdatePositionExpr(entryExtent, index, _debugSymbolDocument, checkBreakpoints: false));
                 }
 
                 exprs.Add(
@@ -2492,8 +2612,8 @@ namespace System.Management.Automation.Language
                 }
 
                 var extent = propertyMember.InitialValue.Extent;
-                _sequencePoints.Add(extent);
-                exprs.Add(new UpdatePositionExpr(extent, _sequencePoints.Count - 1, _debugSymbolDocument, checkBreakpoints: false));
+                int index = AddSequencePoint(extent);
+                exprs.Add(new UpdatePositionExpr(extent, index, _debugSymbolDocument, checkBreakpoints: false));
                 var property = _memberFunctionType.Type.GetProperty(propertyMember.Name, bindingFlags);
                 exprs.Add(
                     Expression.Assign(
@@ -2864,26 +2984,8 @@ namespace System.Management.Automation.Language
             return this.VisitPipeline(dynamicKeywordAst.GenerateCommandCallPipelineAst());
         }
 
-        private bool _generatedCallToDefineWorkflows;
         public object VisitFunctionDefinition(FunctionDefinitionAst functionDefinitionAst)
         {
-            if (functionDefinitionAst.IsWorkflow)
-            {
-                if (_generatedCallToDefineWorkflows)
-                    return ExpressionCache.Empty;
-
-                var topAst = functionDefinitionAst.Parent;
-                while (!(topAst is ScriptBlockAst))
-                {
-                    topAst = topAst.Parent;
-                }
-
-                _generatedCallToDefineWorkflows = true;
-                return Expression.Call(CachedReflectionInfo.FunctionOps_DefineWorkflows,
-                                       _executionContextParameter,
-                                       Expression.Constant(topAst, typeof(ScriptBlockAst)));
-            }
-
             return Expression.Call(CachedReflectionInfo.FunctionOps_DefineFunction,
                                    _executionContextParameter,
                                    Expression.Constant(functionDefinitionAst),
@@ -2894,12 +2996,12 @@ namespace System.Management.Automation.Language
         {
             int clauseCount = ifStmtAst.Clauses.Count;
 
-            var exprs = new Tuple<BlockExpression, Expression>[clauseCount];
+            var exprs = new Tuple<Expression, Expression>[clauseCount];
             for (int i = 0; i < clauseCount; ++i)
             {
                 IfClause ifClause = ifStmtAst.Clauses[i];
-                var cond = Expression.Block(
-                    UpdatePosition(ifClause.Item1),
+                var cond = UpdatePositionForInitializerOrCondition(
+                    ifClause.Item1,
                     CaptureStatementResults(ifClause.Item1, CaptureAstContext.Condition).Convert(typeof(bool)));
                 var body = Compile(ifClause.Item2);
                 exprs[i] = Tuple.Create(cond, body);
@@ -2964,7 +3066,7 @@ namespace System.Management.Automation.Language
             }
 
             var exprs = new List<Expression>
-                            {
+                        {
                             // Set current position in case of errors.
                             UpdatePosition(assignmentStatementAst),
                             ReduceAssignment((ISupportsAssignment)assignmentStatementAst.Left,
@@ -2998,7 +3100,7 @@ namespace System.Management.Automation.Language
             {
                 var pipeElements = pipelineAst.PipelineElements;
                 var firstCommandExpr = (pipeElements[0] as CommandExpressionAst);
-    
+
                 if (firstCommandExpr != null && pipeElements.Count == 1)
                 {
                     if (firstCommandExpr.Redirections.Count > 0)
@@ -3014,7 +3116,7 @@ namespace System.Management.Automation.Language
                 {
                     Expression input;
                     int i, commandsInPipe;
-    
+
                     if (firstCommandExpr != null)
                     {
                         if (firstCommandExpr.Redirections.Count > 0)
@@ -3026,6 +3128,12 @@ namespace System.Management.Automation.Language
                             input = GetRangeEnumerator(firstCommandExpr.Expression) ??
                                     Compile(firstCommandExpr.Expression);
                         }
+
+                        if (input.Type == typeof(void))
+                        {
+                            input = Expression.Block(input, ExpressionCache.AutomationNullConstant);
+                        }
+
                         i = 1;
                         commandsInPipe = pipeElements.Count - 1;
                     }
@@ -3035,7 +3143,7 @@ namespace System.Management.Automation.Language
                         // here so that we can tell the difference b/w $null and no input when
                         // starting the pipeline, in other words, PipelineOps.InvokePipe will
                         // not pass this value to the pipe.
-    
+
                         input = ExpressionCache.AutomationNullConstant;
                         i = 0;
                         commandsInPipe = pipeElements.Count;
@@ -3043,16 +3151,16 @@ namespace System.Management.Automation.Language
                     Expression[] pipelineExprs = new Expression[commandsInPipe];
                     CommandBaseAst[] pipeElementAsts = new CommandBaseAst[commandsInPipe];
                     var commandRedirections = new object[commandsInPipe];
-    
+
                     for (int j = 0; i < pipeElements.Count; ++i, ++j)
                     {
                         var pipeElement = pipeElements[i];
                         pipelineExprs[j] = Compile(pipeElement);
-    
+
                         commandRedirections[j] = GetCommandRedirections(pipeElement);
                         pipeElementAsts[j] = pipeElement;
                     }
-    
+
                     // The redirections are passed as a CommandRedirection[][] - one dimension for each command in the pipe,
                     // one dimension because each command may have multiple redirections.  Here we create the array for
                     // each command in the pipe, either a compile time constant or created at runtime if necessary.
@@ -3076,7 +3184,7 @@ namespace System.Management.Automation.Language
                         // No redirections.
                         redirectionExpr = ExpressionCache.NullCommandRedirections;
                     }
-    
+
                     if (firstCommandExpr != null)
                     {
                         var inputTemp = Expression.Variable(input.Type);
@@ -3084,7 +3192,7 @@ namespace System.Management.Automation.Language
                         exprs.Add(Expression.Assign(inputTemp, input));
                         input = inputTemp;
                     }
-    
+
                     Expression invokePipe = Expression.Call(
                         CachedReflectionInfo.PipelineOps_InvokePipeline,
                         input.Cast(typeof(object)),
@@ -3177,6 +3285,7 @@ namespace System.Management.Automation.Language
                 exprs.Add(Expression.Call(oldPipe, CachedReflectionInfo.Pipe_SetVariableListForTemporaryPipe, s_getCurrentPipe));
             }
 
+            List<Expression> extraFileRedirectExprs = null;
             // We must generate the code for output redirection to a file before any merging redirections
             // because merging redirections will use funcContext._outputPipe as the value to merge to, so defer merging
             // redirections until file redirections are done.
@@ -3185,35 +3294,55 @@ namespace System.Management.Automation.Language
                 // This will simply return a Linq.Expression representing the redirection.
                 var compiledRedirection = VisitFileRedirection(fileRedirectionAst);
 
-                // For non-output streams (error, warning, etc.) we must save the old stream so it can be restored.
-                // The savedPipe variable is used only for setting funcContext._outputPipe for redirecting Output to file.
-                // The savedPipes variable is used for restoring non-output streams (error, warning, etc.).
-                var savedPipes = NewTemp(typeof(Pipe[]), "savedPipes");
-                temps.Add(savedPipes);
+                if (extraFileRedirectExprs == null)
+                {
+                    extraFileRedirectExprs = new List<Expression>(commandExpr.Redirections.Count);
+                }
 
+                // Hold the current 'FileRedirection' instance for later use
                 var redirectionExpr = NewTemp(typeof(FileRedirection), "fileRedirection");
                 temps.Add(redirectionExpr);
                 exprs.Add(Expression.Assign(redirectionExpr, (Expression)compiledRedirection));
-                /*
-                                if (fileRedirectionAst.FromStream != RedirectionStream.Output && !(redirectionExpr is ConstantExpression))
-                                {
-                                    // We'll be reusing redirectionExpr, it's not constant, so save it in a temp.
-                                    var temp = Expression.Variable(redirectionExpr.Type);
-                                    temps.Add(temp);
-                                    exprs.Add(Expression.Assign(temp, redirectionExpr));
-                                    redirectionExpr = temp;
-                                }
-                */
+
+                // We must save the old streams so they can be restored later.
+                var savedPipes = NewTemp(typeof(Pipe[]), "savedPipes");
+                temps.Add(savedPipes);
                 exprs.Add(Expression.Assign(
                     savedPipes,
                     Expression.Call(redirectionExpr, CachedReflectionInfo.FileRedirection_BindForExpression, _functionContext)));
-                finallyExprs.Add(Expression.Call(redirectionExpr.Cast(typeof(CommandRedirection)),
-                                                    CachedReflectionInfo.CommandRedirection_UnbindForExpression,
-                                                    _functionContext,
-                                                    savedPipes));
+
+                // We need to call 'DoComplete' on the file redirection pipeline processor after writing the stream output to redirection pipe,
+                // so that the 'EndProcessing' method of 'Out-File' would be called as expected.
+                // Expressions for this purpose are kept in 'extraFileRedirectExprs' and will be used later.
+                extraFileRedirectExprs.Add(Expression.Call(redirectionExpr, CachedReflectionInfo.FileRedirection_CallDoCompleteForExpression));
+
+                // The 'UnBind' and 'Dispose' operations on 'FileRedirection' objects must be done in the reverse order of 'Bind' operations.
+                // Namely, it should be done is this order:
+                //   try {
+                //       // The order is A, B
+                //       fileRedirectionA = new FileRedirection(..)
+                //       fileRedirectionA.BindForExpression()
+                //       fileRedirectionB = new FileRedirection(..)
+                //       fileRedirectionB.BindForExpression()
+                //       ...
+                //   } finally {
+                //       // The oder must be B, A
+                //       fileRedirectionB.UnBind()
+                //       fileRedirectionB.Dispose()
+                //       fileRedirectionA.UnBind()
+                //       fileRedirectionA.Dispose()
+                //   }
+                //
+                // Otherwise, the original pipe might not be correctly restored in the end. For example,
+                // '1 *> b.txt > a.txt; 123' would result in the following error when evaluating '123':
+                //   "Cannot perform operation because object "PipelineProcessor" has already been disposed"
+                finallyExprs.Insert(0, Expression.Call(redirectionExpr.Cast(typeof(CommandRedirection)),
+                                                       CachedReflectionInfo.CommandRedirection_UnbindForExpression,
+                                                       _functionContext,
+                                                       savedPipes));
                 // In either case, we must dispose of the redirection or file handles won't get released.
-                finallyExprs.Add(Expression.Call(redirectionExpr,
-                                                 CachedReflectionInfo.FileRedirection_Dispose));
+                finallyExprs.Insert(1, Expression.Call(redirectionExpr,
+                                                       CachedReflectionInfo.FileRedirection_Dispose));
             }
 
             Expression result = null;
@@ -3278,10 +3407,29 @@ namespace System.Management.Automation.Language
                 }
             }
 
+            if (extraFileRedirectExprs != null)
+            {
+                // Now that the redirection is done, we need to call 'DoComplete' on the file redirection pipeline processors.
+                // Exception may be thrown when running 'DoComplete', but we don't want the exception to affect the cleanup
+                // work in 'finallyExprs'. We generate the following code to make sure it does what we want.
+                //   try {
+                //       try {
+                //           exprs
+                //       } finally {
+                //           extraFileRedirectExprs
+                //       }
+                //   finally {
+                //       finallyExprs
+                //   }
+                var wrapExpr = Expression.TryFinally(Expression.Block(exprs), Expression.Block(extraFileRedirectExprs));
+                exprs.Clear();
+                exprs.Add(wrapExpr);
+            }
+
             if (oldPipe != null)
             {
                 // If a temporary pipe was created at the beginning, we should restore the original pipe in the
-                // very end of the finally block. Otherwise, _getCurrentPipe may be messed up by the following
+                // very end of the finally block. Otherwise, s_getCurrentPipe may be messed up by the following
                 // file redirection unbind operation.
                 // For example:
                 //    function foo
@@ -3390,13 +3538,11 @@ namespace System.Management.Automation.Language
                         splatted = variableExpression.Splatted;
                     }
 
-                    bool arrayIsSingleArgumentForNativeCommand = ArgumentIsNotReallyArrayIfCommandIsNative(element);
                     elementExprs[i] =
                         Expression.Call(CachedReflectionInfo.CommandParameterInternal_CreateArgument,
-                                        Expression.Constant(element.Extent),
                                         Expression.Convert(GetCommandArgumentExpression(element), typeof(object)),
-                                        ExpressionCache.Constant(splatted),
-                                        ExpressionCache.Constant(arrayIsSingleArgumentForNativeCommand));
+                                        Expression.Constant(element),
+                                        ExpressionCache.Constant(splatted));
                 }
             }
 
@@ -3466,31 +3612,6 @@ namespace System.Management.Automation.Language
             return CallAddPipe(expr, s_getCurrentPipe);
         }
 
-        private bool ArgumentIsNotReallyArrayIfCommandIsNative(Ast arg)
-        {
-            var arrayLiteralAst = arg as ArrayLiteralAst;
-            if (arrayLiteralAst == null)
-            {
-                return false;
-            }
-
-            Diagnostics.Assert(arrayLiteralAst.Elements.Count > 1, "Single dimension array arguments are surrounded with parens if the value is an argument");
-            var previousElement = arrayLiteralAst.Elements[0];
-            for (int index = 1; index < arrayLiteralAst.Elements.Count; index++)
-            {
-                var element = arrayLiteralAst.Elements[index];
-                // EndOffset is 1 past the end which puts it on the comma, so if +1 is not the next element,
-                // there is whitespace between elements
-                if (previousElement.Extent.EndOffset + 1 != element.Extent.StartOffset)
-                {
-                    return false;
-                }
-                previousElement = element;
-            }
-
-            return true;
-        }
-
         public object VisitCommandParameter(CommandParameterAst commandParameterAst)
         {
             var arg = commandParameterAst.Argument;
@@ -3499,21 +3620,19 @@ namespace System.Management.Automation.Language
             {
                 bool spaceAfterParameter = (errorPos.EndLineNumber != arg.Extent.StartLineNumber ||
                                             errorPos.EndColumnNumber != arg.Extent.StartColumnNumber);
-                bool arrayIsSingleArgumentForNativeCommand = ArgumentIsNotReallyArrayIfCommandIsNative(arg);
                 return Expression.Call(CachedReflectionInfo.CommandParameterInternal_CreateParameterWithArgument,
-                                       Expression.Constant(errorPos),
+                                       Expression.Constant(commandParameterAst),
                                        Expression.Constant(commandParameterAst.ParameterName),
                                        Expression.Constant(errorPos.Text),
-                                       Expression.Constant(arg.Extent),
+                                       Expression.Constant(arg),
                                        Expression.Convert(GetCommandArgumentExpression(arg), typeof(object)),
-                                       ExpressionCache.Constant(spaceAfterParameter),
-                                       ExpressionCache.Constant(arrayIsSingleArgumentForNativeCommand));
+                                       ExpressionCache.Constant(spaceAfterParameter));
             }
 
             return Expression.Call(CachedReflectionInfo.CommandParameterInternal_CreateParameter,
-                                   Expression.Constant(errorPos),
                                    Expression.Constant(commandParameterAst.ParameterName),
-                                   Expression.Constant(errorPos.Text));
+                                   Expression.Constant(errorPos.Text),
+                                   Expression.Constant(commandParameterAst));
         }
 
         internal static Expression ThrowRuntimeError(string errorID, string resourceString, params Expression[] exceptionArgs)
@@ -3940,7 +4059,7 @@ namespace System.Management.Automation.Language
                     Expression.IfThenElse(
                         Expression.Call(breakExceptionVar,
                                         CachedReflectionInfo.LoopFlowException_MatchLabel,
-                                        Expression.Constant(label ?? "", typeof(string))),
+                                        Expression.Constant(label ?? string.Empty, typeof(string))),
                         Expression.Break(breakLabel),
                         Expression.Rethrow())),
 
@@ -3949,7 +4068,7 @@ namespace System.Management.Automation.Language
                     Expression.IfThenElse(
                         Expression.Call(continueExceptionVar,
                                         CachedReflectionInfo.LoopFlowException_MatchLabel,
-                                        Expression.Constant(label ?? "", typeof(string))),
+                                        Expression.Constant(label ?? string.Empty, typeof(string))),
                         Expression.Continue(continueLabel),
                         Expression.Rethrow()))
             };
@@ -4017,7 +4136,7 @@ namespace System.Management.Automation.Language
             var loopBodyExprs = new List<Expression>();
             loopBodyExprs.Add(s_callCheckForInterrupts);
 
-            _loopTargets.Add(new LoopGotoTargets(loopLabel ?? "", breakLabel, continueLabel));
+            _loopTargets.Add(new LoopGotoTargets(loopLabel ?? string.Empty, breakLabel, continueLabel));
             _generatingWhileOrDoLoop = true;
             generateLoopBody(loopBodyExprs, breakLabel, continueLabel);
             _generatingWhileOrDoLoop = false;
@@ -4096,10 +4215,10 @@ namespace System.Management.Automation.Language
             exprs.Add(Expression.Label(repeatLabel));
             exprs.Add(enterLoopExpression);
 
-            _loopTargets.Add(new LoopGotoTargets(loopLabel ?? "", breakLabel, continueLabel));
+            _loopTargets.Add(new LoopGotoTargets(loopLabel ?? string.Empty, breakLabel, continueLabel));
             _generatingWhileOrDoLoop = true;
             var loopBodyExprs = new List<Expression>
-                                    {
+                                {
                                     s_callCheckForInterrupts,
                                     Compile(loopStatement.Body),
                                     ExpressionCache.Empty
@@ -4115,6 +4234,7 @@ namespace System.Management.Automation.Language
             {
                 test = Expression.Not(test);
             }
+            test = UpdatePositionForInitializerOrCondition(loopStatement.Condition, test);
             exprs.Add(Expression.IfThen(test, Expression.Goto(repeatLabel)));
             exprs.Add(Expression.Label(breakLabel));
 
@@ -4165,10 +4285,26 @@ namespace System.Management.Automation.Language
             // $foreach/$switch = GetEnumerator $enumerable
             var enumerable = NewTemp(typeof(object), "enumerable");
             temps.Add(enumerable);
+
+            // Update position to make it safe to access 'CurrentPosition' property in FunctionContext in case
+            // that the evaluation of 'stmt.Condition' throws exception.
             if (generatingForeach)
             {
+                // For foreach statement, we want the debugger to stop at 'stmt.Condition' before evaluating it.
+                // The debugger will stop at 'stmt.Condition' only once. The following enumeration will stop at
+                // the foreach variable.
                 exprs.Add(UpdatePosition(stmt.Condition));
             }
+            else
+            {
+                // For switch statement, we don't want the debugger to stop at 'stmt.Condition' before evaluating it.
+                // The following enumeration will stop at 'stmt.Condition' again, and we don't want the debugger to
+                // stop at 'stmt.Condition' twice before getting into one of its case clauses.
+                var extent = stmt.Condition.Extent;
+                int index = AddSequencePoint(extent);
+                exprs.Add(new UpdatePositionExpr(extent, index, _debugSymbolDocument, checkBreakpoints: false));
+            }
+
             exprs.Add(
                 Expression.Assign(enumerable,
                                   GetRangeEnumerator(stmt.Condition.GetPureExpression())
@@ -4262,7 +4398,6 @@ namespace System.Management.Automation.Language
 
         private Expression GetRangeEnumerator(ExpressionAst condExpr)
         {
-            Expression result = null;
             if (condExpr != null)
             {
                 var binaryExpr = condExpr as BinaryExpressionAst;
@@ -4271,12 +4406,26 @@ namespace System.Management.Automation.Language
                     Expression lhs = Compile(binaryExpr.Left);
                     Expression rhs = Compile(binaryExpr.Right);
 
-                    result = Expression.New(CachedReflectionInfo.RangeEnumerator_ctor,
-                                            lhs.Convert(typeof(int)),
-                                            rhs.Convert(typeof(int)));
+                    return Expression.Call(CachedReflectionInfo.ParserOps_GetRangeEnumerator,
+                                           lhs.Cast(typeof(object)),
+                                           rhs.Cast(typeof(object)));
                 }
             }
-            return result;
+
+            return null;
+        }
+
+        private Expression UpdatePositionForInitializerOrCondition(PipelineBaseAst pipelineBaseAst, Expression initializerOrCondition)
+        {
+            if (pipelineBaseAst is PipelineAst pipelineAst && !pipelineAst.Background && pipelineAst.GetPureExpression() != null)
+            {
+                // If the initializer or condition is a pure expression (CommandExpressionAst without redirection),
+                // then we need to add a sequence point. If it's an AssignmentStatementAst, we don't need to add
+                // sequence point here because one will be added when processing the AssignmentStatementAst.
+                initializerOrCondition = Expression.Block(UpdatePosition(pipelineBaseAst), initializerOrCondition);
+            }
+
+            return initializerOrCondition;
         }
 
         public object VisitDoWhileStatement(DoWhileStatementAst doWhileStatementAst)
@@ -4292,13 +4441,17 @@ namespace System.Management.Automation.Language
         public object VisitForStatement(ForStatementAst forStatementAst)
         {
             // We should not preserve the partial output if exception is thrown when evaluating the initializer.
-            var init = (forStatementAst.Initializer != null)
-                           ? CaptureStatementResults(forStatementAst.Initializer, CaptureAstContext.AssignmentWithoutResultPreservation)
-                           : null;
+            Expression init = null;
+            PipelineBaseAst initializer = forStatementAst.Initializer;
+            if (initializer != null)
+            {
+                init = CaptureStatementResults(initializer, CaptureAstContext.AssignmentWithoutResultPreservation);
+                init = UpdatePositionForInitializerOrCondition(initializer, init);
+            }
 
-            var generateCondition = forStatementAst.Condition != null
-                ? () => Expression.Block(UpdatePosition(forStatementAst.Condition),
-                                         CaptureStatementResults(forStatementAst.Condition, CaptureAstContext.Condition))
+            PipelineBaseAst condition = forStatementAst.Condition;
+            var generateCondition = condition != null
+                ? () => UpdatePositionForInitializerOrCondition(condition, CaptureStatementResults(condition, CaptureAstContext.Condition))
                 : (Func<Expression>)null;
 
             var loop = GenerateWhileLoop(forStatementAst.Label, generateCondition,
@@ -4314,9 +4467,9 @@ namespace System.Management.Automation.Language
 
         public object VisitWhileStatement(WhileStatementAst whileStatementAst)
         {
+            PipelineBaseAst condition = whileStatementAst.Condition;
             return GenerateWhileLoop(whileStatementAst.Label,
-                                     () => Expression.Block(UpdatePosition(whileStatementAst.Condition),
-                                                            CaptureStatementResults(whileStatementAst.Condition, CaptureAstContext.Condition)),
+                                     () => UpdatePositionForInitializerOrCondition(condition, CaptureStatementResults(condition, CaptureAstContext.Condition)),
                                      (loopBody, breakTarget, continueTarget) => loopBody.Add(Compile(whileStatementAst.Body)));
         }
 
@@ -4832,7 +4985,7 @@ namespace System.Management.Automation.Language
                         var isType = (Type)((ConstantExpression)rhs).Value;
                         if (!(isType == typeof(PSCustomObject)) && !(isType == typeof(PSObject)))
                         {
-                            lhs = lhs.Type.GetTypeInfo().IsValueType ? lhs : Expression.Call(CachedReflectionInfo.PSObject_Base, lhs);
+                            lhs = lhs.Type.IsValueType ? lhs : Expression.Call(CachedReflectionInfo.PSObject_Base, lhs);
                             if (binaryExpressionAst.Operator == TokenKind.Is)
                                 return Expression.TypeIs(lhs, isType);
                             return Expression.Not(Expression.TypeIs(lhs, isType));
@@ -4850,9 +5003,13 @@ namespace System.Management.Automation.Language
                     return Expression.Call(CachedReflectionInfo.TypeOps_AsOperator, lhs.Cast(typeof(object)), rhs.Convert(typeof(Type)));
 
                 case TokenKind.DotDot:
-                    return Expression.Call(CachedReflectionInfo.IntOps_Range,
-                                           lhs.Convert(typeof(int)),
-                                           rhs.Convert(typeof(int)));
+                    // We could generate faster code using Expression.Dynamic with a binder.
+                    // Currently, type checks are done in ParserOps.RangeOperator at runtime every time
+                    // a range operator is used. By replacing with Expression.Dynamic and a binder, the
+                    // type check is done only once when you repeatedly execute the same line in script.
+                    return Expression.Call(
+                        CachedReflectionInfo.ParserOps_RangeOperator, lhs.Cast(typeof(object)), rhs.Cast(typeof(object)));
+
                 case TokenKind.Multiply:
                     if (lhs.Type == typeof(double) && rhs.Type == typeof(double))
                     {
@@ -5134,7 +5291,7 @@ namespace System.Management.Automation.Language
                 var newValue = DynamicExpression.Dynamic(PSUnaryOperationBinder.Get(valueToAdd == 1 ? ExpressionType.Increment : ExpressionType.Decrement),
                                                          typeof(object), tmp);
                 exprs.Add(av.SetValue(this, newValue));
-                if (tmp.Type.GetTypeInfo().IsValueType)
+                if (tmp.Type.IsValueType)
                 {
                     // This is the result of the expression - it might be unused, but we don't bother knowing if it is used or not.
                     exprs.Add(tmp);
@@ -5335,7 +5492,7 @@ namespace System.Management.Automation.Language
             if (memberExpressionAst.Static && (memberExpressionAst.Expression is TypeExpressionAst))
             {
                 var type = ((TypeExpressionAst)memberExpressionAst.Expression).TypeName.GetReflectionType();
-                if (type != null && !type.GetTypeInfo().IsGenericTypeDefinition)
+                if (type != null && !type.IsGenericTypeDefinition)
                 {
                     var member = memberExpressionAst.Member as StringConstantExpressionAst;
                     if (member != null)
@@ -5349,6 +5506,22 @@ namespace System.Management.Automation.Language
                             var propertyInfo = memberInfo[0] as PropertyInfo;
                             if (propertyInfo != null)
                             {
+                                if (propertyInfo.PropertyType.IsByRefLike)
+                                {
+                                    // ByRef-like types are not boxable and should be used only on stack.
+                                    return Expression.Throw(
+                                        Expression.New(
+                                            CachedReflectionInfo.GetValueException_ctor,
+                                            Expression.Constant(nameof(ExtendedTypeSystem.CannotAccessByRefLikePropertyOrField)),
+                                            Expression.Constant(null, typeof(Exception)),
+                                            Expression.Constant(ExtendedTypeSystem.CannotAccessByRefLikePropertyOrField),
+                                            Expression.NewArrayInit(
+                                                typeof(object),
+                                                Expression.Constant(propertyInfo.Name),
+                                                Expression.Constant(propertyInfo.PropertyType, typeof(Type)))),
+                                        typeof(object));
+                                }
+
                                 if (propertyInfo.CanRead)
                                 {
                                     return Expression.Property(null, propertyInfo);
@@ -5357,6 +5530,8 @@ namespace System.Management.Automation.Language
                             }
                             else
                             {
+                                // Field cannot be of a ByRef-like type unless it's an instance member of a ref struct.
+                                // So we don't need to check 'IsByRefLike' for static field access.
                                 return Expression.Field(null, (FieldInfo)memberInfo[0]);
                             }
                         }
@@ -5391,7 +5566,7 @@ namespace System.Management.Automation.Language
             TypeDefinitionAst typeDefinitionAst = Ast.GetAncestorTypeDefinitionAst(invokeMemberExpressionAst);
             if (typeDefinitionAst != null)
             {
-                targetTypeConstraint = (typeDefinitionAst as TypeDefinitionAst).Type.GetTypeInfo().BaseType;
+                targetTypeConstraint = (typeDefinitionAst as TypeDefinitionAst).Type.BaseType;
             }
             else
             {
@@ -5457,6 +5632,8 @@ namespace System.Management.Automation.Language
         public object VisitArrayExpression(ArrayExpressionAst arrayExpressionAst)
         {
             Expression values = null;
+            ExpressionAst pureExprAst = null;
+
             var subExpr = arrayExpressionAst.SubExpression;
             if (subExpr.Traps == null)
             {
@@ -5465,10 +5642,10 @@ namespace System.Management.Automation.Language
                     var pipelineBase = subExpr.Statements[0] as PipelineBaseAst;
                     if (pipelineBase != null)
                     {
-                        var exprAst = pipelineBase.GetPureExpression();
-                        if (exprAst != null)
+                        pureExprAst = pipelineBase.GetPureExpression();
+                        if (pureExprAst != null)
                         {
-                            values = Compile(exprAst);
+                            values = Compile(pureExprAst);
                         }
                     }
                 }
@@ -5480,16 +5657,12 @@ namespace System.Management.Automation.Language
             }
             values = values ?? CaptureAstResults(subExpr, CaptureAstContext.Enumerable);
 
-            if (values.Type.IsArray)
+            if (pureExprAst is ArrayLiteralAst)
             {
-                // If the result is already an array, don't wrap the array.
+                // If the pure expression is ArrayLiteralAst, just return the result.
                 return values;
             }
-            if (values.Type == typeof(List<object>))
-            {
-                return Expression.Call(values, CachedReflectionInfo.ObjectList_ToArray);
-            }
-            if (values.Type.GetTypeInfo().IsPrimitive || values.Type == typeof(string))
+            if (values.Type.IsPrimitive || values.Type == typeof(string))
             {
                 // Slight optimization - no need for a dynamic site.  We could special case other
                 // types as well, but it's probably not worth it.
@@ -5498,7 +5671,7 @@ namespace System.Management.Automation.Language
             if (values.Type == typeof(void))
             {
                 // A dynamic site can't take void - but a void value is just an empty array.
-                return Expression.NewArrayInit(typeof(object));
+                return Expression.Block(values, Expression.NewArrayInit(typeof(object)));
             }
 
             return DynamicExpression.Dynamic(PSToObjectArrayBinder.Get(), typeof(object[]), values);
@@ -5506,8 +5679,13 @@ namespace System.Management.Automation.Language
 
         public object VisitArrayLiteral(ArrayLiteralAst arrayLiteralAst)
         {
-            return Expression.NewArrayInit(typeof(object),
-                                           arrayLiteralAst.Elements.Select(elem => Compile(elem).Cast(typeof(object))));
+            List<Expression> elementValues = new List<Expression>(arrayLiteralAst.Elements.Count);
+            foreach (var element in arrayLiteralAst.Elements)
+            {
+                var eValue = Compile(element);
+                elementValues.Add(eValue.Type != typeof(void) ? eValue.Cast(typeof(object)) : Expression.Block(eValue, ExpressionCache.AutomationNullConstant));
+            }
+            return Expression.NewArrayInit(typeof(object), elementValues);
         }
 
         private IEnumerable<Expression> BuildHashtable(ReadOnlyCollection<KeyValuePair> keyValuePairs, ParameterExpression temp, bool ordered)

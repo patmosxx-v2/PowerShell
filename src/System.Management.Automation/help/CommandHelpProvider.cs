@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.IO;
 using System.Collections;
@@ -22,7 +21,6 @@ namespace System.Management.Automation
     /// <summary>
     /// Class CommandHelpProvider implement the help provider for commands.
     /// </summary>
-    /// 
     /// <remarks>
     /// Command Help information are stored in 'help.xml' files. Location of these files
     /// can be found from through the engine execution context.
@@ -38,7 +36,6 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// 
         /// </summary>
         static CommandHelpProvider()
         {
@@ -125,9 +122,7 @@ namespace System.Management.Automation
                         }
                         else if (scriptCommandInfo != null &&
                                   (nestedModule.ExportedFunctions.ContainsKey(commandInfo.Name) ||
-                                    nestedModule.ExportedWorkflows.ContainsKey(commandInfo.Name) ||
-                                    (testWithoutPrefix && nestedModule.ExportedFunctions.ContainsKey(cmdNameWithoutPrefix)) ||
-                                    (testWithoutPrefix && nestedModule.ExportedWorkflows.ContainsKey(cmdNameWithoutPrefix))))
+                                    (testWithoutPrefix && nestedModule.ExportedFunctions.ContainsKey(cmdNameWithoutPrefix))))
                         {
                             nestedModulePath = nestedModule.Path;
                             break;
@@ -225,7 +220,7 @@ namespace System.Management.Automation
             {
                 result = GetFromCommandCache(cmdletInfo.ModuleName, cmdletInfo.Name, cmdletInfo.HelpCategory);
 
-                if (null == result)
+                if (result == null)
                 {
                     // Try load the help file specified by CmdletInfo.HelpFile property
                     helpFile = FindHelpFile(cmdletInfo);
@@ -251,7 +246,7 @@ namespace System.Management.Automation
             }
 
             // For scripts, try to retrieve the help from the file specified by .ExternalHelp directive
-            if (null == result && isScriptCommand)
+            if (result == null && isScriptCommand)
             {
                 ScriptBlock sb = null;
                 try
@@ -312,16 +307,24 @@ namespace System.Management.Automation
             // in the appropriate UI culture subfolder of ModuleBase, and retrieve help
             // If still not able to get help, try search for a file called <NestedModuleName>-Help.xml
             // under the ModuleBase and the NestedModule's directory, and retrieve help
-            if (null == result && !InternalTestHooks.BypassOnlineHelpRetrieval)
+            if (result == null && !InternalTestHooks.BypassOnlineHelpRetrieval)
             {
                 // Get the name and ModuleBase directory of the command's module
                 // and the nested module that implements the command
                 GetModulePaths(commandInfo, out moduleName, out moduleDir, out nestedModulePath);
 
-                Collection<String> searchPaths = new Collection<String>();
+                var userHomeHelpPath = HelpUtils.GetUserHomeHelpSearchPath();
+
+                Collection<string> searchPaths = new Collection<string>() { userHomeHelpPath };
+
                 if (!String.IsNullOrEmpty(moduleDir))
                 {
                     searchPaths.Add(moduleDir);
+                }
+
+                if (!String.IsNullOrEmpty(userHomeHelpPath) && !String.IsNullOrEmpty(moduleName))
+                {
+                    searchPaths.Add(Path.Combine(userHomeHelpPath, moduleName));
                 }
 
                 if (!String.IsNullOrEmpty(moduleName) && !String.IsNullOrEmpty(moduleDir))
@@ -331,7 +334,7 @@ namespace System.Management.Automation
                     result = GetHelpInfoFromHelpFile(commandInfo, helpFileToFind, searchPaths, reportErrors, out helpFile);
                 }
 
-                if (null == result && !String.IsNullOrEmpty(nestedModulePath))
+                if (result == null && !String.IsNullOrEmpty(nestedModulePath))
                 {
                     // Search for <NestedModuleName>-Help.xml under both ModuleBase and NestedModule's directory
                     searchPaths.Add(Path.GetDirectoryName(nestedModulePath));
@@ -341,7 +344,7 @@ namespace System.Management.Automation
             }
 
             // Set the HelpFile property to the file that contains the help content
-            if (null != result && !String.IsNullOrEmpty(helpFile))
+            if (result != null && !String.IsNullOrEmpty(helpFile))
             {
                 if (isCmdlet)
                 {
@@ -354,7 +357,7 @@ namespace System.Management.Automation
             }
 
             // If the above fails to get help, construct an HelpInfo object using the syntax and definition of the command
-            if (null == result)
+            if (result == null)
             {
                 if (commandInfo.CommandType == CommandTypes.ExternalScript ||
                     commandInfo.CommandType == CommandTypes.Script)
@@ -374,7 +377,7 @@ namespace System.Management.Automation
                 }
             }
 
-            if (null != result)
+            if (result != null)
             {
                 if (isScriptCommand && result.GetUriForOnlineHelp() == null)
                 {
@@ -405,13 +408,12 @@ namespace System.Management.Automation
         /// <summary>
         /// ExactMatchHelp implementation for this help provider.
         /// </summary>
-        /// 
         /// <remarks>
-        /// ExactMatchHelp is overridden instead of DoExactMatchHelp to make sure 
-        /// all help item retrieval will go through command discovery. Because each 
+        /// ExactMatchHelp is overridden instead of DoExactMatchHelp to make sure
+        /// all help item retrieval will go through command discovery. Because each
         /// help file can contain multiple help items for different commands. Directly
         /// retrieve help cache can result in a invalid command to contain valid
-        /// help item. Forcing each ExactMatchHelp to go through command discovery 
+        /// help item. Forcing each ExactMatchHelp to go through command discovery
         /// will make sure helpInfo for invalid command will not be returned.
         /// </remarks>
         /// <param name="helpRequest">help request object</param>
@@ -473,16 +475,15 @@ namespace System.Management.Automation
             if (cmdletInfo.ImplementingType == null)
                 return null;
 
-            return Path.GetDirectoryName(cmdletInfo.ImplementingType.GetTypeInfo().Assembly.Location);
+            return Path.GetDirectoryName(cmdletInfo.ImplementingType.Assembly.Location);
         }
 
         /// <summary>
-        /// This is a hashtable to track which help files are loaded already. 
-        /// 
-        /// This will avoid one help file getting loaded again and again. 
-        /// (Which should not happen unless some commandlet is pointing 
-        /// to a help file that actually doesn't contain the help for it).
+        /// This is a hashtable to track which help files are loaded already.
         ///
+        /// This will avoid one help file getting loaded again and again.
+        /// (Which should not happen unless some commandlet is pointing
+        /// to a help file that actually doesn't contain the help for it).
         /// </summary>
         private readonly Hashtable _helpFiles = new Hashtable();
 
@@ -512,14 +513,18 @@ namespace System.Management.Automation
                     // we have to search only in the application base for a mshsnapin...
                     // if you create an absolute path for helpfile, then MUIFileSearcher
                     // will look only in that path.
-                    helpFileToLoad = Path.Combine(mshSnapInInfo.ApplicationBase, helpFile);
+
+                    searchPaths.Add(HelpUtils.GetUserHomeHelpSearchPath());
+                    searchPaths.Add(mshSnapInInfo.ApplicationBase);
                 }
-                else if (cmdletInfo.Module != null && !string.IsNullOrEmpty(cmdletInfo.Module.Path))
+                else if (cmdletInfo.Module != null && !string.IsNullOrEmpty(cmdletInfo.Module.Path) && !string.IsNullOrEmpty(cmdletInfo.Module.ModuleBase))
                 {
-                    helpFileToLoad = Path.Combine(cmdletInfo.Module.ModuleBase, helpFile);
+                    searchPaths.Add(HelpUtils.GetModuleBaseForUserHelp(cmdletInfo.Module.ModuleBase, cmdletInfo.Module.Name));
+                    searchPaths.Add(cmdletInfo.Module.ModuleBase);
                 }
                 else
                 {
+                    searchPaths.Add(HelpUtils.GetUserHomeHelpSearchPath());
                     searchPaths.Add(GetDefaultShellSearchPath());
                     searchPaths.Add(GetCmdletAssemblyPath(cmdletInfo));
                 }
@@ -585,7 +590,7 @@ namespace System.Management.Automation
                 // e.g., <AssemblyName>.ni.dll as supposed to <AssemblyName>.dll.
 
                 // When cmdlet metadata is generated for the 'HelpFile' field, we use the name assembly and we append '-Help.xml' to it.
-                // Because of this, if the cmdlet is part of an N’gen assembly, then 'HelpFile' field will be pointing to a help file which does not exist.
+                // Because of this, if the cmdlet is part of an Ngen assembly, then 'HelpFile' field will be pointing to a help file which does not exist.
                 // If this is the case, we remove '.ni' from the help file name and try again.
                 // For example:
                 // Ngen assembly name: Microsoft.PowerShell.Commands.Management.ni.dll
@@ -593,7 +598,7 @@ namespace System.Management.Automation
                 // Actual help file name: Microsoft.PowerShell.Commands.Management.dll-Help.xml
 
                 // Make sure that the assembly name contains more than '.ni.dll'
-                string assemblyName = helpFile.Replace(".ni.dll-Help.xml", "");
+                string assemblyName = helpFile.Replace(".ni.dll-Help.xml", string.Empty);
 
                 if (!String.IsNullOrEmpty(assemblyName))
                 {
@@ -604,7 +609,7 @@ namespace System.Management.Automation
                     if (String.IsNullOrEmpty(location))
                     {
                         // If the help file could not be found, then it is possible that the actual assembly name is something like
-                        // <Name>.ni.dll, e.g., MyAssembly.ni.dll, so let’s try to find the original help file in the cmdlet metadata.
+                        // <Name>.ni.dll, e.g., MyAssembly.ni.dll, so let's try to find the original help file in the cmdlet metadata.
                         location = GetHelpFile(helpFile, cmdletInfo);
                     }
                 }
@@ -661,13 +666,13 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Load help file for HelpInfo objects. The HelpInfo objects will be 
+        /// Load help file for HelpInfo objects. The HelpInfo objects will be
         /// put into help cache.
         /// </summary>
         /// <remarks>
-        /// 1. Needs to pay special attention about error handling in this function. 
+        /// 1. Needs to pay special attention about error handling in this function.
         /// Common errors include: file not found and invalid xml. None of these error
-        /// should cause help search to stop. 
+        /// should cause help search to stop.
         /// 2. a helpfile cache is used to avoid same file got loaded again and again.
         /// </remarks>
         private void LoadHelpFile(string helpFile, string helpFileIdentifier)
@@ -738,7 +743,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Process user defined help data by finding the corresponding helpInfo and inserting 
+        /// Process user defined help data by finding the corresponding helpInfo and inserting
         /// necessary helpdata info to command help.
         /// </summary>
         /// <param name="mshSnapInId">PSSnapIn Name for the current help file.</param>
@@ -786,7 +791,7 @@ namespace System.Management.Automation
             HelpInfo result = GetCache(key);
 
             // Win8: Win8:477680: When Function/Workflow Use External Help, Category Property is "Cmdlet"
-            if ((null != result) && (result.HelpCategory != helpCategory))
+            if ((result != null) && (result.HelpCategory != helpCategory))
             {
                 MamlCommandHelpInfo original = (MamlCommandHelpInfo)result;
                 result = original.Copy(helpCategory);
@@ -803,15 +808,15 @@ namespace System.Management.Automation
         /// <returns>HelpInfo object.</returns>
         private HelpInfo GetFromCommandCache(string helpFileIdentifier, CommandInfo commandInfo)
         {
-            Debug.Assert(null != commandInfo, "commandInfo cannot be null");
+            Debug.Assert(commandInfo != null, "commandInfo cannot be null");
             HelpInfo result = GetFromCommandCache(helpFileIdentifier, commandInfo.Name, commandInfo.HelpCategory);
-            if (null == result)
+            if (result == null)
             {
                 // check if the command is prefixed and try retrieving help by removing the prefix
                 if ((commandInfo.Module != null) && (!string.IsNullOrEmpty(commandInfo.Prefix)))
                 {
                     MamlCommandHelpInfo newMamlHelpInfo = GetFromCommandCacheByRemovingPrefix(helpFileIdentifier, commandInfo);
-                    if (null != newMamlHelpInfo)
+                    if (newMamlHelpInfo != null)
                     {
                         // caching the changed help content under the prefixed name for faster
                         // retrieval later.
@@ -833,7 +838,7 @@ namespace System.Management.Automation
         /// </returns>
         private HelpInfo GetFromCommandCacheOrCmdletInfo(CmdletInfo cmdletInfo)
         {
-            Debug.Assert(null != cmdletInfo, "cmdletInfo cannot be null");
+            Debug.Assert(cmdletInfo != null, "cmdletInfo cannot be null");
             HelpInfo result = GetFromCommandCache(cmdletInfo.ModuleName, cmdletInfo.Name, cmdletInfo.HelpCategory);
             if (result == null)
             {
@@ -842,7 +847,7 @@ namespace System.Management.Automation
                 {
                     MamlCommandHelpInfo newMamlHelpInfo = GetFromCommandCacheByRemovingPrefix(cmdletInfo.ModuleName, cmdletInfo);
 
-                    if (null != newMamlHelpInfo)
+                    if (newMamlHelpInfo != null)
                     {
                         // Noun exists only for cmdlets...since prefix will change the Noun, updating
                         // the help content accordingly
@@ -873,7 +878,7 @@ namespace System.Management.Automation
         /// Import-Module and Import-PSSession supports changing the name of a command
         /// by suppling a custom prefix. In those cases, the help content is stored by using the
         /// original command name (without prefix) as the key.
-        /// 
+        ///
         /// This method retrieves the help content by suppressing the prefix and then making a copy
         /// of the help content + change the name and then returns the copied help content.
         /// </summary>
@@ -884,15 +889,14 @@ namespace System.Management.Automation
         /// </returns>
         private MamlCommandHelpInfo GetFromCommandCacheByRemovingPrefix(string helpIdentifier, CommandInfo cmdInfo)
         {
-            Dbg.Assert(null != cmdInfo, "cmdInfo cannot be null");
+            Dbg.Assert(cmdInfo != null, "cmdInfo cannot be null");
 
             MamlCommandHelpInfo result = null;
             MamlCommandHelpInfo originalHelpInfo = GetFromCommandCache(helpIdentifier,
                         Microsoft.PowerShell.Commands.ModuleCmdletBase.RemovePrefixFromCommandName(cmdInfo.Name, cmdInfo.Prefix),
                         cmdInfo.HelpCategory) as MamlCommandHelpInfo;
 
-
-            if (null != originalHelpInfo)
+            if (originalHelpInfo != null)
             {
                 result = originalHelpInfo.Copy();
                 // command's name can be changed using -Prefix while importing module.To give better user experience for
@@ -956,22 +960,21 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Check whether a HelpItems node indicates that the help content is 
-        /// authored using maml schema. 
-        /// 
-        /// This covers two cases: 
+        /// Check whether a HelpItems node indicates that the help content is
+        /// authored using maml schema.
+        ///
+        /// This covers two cases:
         ///     a. If the help file has an extension .maml.
         ///     b. If HelpItems node (which should be the top node of any command help file)
         ///        has an attribute "schema" with value "maml", its content is in maml
         ///        schema
-        /// 
         /// </summary>
         /// <param name="helpFile"></param>
         /// <param name="helpItemsNode"></param>
         /// <returns></returns>
         internal static bool IsMamlHelp(string helpFile, XmlNode helpItemsNode)
         {
-            if (helpFile.EndsWith(".maml", StringComparison.CurrentCultureIgnoreCase))
+            if (helpFile.EndsWith(".maml", StringComparison.OrdinalIgnoreCase))
                 return true;
 
             if (helpItemsNode.Attributes == null)
@@ -990,7 +993,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Search help for a specific target. 
+        /// Search help for a specific target.
         /// </summary>
         /// <param name="helpRequest">help request object</param>
         /// <param name="searchOnlyContent">
@@ -1005,7 +1008,7 @@ namespace System.Management.Automation
             // this will be used only when searchOnlyContent == true
             WildcardPattern wildCardPattern = null;
             // Decorated Search means that original match target is a target without
-            // wildcard patterns. It come here to because exact match was not found 
+            // wildcard patterns. It come here to because exact match was not found
             // and search target will be decorated with wildcard character '*' to
             // search again.
             bool decoratedSearch = !WildcardPattern.ContainsWildcardCharacters(helpRequest.Target);
@@ -1194,7 +1197,7 @@ namespace System.Management.Automation
                 return true;
 
             if (String.IsNullOrEmpty(target))
-                target = "";
+                target = string.Empty;
 
             WildcardPattern matcher = WildcardPattern.Get(pattern, WildcardOptions.IgnoreCase);
 
@@ -1208,7 +1211,7 @@ namespace System.Management.Automation
         /// <param name="target">content to search in.</param>
         /// <param name="patterns">string patterns to look for.</param>
         /// <returns>
-        /// true if <paramref name="target"/> contains any of the patterns 
+        /// true if <paramref name="target"/> contains any of the patterns
         /// present in <paramref name="patterns"/>
         /// false otherwise.
         /// </returns>
@@ -1237,7 +1240,7 @@ namespace System.Management.Automation
         /// This can return more than 1 helpinfo object.
         /// </summary>
         /// <param name="helpInfo">HelpInfo that is forwarded over</param>
-        /// <param name="helpRequest">Help request object</param>        
+        /// <param name="helpRequest">Help request object</param>
         /// <returns>The result helpInfo objects after processing</returns>
         internal override IEnumerable<HelpInfo> ProcessForwardedHelp(HelpInfo helpInfo, HelpRequest helpRequest)
         {
@@ -1284,8 +1287,8 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// This will reset the help cache. Normally this corresponds to a 
-        /// help culture change. 
+        /// This will reset the help cache. Normally this corresponds to a
+        /// help culture change.
         /// </summary>
         internal override void Reset()
         {
@@ -1330,7 +1333,6 @@ namespace System.Management.Automation
                         CommandTypes.Cmdlet,
                         context);
 
-
             return searcher;
         }
 
@@ -1345,9 +1347,9 @@ namespace System.Management.Automation
     }
 
     /// <summary>
-    /// This is the class to track the user-defined Help Data which is separate from the 
-    /// commandHelp itself. 
-    /// 
+    /// This is the class to track the user-defined Help Data which is separate from the
+    /// commandHelp itself.
+    ///
     /// Legally, user-defined Help Data should be within the same file as the corresponding
     /// commandHelp and it should appear after the commandHelp.
     /// </summary>

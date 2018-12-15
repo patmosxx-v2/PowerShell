@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Management.Automation.Internal;
@@ -12,7 +11,6 @@ namespace System.Management.Automation
     /// <summary>
     /// The parameter binder for shell functions.
     /// </summary>
-    ///
     internal class ScriptParameterBinder : ParameterBinderBase
     {
         #region ctor
@@ -20,23 +18,18 @@ namespace System.Management.Automation
         /// <summary>
         /// Constructs a ScriptParameterBinder with the specified context
         /// </summary>
-        ///
         /// <param name="script">
         /// The script block representing the code being run
         /// </param>
-        ///
         /// <param name="invocationInfo">
         /// The invocation information about the code that is being run.
         /// </param>
-        ///
         /// <param name="context">
         /// The context under which the shell function is executing.
         /// </param>
-        ///
         /// <param name="command">
         /// The command instance that represents the script in a pipeline. May be null.
         /// </param>
-        ///
         /// <param name="localScope">
         /// If binding in a new local scope, the scope to set variables in.  If dotting, the value is null.
         /// </param>
@@ -70,15 +63,12 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets the default value for the specified parameter
         /// </summary>
-        ///
         /// <param name="name">
         /// The name of the parameter to get the default value of.
         /// </param>
-        ///
         /// <returns>
         /// The default value of the specified parameter.
         /// </returns>
-        ///
         /// <exception cref="Exception">see SessionStateInternal.GetVariableValue</exception>
         internal override object GetDefaultParameterValue(string name)
         {
@@ -143,7 +133,7 @@ namespace System.Management.Automation
                 // to do so again.
                 variable.AddParameterAttributesNoChecks(runtimeDefinedParameter.Attributes);
             }
-        } // BindParameter
+        }
 
         /// <summary>
         /// Return the default value of a script parameter, evaluating the parse tree if necessary.
@@ -175,5 +165,5 @@ namespace System.Management.Automation
         internal SessionStateScope LocalScope { get; set; }
 
         #endregion private members
-    } // ScriptParameterBinder
-} // namespace System.Management.Automation
+    }
+}

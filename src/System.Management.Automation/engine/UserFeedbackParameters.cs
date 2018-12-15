@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Globalization;
 using System.Management.Automation.Language;
@@ -108,12 +107,10 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Constructs an instance with the specified command instance
         /// </summary>
-        ///
         /// <param name="commandRuntime">
         /// The instance of the command that the parameters should set the
         /// user feedback properties on when the parameters get bound.
         /// </param>
-        ///
         internal ShouldProcessParameters(MshCommandRuntime commandRuntime)
         {
             if (commandRuntime == null)
@@ -121,7 +118,7 @@ namespace System.Management.Automation.Internal
                 throw PSTraceSource.NewArgumentNullException("commandRuntime");
             }
             _commandRuntime = commandRuntime;
-        } // ctor
+        }
         #endregion ctor
 
         #region parameters
@@ -175,16 +172,14 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Constructs an instance with the specified command instance
         /// </summary>
-        ///
         /// <param name="commandRuntime">
         /// The instance of the command that the parameters should set the
         /// user feedback properties on when the parameters get bound.
         /// </param>
-        ///
         internal TransactionParameters(MshCommandRuntime commandRuntime)
         {
             _commandRuntime = commandRuntime;
-        } // ctor
+        }
         #endregion ctor
 
         #region parameters
@@ -192,7 +187,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Gets or sets the value of the -UseTransaction parameter for all cmdlets.
         /// </summary>
-        ///
         [Parameter]
         [Alias("usetx")]
         public SwitchParameter UseTransaction

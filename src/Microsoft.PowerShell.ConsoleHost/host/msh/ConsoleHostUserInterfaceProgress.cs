@@ -1,14 +1,10 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
-
-
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Management.Automation;
 using Dbg = System.Management.Automation.Diagnostics;
 using System.Threading;
-
 
 namespace Microsoft.PowerShell
 {
@@ -16,10 +12,8 @@ namespace Microsoft.PowerShell
     class ConsoleHostUserInterface : System.Management.Automation.Host.PSHostUserInterface
     {
         /// <summary>
-        ///
         /// Called at the end of a prompt loop to take down any progress display that might have appeared and purge any
         /// outstanding progress activity state.
-        ///
         /// </summary>
 
         internal
@@ -55,13 +49,9 @@ namespace Microsoft.PowerShell
             }
         }
 
-
-
         /// <summary>
-        ///
         /// Invoked by ConsoleHostUserInterface.WriteProgress to update the set of outstanding activities for which
         /// ProgressRecords have been received.
-        ///
         /// </summary>
 
         private
@@ -106,12 +96,8 @@ namespace Microsoft.PowerShell
             }
         }
 
-
-
         /// <summary>
-        ///
         /// TimerCallback for '_progPaneUpdateTimer' to update 'progPaneUpdateFlag'
-        ///
         /// </summary>
 
         private
@@ -131,8 +117,6 @@ namespace Microsoft.PowerShell
             }
         }
 
-
-
         private
         void
         PostWrite()
@@ -142,8 +126,6 @@ namespace Microsoft.PowerShell
                 _progPane.Show();
             }
         }
-
-
 
         private
         void
@@ -164,8 +146,6 @@ namespace Microsoft.PowerShell
             }
         }
 
-
-
         private
         void
         PreRead()
@@ -176,8 +156,6 @@ namespace Microsoft.PowerShell
             }
         }
 
-
-
         private
         void
         PostRead()
@@ -187,8 +165,6 @@ namespace Microsoft.PowerShell
                 _progPane.Show();
             }
         }
-
-
 
         private
         void
@@ -210,8 +186,6 @@ namespace Microsoft.PowerShell
             }
         }
 
-
-
         private ProgressPane _progPane = null;
         private PendingProgress _pendingProgress = null;
         // The timer set up 'progPaneUpdateFlag' every 'UpdateTimerThreshold' milliseconds to update 'ProgressPane'
@@ -220,6 +194,4 @@ namespace Microsoft.PowerShell
         private int progPaneUpdateFlag = 0;
     }
 }   // namespace
-
-
 

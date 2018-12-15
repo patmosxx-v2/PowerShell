@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Management.Automation;
 using Dbg = System.Management.Automation;
@@ -26,38 +25,37 @@ namespace Microsoft.PowerShell.Commands
             get
             {
                 return _path;
-            } // get
+            }
 
             set
             {
                 _path = value;
-            } // set
-        } // Path
+            }
+        }
 
         /// <summary>
         /// Gets or sets the literal path parameter to the command
         /// </summary>
         [Parameter(ParameterSetName = "LiteralPath",
                    Mandatory = true, ValueFromPipeline = false, ValueFromPipelineByPropertyName = true)]
-        [Alias("PSPath")]
+        [Alias("PSPath", "LP")]
         public string LiteralPath
         {
             get
             {
                 return _path;
-            } // get
+            }
 
             set
             {
                 base.SuppressWildcardExpansion = true;
                 _path = value;
-            } // set
-        } // LiteralPath
+            }
+        }
 
         /// <summary>
         /// The properties to be renamed on the item
         /// </summary>
-        ///
         [Parameter(Mandatory = true, Position = 1, ValueFromPipelineByPropertyName = true)]
         [Alias("PSProperty")]
         public string Name { get; set; }
@@ -65,7 +63,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// The new name of the property on the item
         /// </summary>
-        ///
         [Parameter(Mandatory = true, Position = 2, ValueFromPipelineByPropertyName = true)]
         public string NewName { get; set; }
 
@@ -74,16 +71,13 @@ namespace Microsoft.PowerShell.Commands
         /// that require dynamic parameters should override this method and return the
         /// dynamic parameter object.
         /// </summary>
-        ///
         /// <param name="context">
         /// The context under which the command is running.
         /// </param>
-        ///
         /// <returns>
         /// An object representing the dynamic parameters for the cmdlet or null if there
         /// are none.
         /// </returns>
-        ///
         internal override object GetDynamicParameters(CmdletProviderContext context)
         {
             if (Path != null)
@@ -91,7 +85,7 @@ namespace Microsoft.PowerShell.Commands
                 return InvokeProvider.Property.RenamePropertyDynamicParameters(Path, Name, NewName, context);
             }
             return InvokeProvider.Property.RenamePropertyDynamicParameters(".", Name, NewName, context);
-        } // GetDynamicParameters
+        }
 
         #endregion Parameters
 
@@ -146,9 +140,8 @@ namespace Microsoft.PowerShell.Commands
                         pathNotFound.ErrorRecord,
                         pathNotFound));
             }
-        } // ProcessRecord
+        }
         #endregion Command code
 
-
-    } // RenameItemPropertyCommand
-} // namespace Microsoft.PowerShell.Commands
+    }
+}

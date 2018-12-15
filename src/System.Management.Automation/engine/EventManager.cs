@@ -1,6 +1,6 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #pragma warning disable 1634, 1691
 
 using System.Collections;
@@ -12,12 +12,6 @@ using System.Management.Automation.Runspaces;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
-
-#if !CORECLR
-// StackFrame and SymbolStore related types are not available in CoreCLR.
-using System.Diagnostics.SymbolStore;
-using System.Diagnostics;
-#endif
 
 namespace System.Management.Automation
 {
@@ -50,7 +44,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Creates a PowerShell event.
-        ///
         /// <param name="sourceIdentifier">
         /// An optional identifier that identifies the source event
         /// </param>
@@ -68,7 +61,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Generate a PowerShell event.
-        ///
         /// <param name="sourceIdentifier">
         /// An optional identifier that identifies the source event
         /// </param>
@@ -89,7 +81,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Generate a PowerShell event.
-        ///
         /// <param name="sourceIdentifier">
         /// An optional identifier that identifies the source event
         /// </param>
@@ -142,7 +133,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Get the event subscription that corresponds to an identifier
-        ///
         /// <param name="sourceIdentifier">
         /// The identifier that identifies the source of the events
         /// </param>
@@ -151,7 +141,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -179,7 +168,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -211,7 +199,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -237,10 +224,8 @@ namespace System.Management.Automation
         [SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly")]
         public abstract PSEventSubscriber SubscribeEvent(object source, string eventName, string sourceIdentifier, PSObject data, PSEventReceivedEventHandler handlerDelegate, bool supportEvent, bool forwardEvent);
 
-
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -272,7 +257,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -317,10 +301,8 @@ namespace System.Management.Automation
             return SubscribeEvent(source, eventName, sourceIdentifier, data, handlerDelegate, supportEvent, forwardEvent, maxTriggerCount);
         }
 
-
         /// <summary>
         /// Unsubscribes from an event on an object.
-        ///
         /// <param name="subscriber">
         /// The subscriber associated with the event subscription
         /// </param>
@@ -361,9 +343,6 @@ namespace System.Management.Automation
         private AssemblyBuilder _eventAssembly = null;
         private ModuleBuilder _eventModule = null;
         private int _typeId = 0;
-#if !CORECLR
-        private bool debugMode = false;
-#endif
 
         /// <summary>
         /// Gets the list of event subscribers.
@@ -388,7 +367,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -419,7 +397,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -459,7 +436,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -508,7 +484,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -537,10 +512,8 @@ namespace System.Management.Automation
             return SubscribeEvent(source, eventName, sourceIdentifier, data, handlerDelegate, supportEvent, forwardEvent, 0);
         }
 
-
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -578,14 +551,12 @@ namespace System.Management.Automation
             return subscriber;
         }
 
-
         #region OnIdleProcessing
 
         private Timer _timer = null;
         private bool _timerInitialized = false;
         private bool _isTimerActive = false;
         /// <summary>
-        ///
         /// We sample every 100ms to check if the engine is idle (currentlyRunningPipeline == null). If it's "idle"
         /// in four consecutive samples, then we believe it's actually idle. In this way we can avoid capturing possible
         /// pipeline transitions.
@@ -593,7 +564,6 @@ namespace System.Management.Automation
         private int _consecutiveIdleSamples = 0;
 
         /// <summary>
-        ///
         /// Send on-idle event if the engine is idle. The property "AutoReset" of the timer is always false,
         /// so only one handler will be running at anytime. The timer will be enabled again if we can meet
         /// the following two conditions.
@@ -677,22 +647,10 @@ namespace System.Management.Automation
 
             if (_eventAssembly == null)
             {
-#if !CORECLR
-                // Define the assembly that will hold our event handlers
-                StackFrame callStack = new StackFrame(0, true);
-                debugMode = (callStack.GetFileName() != null);
-#endif
                 _eventAssembly = AssemblyBuilder.DefineDynamicAssembly(
                     new AssemblyName("PSEventHandler"),
                     AssemblyBuilderAccess.Run);
-            }
-            if (_eventModule == null)
-            {
-#if CORECLR
                 _eventModule = _eventAssembly.DefineDynamicModule("PSGenericEventModule");
-#else
-                _eventModule = _eventAssembly.DefineDynamicModule("PSGenericEventModule", debugMode);
-#endif
             }
 
             string engineEventSourceIdentifier = null;
@@ -752,14 +710,7 @@ namespace System.Management.Automation
                         }
                     }
                 }
-#if !CORECLR
-                // If it is a ManagementEventWatcher, enable it
-                ManagementEventWatcher eventWatcher = source as ManagementEventWatcher;
-                if (eventWatcher != null)
-                {
-                    eventWatcher.Start();
-                }
-#endif
+
                 // Get its invoke method, and register ourselves as a handler
                 MethodInfo invokeMethod = eventInfo.EventHandlerType.GetMethod("Invoke");
 
@@ -771,7 +722,6 @@ namespace System.Management.Automation
                 if (invokeMethod.ReturnType != typeof(void))
                 {
                     string errorMessage = EventingResources.NonVoidDelegateNotSupported;
-
                     throw new ArgumentException(errorMessage, "eventName");
                 }
 
@@ -843,10 +793,8 @@ namespace System.Management.Automation
             }
         }
 
-
         /// <summary>
         /// Unsubscribes from an event on an object.
-        ///
         /// <param name="subscriber">
         /// The subscriber associated with the event subscription
         /// </param>
@@ -856,10 +804,8 @@ namespace System.Management.Automation
             UnsubscribeEvent(subscriber, false);
         }
 
-
         /// <summary>
         /// Unsubscribes from an event on an object.
-        ///
         /// <param name="subscriber">
         /// The subscriber associated with the event subscription
         /// </param>
@@ -933,7 +879,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Creates a PowerShell event.
-        ///
         /// <param name="sourceIdentifier">
         /// An optional identifier that identifies the source event
         /// </param>
@@ -991,7 +936,7 @@ namespace System.Management.Automation
                     // invocation to the current runspace, we took dependency on eventing infrastructure and
                     // this required ensuring the event and associated action be processed in the current thread
                     // synchronously. The below while loop was added for that (win8: 530495). However, fix for
-                    // 530495 resulted in hang for icm | % { icm } case and dynamic event/subscriptions scenarios.
+                    // 530495 resulted in not responding for icm | % { icm } case and dynamic event/subscriptions scenarios.
                     // To overcome that, changed "processSynchronously" parameter to "processInCurrentThread" and added
                     // a new parameter "waitForCompletionWhenInCurrentThread" to trigger blocking for ScriptBlock
                     // case.
@@ -1013,7 +958,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Called from  ProcessNewEvent to actually process the event.
+        /// Called from ProcessNewEvent to actually process the event.
         /// </summary>
         private void ProcessNewEventImplementation(PSEventArgs newEvent, bool processSynchronously)
         {
@@ -1116,7 +1061,6 @@ namespace System.Management.Automation
         /// To prevent starvation of the foreground script, we throttle the number of events
         /// that we process while the parser is waiting. If the parser is not waiting, we
         /// do not throttle the event processing.
-        ///
         /// </summary>
         internal void ProcessPendingActions()
         {
@@ -1338,7 +1282,6 @@ namespace System.Management.Automation
             }
         }
 
-
         internal bool IsExecutingEventAction
         {
             get { return (_processingAction != null); }
@@ -1346,7 +1289,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Get the event subscription that corresponds to an identifier
-        ///
         /// <param name="sourceIdentifier">
         /// The identifier that identifies the source of the events
         /// </param>
@@ -1430,16 +1372,7 @@ namespace System.Management.Automation
         private Type GenerateEventHandler(MethodInfo invokeSignature)
         {
             int parameterCount = invokeSignature.GetParameters().Length;
-#if !CORECLR
-            StackFrame callStack = new StackFrame(0, true);
 
-            // Get the filename to associate with the debug symbols
-            ISymbolDocumentWriter doc = null;
-            if (debugMode)
-            {
-                doc = _eventModule.DefineDocument(callStack.GetFileName(), Guid.Empty, Guid.Empty, Guid.Empty);
-            }
-#endif
             // Define the type that will respond to the event. It
             // derives from PSEventHandler so that complex
             // functionality can go into its base class.
@@ -1452,21 +1385,6 @@ namespace System.Management.Automation
                 typeof(PSEventHandler).GetConstructor(
                     new Type[] { typeof(PSEventManager), typeof(Object), typeof(string), typeof(PSObject) });
 
-#if !CORECLR
-            if (debugMode)
-            {
-                // Mark as debuggable
-                Type debugAttributeType = typeof(DebuggableAttribute);
-                ConstructorInfo debugAttributeCtor = debugAttributeType.GetConstructor(new Type[] { typeof(DebuggableAttribute.DebuggingModes) });
-
-                CustomAttributeBuilder debugAttributeBuilder = new CustomAttributeBuilder(debugAttributeCtor,
-                    new object[] {
-                        DebuggableAttribute.DebuggingModes.DisableOptimizations |
-                        DebuggableAttribute.DebuggingModes.Default
-                    });
-                _eventAssembly.SetCustomAttribute(debugAttributeBuilder);
-            }
-#endif
             // Define the new constructor
             // public TestEventHandler(PSEventManager eventManager, Object sender, string sourceIdentifier, PSObject extraData)
             // : base(eventManager, sender, sourceIdentifier, extraData)
@@ -1506,41 +1424,25 @@ namespace System.Management.Automation
 
             ILGenerator methodContents = eventMethod.GetILGenerator();
 
-            // Object[] args =
-            LocalBuilder argsBuilder = methodContents.DeclareLocal(typeof(object[]));
+            // Declare a local variable of the type 'object[]' at index 0, say 'object[] args'
+            methodContents.DeclareLocal(typeof(object[]));
 
-#if !CORECLR
-            if (debugMode)
-            {
-                argsBuilder.SetLocalSymInfo("args");
-
-                //     new Object[ invokeSignature.GetParameters().Length ]
-                methodContents.MarkSequencePoint(doc, callStack.GetFileLineNumber() - 1, 1, callStack.GetFileLineNumber(), 100);
-            }
-#endif
             methodContents.Emit(OpCodes.Ldc_I4, parameterCount);
             methodContents.Emit(OpCodes.Newarr, typeof(Object));
 
-            // Retrieve the args variable from local variable index 0
+            // Store the new array to the local variable 'args'
             methodContents.Emit(OpCodes.Stloc_0);
 
             // Inline, this converts into a series of setting args[n] to
             // the argument at the same parameter index
             for (int counter = 1; counter <= parameterCount; counter++)
             {
-#if !CORECLR
-                if (debugMode)
-                {
-                    // args[n] = argument[n]
-                    methodContents.MarkSequencePoint(doc, callStack.GetFileLineNumber() - 1, 1, callStack.GetFileLineNumber(), 100);
-                }
-#endif
                 methodContents.Emit(OpCodes.Ldloc_0);
                 methodContents.Emit(OpCodes.Ldc_I4, counter - 1);
                 methodContents.Emit(OpCodes.Ldarg, counter);
 
                 // Box the value type if necessary
-                if (parameterTypes[counter - 1].GetTypeInfo().IsValueType)
+                if (parameterTypes[counter - 1].IsValueType)
                 {
                     methodContents.Emit(OpCodes.Box, parameterTypes[counter - 1]);
                 }
@@ -1579,16 +1481,9 @@ namespace System.Management.Automation
 
             // Finally, invoke the method
             MethodInfo generateEventMethod = typeof(PSEventManager).GetMethod(
-                "GenerateEvent",
-                new Type[] { typeof(string), typeof(object), typeof(object[]), typeof(PSObject) }
-                );
-#if !CORECLR
-            if (debugMode)
-            {
-                // GenerateEvent(sourceIdentifier, args, extraData);
-                methodContents.MarkSequencePoint(doc, callStack.GetFileLineNumber() - 1, 1, callStack.GetFileLineNumber(), 100);
-            }
-#endif
+                nameof(PSEventManager.GenerateEvent),
+                new Type[] { typeof(string), typeof(object), typeof(object[]), typeof(PSObject) });
+
             methodContents.Emit(OpCodes.Callvirt, generateEventMethod);
 
             // Discard the return value, and return
@@ -1619,7 +1514,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Destructor for the EventManager class
         /// </summary>
-        ///
         ~PSLocalEventManager()
         {
             Dispose(false);
@@ -1628,7 +1522,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Disposes the EventManager class.
         /// </summary>
-        ///
         public void Dispose()
         {
             Dispose(true);
@@ -1638,12 +1531,10 @@ namespace System.Management.Automation
         /// <summary>
         /// Stop the timer if it's not null.
         /// Unsubscribes from all events.
-        ///
         /// <param name="disposing">
         /// Whether to actually dispose the object.
         /// </param>
         /// </summary>
-        ///
         public void Dispose(bool disposing)
         {
             if (disposing)
@@ -1699,7 +1590,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Creates a PowerShell event.
-        ///
         /// <param name="sourceIdentifier">
         /// An optional identifier that identifies the source event
         /// </param>
@@ -1768,7 +1658,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Get the event subscription that corresponds to an identifier
-        ///
         /// <param name="sourceIdentifier">
         /// The identifier that identifies the source of the events
         /// </param>
@@ -1780,7 +1669,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -1811,7 +1699,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -1846,7 +1733,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -1877,7 +1763,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -1912,7 +1797,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Unsubscribes from an event on an object.
-        ///
         /// <param name="subscriber">
         /// The subscriber associated with the event subscription
         /// </param>
@@ -1982,7 +1866,6 @@ namespace System.Management.Automation
         internal static readonly HashSet<string> EngineEvents = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { Exiting, OnIdle, OnScriptBlockInvoke };
     }
 
-
     /// <summary>
     /// Represents a subscriber to an event
     /// </summary>
@@ -2037,7 +1920,7 @@ namespace System.Management.Automation
 
         internal void RegisterJob()
         {
-            // And this event subscriber to the job repository if it's not a support event.
+            // Add this event subscriber to the job repository if it's not a support event.
             if (!SupportEvent)
             {
                 if (this.Action != null)
@@ -2107,7 +1990,6 @@ namespace System.Management.Automation
         /// </summary>
         public PSEventReceivedEventHandler HandlerDelegate { get; } = null;
 
-
         /// <summary>
         /// Get the flag that marks this event as a supporting event
         /// </summary>
@@ -2129,7 +2011,7 @@ namespace System.Management.Automation
         internal bool AutoUnregister { get; private set; }
 
         /// <summary>
-        /// Indicate how many new  should be added to the action queue.
+        /// Indicate how many new should be added to the action queue.
         /// e.g. NumberOfTimesToBeInvoked = 3 means that this subscriber only responses to
         /// the first triggered event. So three new actions will be added to the action
         /// queue, and the following events will be ignored.
@@ -2189,7 +2071,6 @@ namespace System.Management.Automation
         }
     }
 
-
     /// <summary>
     /// The generic event handler from which specific event handlers extend. When possible,
     /// add functionality to this class instead of the IL generated by the GenerateEventHandler()
@@ -2208,7 +2089,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Creates a new instance of the PsEventHandler class for a given
         /// event manager, source identifier, and extra data
-        ///
         /// <param name="eventManager">
         /// The event manager to which we forward events.
         /// </param>
@@ -2307,7 +2187,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Create a new instance of the PSEventArgs type
         /// </summary>
-        ///
         /// <param name="computerName">
         /// Computer on which this event was generated
         /// </param>
@@ -2429,7 +2308,6 @@ namespace System.Management.Automation
     /// </summary>
     public delegate void PSEventReceivedEventHandler(Object sender, PSEventArgs e);
 
-
     /// <summary>
     /// The event arguments associated with unsubscribing from an event
     /// </summary>
@@ -2438,7 +2316,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Create a new instance of the PSEventUnsubscribedEventArgs type
         /// </summary>
-        ///
         /// <param name="eventSubscriber">
         /// The event subscriber being unregistered
         /// </param>
@@ -2458,7 +2335,6 @@ namespace System.Management.Automation
     /// </summary>
     public delegate void PSEventUnsubscribedEventHandler(Object sender, PSEventUnsubscribedEventArgs e);
 
-
     /// <summary>
     /// This class contains the collection of events received by the
     /// execution context.
@@ -2474,7 +2350,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Add add an event to the collection
         /// </summary>
-        ///
         /// <param name="eventToAdd">
         /// The PSEventArgs instance that represents this event
         /// </param>
@@ -2583,7 +2458,6 @@ namespace System.Management.Automation
     {
         /// <summary>
         /// Creates a new instance of the PSEventJob class.
-        ///
         /// <param name="eventManager">
         /// The event manager that controls the event subscriptions
         /// </param>
@@ -2651,7 +2525,6 @@ namespace System.Management.Automation
         }
         private bool _moreData = false;
 
-
         /// <summary>
         /// Location in which this job is running
         /// </summary>
@@ -2670,7 +2543,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Invoke the script block
-        ///
         /// <param name="eventSubscriber">
         /// The subscriber that generated this event
         /// </param>

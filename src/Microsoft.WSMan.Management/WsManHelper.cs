@@ -1,6 +1,6 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -17,9 +17,6 @@ using Microsoft.Win32;
 using System.Management.Automation;
 using System.Management.Automation.Provider;
 using System.Threading;
-#if CORECLR
-using System.Xml.XPath;
-#endif
 
 namespace Microsoft.WSMan.Management
 {
@@ -80,15 +77,13 @@ namespace Microsoft.WSMan.Management
         //string for operation
         internal string WSManOp = null;
 
-        private ResourceManager _resourceMgr = null;
         private PSCmdlet cmdletname;
         private NavigationCmdletProvider _provider;
 
         private FileStream _fs;
         private StreamReader _sr;
 
-        private static ResourceManager g_resourceMgr = new ResourceManager("Microsoft.WSMan.Management.resources.WsManResources", typeof(WSManHelper).GetTypeInfo().Assembly);
-
+        private static ResourceManager _resourceMgr = new ResourceManager("Microsoft.WSMan.Management.resources.WsManResources", typeof(WSManHelper).GetTypeInfo().Assembly);
 
         //
         //
@@ -109,7 +104,6 @@ namespace Microsoft.WSMan.Management
         //
         //
         //
-
 
         internal static void ReleaseSessions()
         {
@@ -153,26 +147,26 @@ namespace Microsoft.WSMan.Management
             System.Security.Principal.WindowsPrincipal principal = new System.Security.Principal.WindowsPrincipal(currentIdentity);
             if (!principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator))
             {
-                string message = g_resourceMgr.GetString("ErrorElevationNeeded");
+                string message = _resourceMgr.GetString("ErrorElevationNeeded");
                 throw new InvalidOperationException(message);
             }
         }
 
         internal string GetResourceMsgFromResourcetext(string rscname)
         {
-            return g_resourceMgr.GetString(rscname);
+            return _resourceMgr.GetString(rscname);
         }
 
         static internal string FormatResourceMsgFromResourcetextS(string rscname,
             params object[] args)
         {
-            return FormatResourceMsgFromResourcetextS(g_resourceMgr, rscname, args);
+            return FormatResourceMsgFromResourcetextS(_resourceMgr, rscname, args);
         }
 
         internal string FormatResourceMsgFromResourcetext(string resourceName,
             params object[] args)
         {
-            return FormatResourceMsgFromResourcetextS(this._resourceMgr, resourceName, args);
+            return FormatResourceMsgFromResourcetextS(_resourceMgr, resourceName, args);
         }
 
         static private string FormatResourceMsgFromResourcetextS(
@@ -193,14 +187,13 @@ namespace Microsoft.WSMan.Management
             string template = resourceManager.GetString(resourceName);
 
             string result = null;
-            if (null != template)
+            if (template != null)
             {
                 result = String.Format(CultureInfo.CurrentCulture,
                     template, args);
             }
             return result;
         }
-
 
         /// <summary>
         /// add a session to dictionary
@@ -477,7 +470,7 @@ namespace Microsoft.WSMan.Management
                                     newnode.Value = "true";
                                     node.Attributes.Append(newnode);
                                     //(newnode.Attributes.Item(0).FirstChild   );
-                                    node.Value = "";
+                                    node.Value = string.Empty;
                                 }
                                 else
                                 {
@@ -496,20 +489,7 @@ namespace Microsoft.WSMan.Management
 
         internal string GetXmlNs(string resUri)
         {
-
-            string tmpNs = null;
-
-            if (resUri.ToLowerInvariant().Contains(URI_IPMI) || (resUri.ToLowerInvariant().Contains(URI_WMI)))
-                tmpNs = StripParams(resUri);
-            else
-            {
-                //tmpNs = StripParams(resUri) + ".xsd";
-                //This was reported by Intel as an interop issue. So now we are not appending a .xsd in the end.
-                tmpNs = StripParams(resUri);
-            }
-
-            return (@"xmlns:p=""" + tmpNs + @"""");
-
+            return (@"xmlns:p=""" + StripParams(resUri) + @"""");
         }
 
         internal XmlNode GetXmlNode(string xmlString, string xpathpattern, string xmlnamespace)
@@ -581,7 +561,6 @@ namespace Microsoft.WSMan.Management
             try
             {
                 m_resource = (IWSManResourceLocator)wsmanObj.CreateResourceLocator(resource);
-
 
                 if (optionset != null)
                 {
@@ -779,7 +758,6 @@ namespace Microsoft.WSMan.Management
                         connObject.SetProxy((int)sessionoption.ProxyAccessType, (int)sessionoption.ProxyAuthentication, null, null);
                     }
 
-
                 }
                 if (sessionoption.SkipCACheck)
                 {
@@ -843,7 +821,6 @@ namespace Microsoft.WSMan.Management
 
         internal void CleanUp()
         {
-
 
             if (_sr != null)
             {
@@ -1010,17 +987,14 @@ namespace Microsoft.WSMan.Management
             {
                 RegistryKey rGPOLocalMachineKey = Registry.LocalMachine.OpenSubKey(
                     Registry_Path_Credentials_Delegation + @"\CredentialsDelegation",
-#if !CORECLR
                     RegistryKeyPermissionCheck.ReadWriteSubTree,
-#endif
                     System.Security.AccessControl.RegistryRights.FullControl);
 
                 if (rGPOLocalMachineKey != null)
                 {
-                    rGPOLocalMachineKey = rGPOLocalMachineKey.OpenSubKey(Key_Allow_Fresh_Credentials,
-#if !CORECLR
+                    rGPOLocalMachineKey = rGPOLocalMachineKey.OpenSubKey(
+                        Key_Allow_Fresh_Credentials,
                         RegistryKeyPermissionCheck.ReadWriteSubTree,
-#endif
                         System.Security.AccessControl.RegistryRights.FullControl);
                     if (rGPOLocalMachineKey == null)
                     {
@@ -1111,7 +1085,6 @@ namespace Microsoft.WSMan.Management
                 throw (e);
             }
 
-
         }
 
         /// <summary>
@@ -1127,7 +1100,7 @@ namespace Microsoft.WSMan.Management
             {
                 LoadResourceData();
             }
-            string value = "";
+            string value = string.Empty;
             if (ResourceValueCache.ContainsKey(Key.Trim()))
             {
                 ResourceValueCache.TryGetValue(Key.Trim(), out value);
@@ -1136,10 +1109,8 @@ namespace Microsoft.WSMan.Management
         }
 
         /// <summary>
-        ///
         /// </summary>
         private static Dictionary<string, string> ResourceValueCache = new Dictionary<string, string>();
-
 
     }
 }

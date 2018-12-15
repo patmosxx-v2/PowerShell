@@ -1,6 +1,6 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 using System;
 using System.IO;
 using System.Reflection;
@@ -16,7 +16,6 @@ using System.Management.Automation.Runspaces;
 using System.Diagnostics.CodeAnalysis;
 using Dbg = System.Management.Automation;
 using System.Globalization;
-
 
 namespace Microsoft.WSMan.Management
 {
@@ -82,7 +81,7 @@ namespace Microsoft.WSMan.Management
             set
             {
                 computername = value;
-                if ((string.IsNullOrEmpty(computername)) || (computername.Equals(".", StringComparison.CurrentCultureIgnoreCase)))
+                if ((string.IsNullOrEmpty(computername)) || (computername.Equals(".", StringComparison.OrdinalIgnoreCase)))
                 {
                     computername = "localhost";
                 }
@@ -182,7 +181,7 @@ namespace Microsoft.WSMan.Management
 
         /// <summary>
         /// The following is the definition of the input parameter "OptionSet".
-        /// OptionSet is a hashtable  and is used to pass a set of switches to the
+        /// OptionSet is a hashtable and is used to pass a set of switches to the
         /// service to modify or refine the nature of the request.
         /// </summary>
         [Parameter(ValueFromPipeline = true,
@@ -394,11 +393,11 @@ namespace Microsoft.WSMan.Management
                 IWSManEnumerator obj;
                 if (returntype != null)
                 {
-                    if (returntype.Equals("object", StringComparison.CurrentCultureIgnoreCase))
+                    if (returntype.Equals("object", StringComparison.OrdinalIgnoreCase))
                     {
                         flags = wsmanObject.EnumerationFlagReturnObject();
                     }
-                    else if (returntype.Equals("epr", StringComparison.CurrentCultureIgnoreCase))
+                    else if (returntype.Equals("epr", StringComparison.OrdinalIgnoreCase))
                     {
                             flags = wsmanObject.EnumerationFlagReturnEPR();
                     }
@@ -423,12 +422,12 @@ namespace Microsoft.WSMan.Management
                 if (dialect != null && filter != null)
                 {
 
-                    if (dialect.ToString().Equals(helper.ALIAS_WQL, StringComparison.CurrentCultureIgnoreCase) || dialect.ToString().Equals(helper.URI_WQL_DIALECT, StringComparison.CurrentCultureIgnoreCase))
+                    if (dialect.ToString().Equals(helper.ALIAS_WQL, StringComparison.OrdinalIgnoreCase) || dialect.ToString().Equals(helper.URI_WQL_DIALECT, StringComparison.OrdinalIgnoreCase))
                     {
                         fragment = helper.URI_WQL_DIALECT;
                         dialect = new Uri(fragment);
                     }
-                    else if (dialect.ToString().Equals(helper.ALIAS_ASSOCIATION, StringComparison.CurrentCultureIgnoreCase) || dialect.ToString().Equals(helper.URI_ASSOCIATION_DIALECT, StringComparison.CurrentCultureIgnoreCase))
+                    else if (dialect.ToString().Equals(helper.ALIAS_ASSOCIATION, StringComparison.OrdinalIgnoreCase) || dialect.ToString().Equals(helper.URI_ASSOCIATION_DIALECT, StringComparison.OrdinalIgnoreCase))
                     {
                             if (associations)
                             {
@@ -441,7 +440,7 @@ namespace Microsoft.WSMan.Management
                             fragment = helper.URI_ASSOCIATION_DIALECT;
                             dialect = new Uri(fragment);
                     }
-                    else if (dialect.ToString().Equals(helper.ALIAS_SELECTOR, StringComparison.CurrentCultureIgnoreCase) || dialect.ToString().Equals(helper.URI_SELECTOR_DIALECT, StringComparison.CurrentCultureIgnoreCase))
+                    else if (dialect.ToString().Equals(helper.ALIAS_SELECTOR, StringComparison.OrdinalIgnoreCase) || dialect.ToString().Equals(helper.URI_SELECTOR_DIALECT, StringComparison.OrdinalIgnoreCase))
                     {
                                 filter = GetFilter();
                                 fragment = helper.URI_SELECTOR_DIALECT;
@@ -579,7 +578,6 @@ namespace Microsoft.WSMan.Management
 
         #endregion IDisposable Members
 
-
         /// <summary>
         /// BeginProcessing method.
         /// </summary>
@@ -588,7 +586,6 @@ namespace Microsoft.WSMan.Management
 
             helper.CleanUp();
         }
-
 
     }
     #endregion
@@ -634,7 +631,7 @@ namespace Microsoft.WSMan.Management
             set
             {
                 computername = value;
-                if ((string.IsNullOrEmpty(computername)) || (computername.Equals(".", StringComparison.CurrentCultureIgnoreCase)))
+                if ((string.IsNullOrEmpty(computername)) || (computername.Equals(".", StringComparison.OrdinalIgnoreCase)))
                 {
                     computername = "localhost";
                 }
@@ -677,6 +674,7 @@ namespace Microsoft.WSMan.Management
         /// via this input file
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true)]
+        [Alias("Path")]
         [ValidateNotNullOrEmpty]
         public string FilePath
         {
@@ -684,7 +682,6 @@ namespace Microsoft.WSMan.Management
             set { filepath = value; }
         }
         private string filepath;
-
 
         /// <summary>
         /// The following is the definition of the input parameter "Fragment".
@@ -816,8 +813,6 @@ namespace Microsoft.WSMan.Management
         }
         private Hashtable valueset;
 
-
-
         #endregion
 
         private WSManHelper helper ;
@@ -831,14 +826,13 @@ namespace Microsoft.WSMan.Management
             helper.WSManOp = "set";
             IWSManSession m_session = null;
 
-
             if (dialect != null)
             {
-                if (dialect.ToString().Equals(helper.ALIAS_WQL, StringComparison.CurrentCultureIgnoreCase))
+                if (dialect.ToString().Equals(helper.ALIAS_WQL, StringComparison.OrdinalIgnoreCase))
                     dialect = new Uri(helper.URI_WQL_DIALECT);
-                if (dialect.ToString().Equals(helper.ALIAS_SELECTOR, StringComparison.CurrentCultureIgnoreCase))
+                if (dialect.ToString().Equals(helper.ALIAS_SELECTOR, StringComparison.OrdinalIgnoreCase))
                     dialect = new Uri(helper.URI_SELECTOR_DIALECT);
-                if (dialect.ToString().Equals(helper.ALIAS_ASSOCIATION, StringComparison.CurrentCultureIgnoreCase))
+                if (dialect.ToString().Equals(helper.ALIAS_ASSOCIATION, StringComparison.OrdinalIgnoreCase))
                     dialect = new Uri(helper.URI_ASSOCIATION_DIALECT);
             }
 
@@ -882,7 +876,7 @@ namespace Microsoft.WSMan.Management
                     {
                         foreach (XmlNode node in xmldoc.DocumentElement.ChildNodes)
                         {
-                            if (node.Name.Equals(fragment, StringComparison.CurrentCultureIgnoreCase))
+                            if (node.Name.Equals(fragment, StringComparison.OrdinalIgnoreCase))
                                 WriteObject(node.Name + " = " + node.InnerText);
                         }
                     }
@@ -941,10 +935,7 @@ namespace Microsoft.WSMan.Management
 
     }
 
-
-
     #endregion
-
 
     #region Remove-WsManInstance
 
@@ -987,7 +978,7 @@ namespace Microsoft.WSMan.Management
             set
             {
                 computername = value;
-                if ((string.IsNullOrEmpty(computername)) || (computername.Equals(".", StringComparison.CurrentCultureIgnoreCase)))
+                if ((string.IsNullOrEmpty(computername)) || (computername.Equals(".", StringComparison.OrdinalIgnoreCase)))
                 {
                     computername = "localhost";
                 }
@@ -1111,11 +1102,7 @@ namespace Microsoft.WSMan.Management
         }
         private SwitchParameter usessl;
 
-
-
-
         #endregion
-
 
         /// <summary>
         /// ProcessRecord method.
@@ -1200,9 +1187,7 @@ namespace Microsoft.WSMan.Management
 
         #endregion IDisposable Members
 
-
     }
-
 
     #endregion
 
@@ -1242,7 +1227,7 @@ namespace Microsoft.WSMan.Management
             set
             {
                 computername = value;
-                if ((string.IsNullOrEmpty(computername)) || (computername.Equals(".", StringComparison.CurrentCultureIgnoreCase)))
+                if ((string.IsNullOrEmpty(computername)) || (computername.Equals(".", StringComparison.OrdinalIgnoreCase)))
                 {
                     computername = "localhost";
                 }
@@ -1274,6 +1259,7 @@ namespace Microsoft.WSMan.Management
         /// </summary>
         [Parameter]
         [ValidateNotNullOrEmpty]
+        [Alias("Path")]
         public String FilePath
         {
             get { return filepath; }
@@ -1417,7 +1403,6 @@ namespace Microsoft.WSMan.Management
             }
 
         }//End BeginProcessing()
-
 
         /// <summary>
         /// ProcessRecord method.

@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Net;
 using System.Net.Sockets;
@@ -37,7 +36,7 @@ namespace System.Management.Automation.Runspaces
     public enum AuthenticationMechanism
     {
         /// <summary>
-        /// Use the default authentication (as defined by the underlying protocol) 
+        /// Use the default authentication (as defined by the underlying protocol)
         /// for establishing a remote connection.
         /// </summary>
         Default = 0x0,
@@ -60,11 +59,11 @@ namespace System.Management.Automation.Runspaces
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Credssp")]
         Credssp = 0x4,
         /// <summary>
-        /// Use Digest authentication mechanism. Digest authentication operates much 
-        /// like Basic authentication. However, unlike Basic authentication, Digest authentication 
+        /// Use Digest authentication mechanism. Digest authentication operates much
+        /// like Basic authentication. However, unlike Basic authentication, Digest authentication
         /// transmits credentials across the network as a hash value, also known as a message digest.
-        /// The user name and password cannot be deciphered from the hash value. Conversely, Basic 
-        /// authentication sends a Base 64 encoded password, essentially in clear text, across the 
+        /// The user name and password cannot be deciphered from the hash value. Conversely, Basic
+        /// authentication sends a Base 64 encoded password, essentially in clear text, across the
         /// network.
         /// </summary>
         Digest = 0x5,
@@ -116,14 +115,14 @@ namespace System.Management.Automation.Runspaces
 
     /// <summary>
     /// WSManTransportManager supports disconnected PowerShell sessions.
-    /// When a remote PS session server is in disconnected state, output 
-    /// from the running command pipeline is cached on the server.  This 
+    /// When a remote PS session server is in disconnected state, output
+    /// from the running command pipeline is cached on the server.  This
     /// enum determines what the server does when the cache is full.
     /// </summary>
     public enum OutputBufferingMode
     {
         /// <summary>
-        /// No output buffering mode specified.  Output buffering mode on server will 
+        /// No output buffering mode specified.  Output buffering mode on server will
         /// default to Block if a new session is created, or will retain its current
         /// mode for non-creation scenarios (e.g., disconnect/connect operations).
         /// </summary>
@@ -141,7 +140,7 @@ namespace System.Management.Automation.Runspaces
     }
 
     /// <summary>
-    /// Class which defines connection path to a remote runspace 
+    /// Class which defines connection path to a remote runspace
     /// that needs to be created. Transport specific connection
     /// paths will be derived from this
     /// </summary>
@@ -214,9 +213,9 @@ namespace System.Management.Automation.Runspaces
         private CultureInfo _uiCulture = CultureInfo.CurrentUICulture;
 
         /// <summary>
-        /// The duration (in ms) for which PowerShell remoting waits before timing out on a connection to a remote machine. 
-        /// Simply put, the timeout for a remote runspace creation. 
-        /// The administrator would like to tweak this timeout depending on whether 
+        /// The duration (in ms) for which PowerShell remoting waits before timing out on a connection to a remote machine.
+        /// Simply put, the timeout for a remote runspace creation.
+        /// The administrator would like to tweak this timeout depending on whether
         /// he/she is connecting to a machine in the data center or across a slow WAN.
         /// </summary>
         public int OpenTimeout
@@ -232,9 +231,9 @@ namespace System.Management.Automation.Runspaces
                 }
                 else if (this is WSManConnectionInfo && _openTimeout == InfiniteTimeout)
                 {
-                    // this timeout value gets passed to a 
-                    // timer associated with the session 
-                    // data structure handler state machine. 
+                    // this timeout value gets passed to a
+                    // timer associated with the session
+                    // data structure handler state machine.
                     // The timer constructor will throw an exception
                     // for any value greater than Int32.MaxValue
                     // hence this is the maximum possible limit
@@ -247,31 +246,30 @@ namespace System.Management.Automation.Runspaces
         internal const int DefaultTimeout = -1;
         internal const int InfiniteTimeout = 0;
 
-
         /// <summary>
-        /// The duration (in ms) for which PowerShell should wait before it times out on cancel operations 
-        /// (close runspace or stop powershell). For instance, when the user hits ctrl-C, 
-        /// New-PSSession cmdlet tries to call a stop on all remote runspaces which are in the Opening state. 
-        /// The administrator wouldn�t mind waiting for 15 seconds, but this should be time bound and of a shorter duration. 
-        /// A high timeout here like 3 minutes will give the administrator a feeling that the PowerShell client has hung.
+        /// The duration (in ms) for which PowerShell should wait before it times out on cancel operations
+        /// (close runspace or stop powershell). For instance, when the user hits ctrl-C,
+        /// New-PSSession cmdlet tries to call a stop on all remote runspaces which are in the Opening state.
+        /// The administrator wouldn't mind waiting for 15 seconds, but this should be time bound and of a shorter duration.
+        /// A high timeout here like 3 minutes will give the administrator a feeling that the PowerShell client is not responding.
         /// </summary>
         public int CancelTimeout { get; set; } = defaultCancelTimeout;
 
         internal const int defaultCancelTimeout = BaseTransportManager.ClientCloseTimeoutMs;
 
         /// <summary>
-        /// The duration for which PowerShell remoting waits before timing out 
-        /// for any operation. The user would like to tweak this timeout 
+        /// The duration for which PowerShell remoting waits before timing out
+        /// for any operation. The user would like to tweak this timeout
         /// depending on whether he/she is connecting to a machine in the data
         /// center or across a slow WAN.
-        /// 
+        ///
         /// Default: 3*60*1000 == 3minutes
         /// </summary>
         public int OperationTimeout { get; set; } = BaseTransportManager.ClientDefaultOperationTimeoutMs;
 
         /// <summary>
-        /// The duration (in ms) for which a Runspace on server needs to wait before it declares the client dead and closes itself down. 
-        /// This is especially important as these values may have to be configured differently for enterprise administration 
+        /// The duration (in ms) for which a Runspace on server needs to wait before it declares the client dead and closes itself down.
+        /// This is especially important as these values may have to be configured differently for enterprise administration
         /// and exchange scenarios.
         /// </summary>
         public int IdleTimeout { get; set; } = DefaultIdleTimeout;
@@ -309,8 +307,8 @@ namespace System.Management.Automation.Runspaces
             CancelTimeout = TimeSpanToTimeOutMs(options.CancelTimeout);
             OperationTimeout = TimeSpanToTimeOutMs(options.OperationTimeout);
 
-            // Special case for idle timeout.  A value of milliseconds == -1 
-            // (BaseTransportManager.UseServerDefaultIdleTimeout) is allowed for 
+            // Special case for idle timeout.  A value of milliseconds == -1
+            // (BaseTransportManager.UseServerDefaultIdleTimeout) is allowed for
             // specifying the default value on the server.
             IdleTimeout = (options.IdleTimeout.TotalMilliseconds >= BaseTransportManager.UseServerDefaultIdleTimeout &&
                                 options.IdleTimeout.TotalMilliseconds < int.MaxValue)
@@ -464,7 +462,7 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        /// AppName which identifies the connection 
+        /// AppName which identifies the connection
         /// end point in the machine
         /// </summary>
         public String AppName
@@ -497,8 +495,7 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        /// 
-        /// </summary> 
+        /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings", Scope = "member", Target = "System.Management.Automation.Runspaces.WSManConnectionInfo.#ShellUri")]
         public string ShellUri
         {
@@ -632,9 +629,9 @@ namespace System.Management.Automation.Runspaces
 
         /// <summary>
         /// If true, underlying WSMan infrastructure will compress data sent on the network.
-        /// If false, data will not be compressed. Compression improves performance by 
+        /// If false, data will not be compressed. Compression improves performance by
         /// reducing the amount of data sent on the network. Compression my require extra
-        /// memory consumption and CPU usage. In cases where available memory / CPU is less, 
+        /// memory consumption and CPU usage. In cases where available memory / CPU is less,
         /// set this property to false.
         /// By default the value of this property is "true".
         /// </summary>
@@ -643,31 +640,31 @@ namespace System.Management.Automation.Runspaces
         /// <summary>
         /// If <c>true</c> then Operating System won't load the user profile (i.e. registry keys under HKCU) on the remote server
         /// which can result in a faster session creation time.  This option won't have any effect if the remote machine has
-        /// already loaded the profile (i.e. in another session). 
+        /// already loaded the profile (i.e. in another session).
         /// </summary>
         public bool NoMachineProfile { get; set; }
 
         // BEGIN: Session Options
 
         /// <summary>
-        /// By default, wsman uses IEConfig - the current user 
-        ///  Internet Explorer proxy settings for the current active network connection. 
-        ///  This option requires the user profile to be loaded, so the option can 
-        ///  be directly used when called within a process that is running under 
-        ///  an interactive user account identity; if the client application is running 
-        ///  under a user context different then the interactive user, the client 
+        /// By default, wsman uses IEConfig - the current user
+        ///  Internet Explorer proxy settings for the current active network connection.
+        ///  This option requires the user profile to be loaded, so the option can
+        ///  be directly used when called within a process that is running under
+        ///  an interactive user account identity; if the client application is running
+        ///  under a user context different then the interactive user, the client
         ///  application has to explicitly load the user profile prior to using this option.
-        ///  
-        /// IMPORTANT: proxy configuration is supported for HTTPS only; for HTTP, the direct 
-        /// connection to the server is used 
+        ///
+        /// IMPORTANT: proxy configuration is supported for HTTPS only; for HTTP, the direct
+        /// connection to the server is used
         /// </summary>
         public ProxyAccessType ProxyAccessType { get; set; } = ProxyAccessType.None;
 
         /// <summary>
         /// The following is the definition of the input parameter "ProxyAuthentication".
-        /// This parameter takes a set of authentication methods the user can select 
+        /// This parameter takes a set of authentication methods the user can select
         /// from.  The available options should be as follows:
-        /// - Negotiate: Use the default authentication (ad defined by the underlying 
+        /// - Negotiate: Use the default authentication (ad defined by the underlying
         /// protocol) for establishing a remote connection.
         /// - Basic:  Use basic authentication for establishing a remote connection
         /// - Digest: Use Digest authentication for establishing a remote connection
@@ -714,39 +711,38 @@ namespace System.Management.Automation.Runspaces
             }
         }
 
-
         /// <summary>
-        /// When connecting over HTTPS, the client does not validate that the server 
-        /// certificate is signed by a trusted certificate authority (CA). Use only when 
-        /// the remote computer is trusted by other means, for example, if the remote 
-        /// computer is part of a network that is physically secure and isolated or the 
+        /// When connecting over HTTPS, the client does not validate that the server
+        /// certificate is signed by a trusted certificate authority (CA). Use only when
+        /// the remote computer is trusted by other means, for example, if the remote
+        /// computer is part of a network that is physically secure and isolated or the
         /// remote computer is listed as a trusted host in WinRM configuration
         /// </summary>
         public bool SkipCACheck { get; set; }
 
         /// <summary>
-        /// Indicates that certificate common name (CN) of the server need not match the 
-        /// hostname of the server. Used only in remote operations using https. This 
+        /// Indicates that certificate common name (CN) of the server need not match the
+        /// hostname of the server. Used only in remote operations using https. This
         /// option should only be used for trusted machines.
         /// </summary>
         public bool SkipCNCheck { get; set; }
 
         /// <summary>
-        /// Indicates that certificate common name (CN) of the server need not match the 
-        /// hostname of the server. Used only in remote operations using https. This 
+        /// Indicates that certificate common name (CN) of the server need not match the
+        /// hostname of the server. Used only in remote operations using https. This
         /// option should only be used for trusted machines
         /// </summary>
         public bool SkipRevocationCheck { get; set; }
 
         /// <summary>
-        /// Specifies that no encryption will be used when doing remote operations over 
-        /// http. Unencrypted traffic is not allowed by default and must be enabled in 
+        /// Specifies that no encryption will be used when doing remote operations over
+        /// http. Unencrypted traffic is not allowed by default and must be enabled in
         /// the local configuration
         /// </summary>
         public bool NoEncryption { get; set; }
 
         /// <summary>
-        /// Indicates the request is encoded in UTF16 format rather than UTF8 format; 
+        /// Indicates the request is encoded in UTF16 format rather than UTF8 format;
         /// UTF8 is the default.
         /// </summary>
         [SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "UTF")]
@@ -768,8 +764,8 @@ namespace System.Management.Automation.Runspaces
 
         /// <summary>
         /// When true and in loopback scenario (localhost) this enables creation of WSMan
-        /// host process with the user interactive token, allowing PowerShell script network access, 
-        /// i.e., allows going off box.  When this property is true and a PSSession is disconnected, 
+        /// host process with the user interactive token, allowing PowerShell script network access,
+        /// i.e., allows going off box.  When this property is true and a PSSession is disconnected,
         /// reconnection is allowed only if reconnecting from a PowerShell session on the same box.
         /// </summary>
         public bool EnableNetworkAccess { get; set; }
@@ -791,9 +787,9 @@ namespace System.Management.Automation.Runspaces
         /// <param name="scheme">scheme to be used for connection</param>
         /// <param name="port">port to connect to</param>
         /// <param name="appName">application end point to connect to</param>
-        /// <param name="shellUri">remote shell to launch 
+        /// <param name="shellUri">remote shell to launch
         /// on connection</param>
-        /// <param name="credential">credential to be used 
+        /// <param name="credential">credential to be used
         /// for connection</param>
         /// <param name="openTimeout">Timeout in milliseconds for open
         /// call on Runspace to finish</param>
@@ -820,9 +816,9 @@ namespace System.Management.Automation.Runspaces
         /// <param name="scheme">Scheme to be used for connection.</param>
         /// <param name="port">port to connect to</param>
         /// <param name="appName">application end point to connect to</param>
-        /// <param name="shellUri">remote shell to launch 
+        /// <param name="shellUri">remote shell to launch
         /// on connection</param>
-        /// <param name="credential">credential to be used 
+        /// <param name="credential">credential to be used
         /// for connection</param>
         /// <exception cref="ArgumentException">Invalid
         /// scheme or invalid port is specified</exception>
@@ -853,7 +849,6 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        /// 
         /// </summary>
         /// <param name="useSsl"></param>
         /// <param name="computerName"></param>
@@ -876,7 +871,7 @@ namespace System.Management.Automation.Runspaces
         /// and with the default credentials, default server
         /// life time and default open timeout
         ///        http://localhost/
-        /// The default shellname Microsoft.PowerShell will be 
+        /// The default shellname Microsoft.PowerShell will be
         /// used
         /// </summary>
         public WSManConnectionInfo()
@@ -892,7 +887,7 @@ namespace System.Management.Automation.Runspaces
         /// </summary>
         /// <param name="uri">uri of remote runspace</param>
         /// <param name="shellUri"></param>
-        /// <param name="credential">credentials to use to 
+        /// <param name="credential">credentials to use to
         /// connect to the remote runspace</param>
         /// <exception cref="ArgumentException">When an
         /// uri representing an invalid path is specified</exception>
@@ -915,7 +910,7 @@ namespace System.Management.Automation.Runspaces
                                                     (RemotingErrorIdStrings.RelativeUriForRunspacePathNotSupported));
             }
 
-            // This check is needed to make sure we connect to WSMan app in the 
+            // This check is needed to make sure we connect to WSMan app in the
             // default case (when user did not specify any appname) like
             // http://localhost , http://127.0.0.1 etc.
             if (uri.AbsolutePath.Equals("/", StringComparison.OrdinalIgnoreCase) &&
@@ -951,7 +946,7 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        /// constructor to create a WSManConnectionInfo with a 
+        /// constructor to create a WSManConnectionInfo with a
         /// uri specified and the default credentials,
         /// default server life time and default open
         /// timeout
@@ -973,7 +968,7 @@ namespace System.Management.Automation.Runspaces
         /// </summary>
         /// <param name="options"></param>
         /// <exception cref="ArgumentException">
-        /// 1. Proxy credential cannot be specified when proxy accesstype is None. 
+        /// 1. Proxy credential cannot be specified when proxy accesstype is None.
         /// Either specify a valid proxy accesstype other than None or do not specify proxy credential.
         /// </exception>
         public override void SetSessionOptions(PSSessionOption options)
@@ -1130,7 +1125,7 @@ namespace System.Management.Automation.Runspaces
             string property, T defaultValue)
         {
             WSManConnectionInfo wsCI = rsCI as WSManConnectionInfo;
-            if (null == wsCI)
+            if (wsCI == null)
             {
                 return defaultValue;
             }
@@ -1140,7 +1135,7 @@ namespace System.Management.Automation.Runspaces
 
         internal void SetConnectionUri(Uri newUri)
         {
-            Dbg.Assert(null != newUri, "newUri cannot be null.");
+            Dbg.Assert(newUri != null, "newUri cannot be null.");
             _connectionUri = newUri;
         }
 
@@ -1207,15 +1202,10 @@ namespace System.Management.Automation.Runspaces
                 // resolve to default ports if required
                 if (port.Value == DefaultPort)
                 {
-                    // this is needed so that the OriginalString on 
+                    // this is needed so that the OriginalString on
                     // connection uri is fine
                     PortSetting = -1;
                     UseDefaultWSManPort = true;
-                }
-                else if (port.Value == DefaultPortHttp || port.Value == DefaultPortHttps)
-                {
-                    PortSetting = port.Value;
-                    UseDefaultWSManPort = false;
                 }
                 else
                 {
@@ -1271,7 +1261,7 @@ namespace System.Management.Automation.Runspaces
         /// User has the following options:
         /// 1. AuthMechanism + Credential
         /// 2. CertificateThumbPrint
-        /// 
+        ///
         /// All the above are mutually exclusive.
         /// </summary>
         /// <exception cref="InvalidOperationException">
@@ -1301,7 +1291,7 @@ namespace System.Management.Automation.Runspaces
                 UseDefaultWSManPort = false;
             }
 
-            // This check is needed to make sure we connect to WSMan app in the 
+            // This check is needed to make sure we connect to WSMan app in the
             // default case (when user did not specify any appname) like
             // http://localhost , http://127.0.0.1 etc.
             string appname;
@@ -1345,8 +1335,8 @@ namespace System.Management.Automation.Runspaces
         #region constants
 
         /// <summary>
-        /// Default disconnected server output mode is set to None.  This mode allows the 
-        /// server to set the buffering mode to Block for new sessions and retain its 
+        /// Default disconnected server output mode is set to None.  This mode allows the
+        /// server to set the buffering mode to Block for new sessions and retain its
         /// current mode during disconnect/connect operations.
         /// </summary>
         internal const OutputBufferingMode DefaultOutputBufferingMode = OutputBufferingMode.None;
@@ -1372,7 +1362,7 @@ namespace System.Management.Automation.Runspaces
         private const string DefaultScheme = HttpScheme;
         private const string DefaultSslScheme = HttpsScheme;
         /// <summary>
-        /// Default appname. This is empty as WSMan configuration has support 
+        /// Default appname. This is empty as WSMan configuration has support
         /// for this. Look at
         /// get-item WSMan:\localhost\Client\URLPrefix
         /// </summary>
@@ -1381,7 +1371,7 @@ namespace System.Management.Automation.Runspaces
         /// <summary>
         /// Default scheme.
         /// As part of port DCR, WSMan changed the default ports
-        /// from 80,443 to 5985,5986 respectively no-SSL,SSL 
+        /// from 80,443 to 5985,5986 respectively no-SSL,SSL
         /// connections. Since the standards say http,https use
         /// 80,443 as defaults..we came up with new mechanism
         /// to specify scheme as empty. For SSL, WSMan introduced
@@ -1695,7 +1685,7 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        /// Optional application domain name.  If not specified then the 
+        /// Optional application domain name.  If not specified then the
         /// default application domain is used.
         /// </summary>
         public string AppDomainName
@@ -1875,6 +1865,15 @@ namespace System.Management.Automation.Runspaces
             set;
         }
 
+        /// <summary>
+        /// Subsystem to use
+        /// </summary>
+        private string Subsystem
+        {
+            get;
+            set;
+        }
+
         #endregion
 
         #region Constructors
@@ -1902,6 +1901,7 @@ namespace System.Management.Automation.Runspaces
             this.ComputerName = computerName;
             this.KeyFilePath = keyFilePath;
             this.Port = DefaultPort;
+            this.Subsystem = DefaultSubsystem;
         }
 
         /// <summary>
@@ -1920,6 +1920,27 @@ namespace System.Management.Automation.Runspaces
             ValidatePortInRange(port);
 
             this.Port = (port != 0) ? port : DefaultPort;
+        }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="userName">User Name</param>
+        /// <param name="computerName">Computer Name</param>
+        /// <param name="keyFilePath">Key File Path</param>
+        /// <param name="port">Port number for connection (default 22)</param>
+        /// <param name="subsystem">Subsystem to use (default 'powershell')</param>
+        public SSHConnectionInfo(
+            string userName,
+            string computerName,
+            string keyFilePath,
+            int port,
+            string subsystem) : this(userName, computerName, keyFilePath)
+        {
+            ValidatePortInRange(port);
+
+            this.Port = (port != 0) ? port : DefaultPort;
+            this.Subsystem = (String.IsNullOrEmpty(subsystem)) ? DefaultSubsystem : subsystem;
         }
 
         #endregion
@@ -1973,6 +1994,7 @@ namespace System.Management.Automation.Runspaces
             newCopy.UserName = this.UserName;
             newCopy.KeyFilePath = this.KeyFilePath;
             newCopy.Port = this.Port;
+            newCopy.Subsystem = this.Subsystem;
 
             return newCopy;
         }
@@ -2033,11 +2055,11 @@ namespace System.Management.Automation.Runspaces
             }
 #endif
 
-            // Create client ssh process that hosts powershell.exe as a subsystem and is configured
+            // Create client ssh process that hosts powershell as a subsystem and is configured
             // to be in server mode for PSRP over SSHD:
-            //   powershell -Version 5.1 -sshs -NoLogo -NoProfile
+            //   powershell -sshs -NoLogo -NoProfile
             //   See sshd_configuration file, subsystems section and it will have this entry:
-            //     Subsystem       powershell C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Version 5.1 -sshs -NoLogo -NoProfile
+            //     Subsystem       powershell C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -sshs -NoLogo -NoProfile
             string arguments;
             if (!string.IsNullOrEmpty(this.KeyFilePath))
             {
@@ -2048,14 +2070,14 @@ namespace System.Management.Automation.Runspaces
                 }
 
                 arguments = (string.IsNullOrEmpty(domainName)) ?
-                    string.Format(CultureInfo.InvariantCulture, @"-i ""{0}"" {1}@{2} -p {3} -s powershell", this.KeyFilePath, userName, this.ComputerName, this.Port) :
-                    string.Format(CultureInfo.InvariantCulture, @"-i ""{0}"" -l {1}@{2} {3} -p {4} -s powershell", this.KeyFilePath, userName, domainName, this.ComputerName, this.Port);
+                    string.Format(CultureInfo.InvariantCulture, @"-i ""{0}"" {1}@{2} -p {3} -s {4}", this.KeyFilePath, userName, this.ComputerName, this.Port, this.Subsystem) :
+                    string.Format(CultureInfo.InvariantCulture, @"-i ""{0}"" -l {1}@{2} {3} -p {4} -s {5}", this.KeyFilePath, userName, domainName, this.ComputerName, this.Port, this.Subsystem);
             }
             else
             {
                 arguments = (string.IsNullOrEmpty(domainName)) ?
-                    string.Format(CultureInfo.InvariantCulture, @"{0}@{1} -p {2} -s powershell", userName, this.ComputerName, this.Port) :
-                    string.Format(CultureInfo.InvariantCulture, @"-l {0}@{1} {2} -p {3} -s powershell", userName, domainName, this.ComputerName, this.Port);
+                    string.Format(CultureInfo.InvariantCulture, @"{0}@{1} -p {2} -s {3}", userName, this.ComputerName, this.Port, this.Subsystem) :
+                    string.Format(CultureInfo.InvariantCulture, @"-l {0}@{1} {2} -p {3} -s {4}", userName, domainName, this.ComputerName, this.Port, this.Subsystem);
             }
 
             System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(
@@ -2089,6 +2111,11 @@ namespace System.Management.Automation.Runspaces
         /// Default value for port
         /// </summary>
         private const int DefaultPort = 22;
+
+        /// <summary>
+        /// Default value for subsystem
+        /// </summary>
+        private const string DefaultSubsystem = "powershell";
 
         #endregion
 
@@ -2153,7 +2180,7 @@ namespace System.Management.Automation.Runspaces
 
             string filename = startInfo.FileName;
             string[] argv = ParseArgv(startInfo);
-            string[] envp = new string[0];
+            string[] envp = CopyEnvVariables(startInfo);
             string cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
             // Invoke the shim fork/execve routine.  It will create pipes for all requested
@@ -2210,6 +2237,20 @@ namespace System.Management.Automation.Runspaces
                 access, StreamBufferSize, isAsync: false);
         }
 
+        /// <summary>Copies environment variables from ProcessStartInfo </summary>
+        /// <param name="psi">ProcessStartInfo</param>
+        /// <returns>String array of environment key/value pairs</returns>
+        private static string[] CopyEnvVariables(ProcessStartInfo psi)
+        {
+            var envp = new string[psi.Environment.Count];
+            int index = 0;
+            foreach (var pair in psi.Environment)
+            {
+                envp[index++] = pair.Key + "=" + pair.Value;
+            }
+            return envp;
+        }
+
         /// <summary>Converts the filename and arguments information from a ProcessStartInfo into an argv array.</summary>
         /// <param name="psi">The ProcessStartInfo.</param>
         /// <returns>The argv array.</returns>
@@ -2217,7 +2258,35 @@ namespace System.Management.Automation.Runspaces
         {
             var argvList = new List<string>();
             argvList.Add(psi.FileName);
-            argvList.AddRange(psi.Arguments.Split(' '));
+
+            var argsToParse = psi.Arguments.Trim();
+            var argsLength = argsToParse.Length;
+            for (int i=0; i<argsLength; )
+            {
+                var iStart = i;
+
+                switch (argsToParse[i])
+                {
+                    case '"':
+                        // Special case for arguments within quotes
+                        // Just return argument value within the quotes
+                        while ((++i < argsLength) && argsToParse[i] != '"') { };
+                        if (iStart < argsLength - 1)
+                        {
+                            iStart++;
+                        }
+                        break;
+
+                    default:
+                        // Common case for parsing arguments with space character delimiter
+                        while ((++i < argsLength) && argsToParse[i] != ' ') { };
+                        break;
+                }
+
+                argvList.Add(argsToParse.Substring(iStart, (i-iStart)));
+                while ((++i < argsLength) && argsToParse[i] == ' ') { };
+            }
+
             return argvList.ToArray();
         }
 
@@ -2319,7 +2388,7 @@ namespace System.Management.Automation.Runspaces
 
         /// <summary>
         /// Create a process through native Win32 APIs and return StdIn, StdOut, StdError reader/writers
-        /// This needs to be done via Win32 APIs because managed code creates anonymous synchronous pipes 
+        /// This needs to be done via Win32 APIs because managed code creates anonymous synchronous pipes
         /// for redirected StdIn/Out and SSH (and PSRP) require asynchronous (overlapped) pipes, which must
         /// be through named pipes.  Managed code for named pipes is unreliable and so this is done via
         /// P-Invoking native APIs.
@@ -2335,7 +2404,7 @@ namespace System.Management.Automation.Runspaces
             //
             // These std pipe handles are bound to managed Reader/Writer objects and returned to the transport
             // manager object, which uses them for PSRP communication.  The lifetime of these handles are then
-            // tied to the reader/writer objects which the transport is responsible for disposing (see 
+            // tied to the reader/writer objects which the transport is responsible for disposing (see
             // SSHClientSessionTransportManger and the CloseConnection() method.
             //
             SafePipeHandle stdInPipeServer = null;
@@ -2359,7 +2428,7 @@ namespace System.Management.Automation.Runspaces
                 (sshProcess.HasExited == true))
             {
                 throw new InvalidOperationException(
-                    StringUtil.Format(RemotingErrorIdStrings.CannotStartSSHClient, (ex != null) ? ex.Message : string.Empty), 
+                    StringUtil.Format(RemotingErrorIdStrings.CannotStartSSHClient, (ex != null) ? ex.Message : string.Empty),
                     ex);
             }
 
@@ -2483,7 +2552,12 @@ namespace System.Management.Automation.Runspaces
 
                 // At this point, we should have a suspended process.  Get the .Net Process object, resume the process, and return.
                 Process result = Process.GetProcessById(lpProcessInformation.dwProcessId);
-                PlatformInvokes.ResumeThread(lpProcessInformation.hThread);
+                uint returnValue = PlatformInvokes.ResumeThread(lpProcessInformation.hThread);
+
+                if (returnValue == PlatformInvokes.RESUME_THREAD_FAILED)
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
 
                 return result;
             }
@@ -2877,56 +2951,66 @@ namespace System.Management.Automation.Runspaces
         private const uint ContainersFeatureNotEnabled = 2;
         private const uint OtherError = 9999;
 
+        private const uint FileNotFoundHResult = 0x80070002;
+
+        // The list of executable to try in order
+        private static readonly string[] Executables = new string[] { "pwsh.exe", "powershell.exe"};
+
         #endregion
 
         #region Properties
 
         /// <summary>
-        /// For Hyper-V container, it is Guid of utility VM hosting Hyper-V container.
+        /// Gets or Sets, for Hyper-V container, the Guid of utility VM hosting Hyper-V container.
         /// For Windows Server Container, it is empty.
         /// </summary>
         public Guid RuntimeId { get; set; }
 
         /// <summary>
-        /// OB root of the container.
+        /// Gets or sets the OB root of the container.
         /// </summary>
         public string ContainerObRoot { get; set; }
 
         /// <summary>
-        /// ID of the container.
+        /// Gets or sets the ID of the container.
         /// </summary>
         public string ContainerId { get; set; }
 
         /// <summary>
-        /// Process ID of the process created in container.
+        /// Gets or sets the process ID of the process created in container.
         /// </summary>
         internal int ProcessId { get; set; }
 
         /// <summary>
-        /// Whether the process in container should be launched as high privileged account
+        /// Gets or sets whether the process in container should be launched as high privileged account
         /// (RunAsAdmin being true) or low privileged account (RunAsAdmin being false).
         /// </summary>
         internal bool RunAsAdmin { get; set; } = false;
 
         /// <summary>
-        /// The configuration name of the container session.
+        /// Gets or sets the configuration name of the container session.
         /// </summary>
         internal string ConfigurationName { get; set; }
 
         /// <summary>
-        /// Whether the process in container has terminated.
+        /// Gets or sets whether the process in container has terminated.
         /// </summary>
         internal bool ProcessTerminated { get; set; } = false;
 
         /// <summary>
-        /// The error code.
+        /// Gets or sets the error code.
         /// </summary>
         internal uint ErrorCode { get; set; } = 0;
 
         /// <summary>
-        /// The error message for other errors.
+        /// Gets or sets the error message for other errors.
         /// </summary>
         internal string ErrorMessage { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the PowerShell executable being used to host the runspace.
+        /// </summary>
+        internal string Executable { get; set; } = string.Empty;
 
         #endregion
 
@@ -3038,7 +3122,7 @@ namespace System.Management.Automation.Runspaces
                                                                             ContainerId));
 
                 case ContainersFeatureNotEnabled:
-                    throw new PSInvalidOperationException(StringUtil.Format(RemotingErrorIdStrings.ContainersFeatureNotEnabled));
+                    throw new PSInvalidOperationException(RemotingErrorIdStrings.ContainersFeatureNotEnabled);
 
                 // other errors caught with exception
                 case OtherError:
@@ -3047,7 +3131,9 @@ namespace System.Management.Automation.Runspaces
                 // other errors caught without exception
                 default:
                     throw new PSInvalidOperationException(StringUtil.Format(RemotingErrorIdStrings.CannotCreateProcessInContainer,
-                                                                            ContainerId));
+                                                                            ContainerId, 
+                                                                            Executable,
+                                                                            ErrorCode));
             }
         }
 
@@ -3077,7 +3163,7 @@ namespace System.Management.Automation.Runspaces
                     break;
 
                 case ContainersFeatureNotEnabled:
-                    throw new PSInvalidOperationException(StringUtil.Format(RemotingErrorIdStrings.ContainersFeatureNotEnabled));
+                    throw new PSInvalidOperationException(RemotingErrorIdStrings.ContainersFeatureNotEnabled);
 
                 case OtherError:
                     throw new PSInvalidOperationException(ErrorMessage);
@@ -3091,15 +3177,30 @@ namespace System.Management.Automation.Runspaces
         /// <summary>
         /// Dynamically load the Host Compute interop assemblies and return useful types.
         /// </summary>
-        /// <param name="computeSystemPropertiesType">The Microsoft.HyperV.Schema.Compute.System.Properties type.</param>
+        /// <param name="computeSystemPropertiesType">The HCS.Compute.System.Properties type.</param>
         /// <param name="hostComputeInteropType">The Microsoft.HostCompute.Interop.HostComputeInterop type.</param>
         private static void GetHostComputeInteropTypes(out Type computeSystemPropertiesType, out Type hostComputeInteropType)
         {
             Assembly schemaAssembly = Assembly.Load(new AssemblyName("Microsoft.HyperV.Schema, Version=10.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"));
-            computeSystemPropertiesType = schemaAssembly.GetType("Microsoft.HyperV.Schema.Compute.System.Properties");
+
+            // The type name was changed in newer version of Windows so we check for new one first,
+            // then fallback to previous type name to support older versions of Windows
+            computeSystemPropertiesType = schemaAssembly.GetType("HCS.Compute.System.Properties");
+            if (computeSystemPropertiesType == null)
+            {
+                computeSystemPropertiesType = schemaAssembly.GetType("Microsoft.HyperV.Schema.Compute.System.Properties");
+                if (computeSystemPropertiesType == null)
+                {
+                    throw new PSInvalidOperationException(RemotingErrorIdStrings.CannotGetHostInteropTypes);
+                }
+            }
 
             Assembly hostComputeInteropAssembly = Assembly.Load(new AssemblyName("Microsoft.HostCompute.Interop, Version=10.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"));
             hostComputeInteropType = hostComputeInteropAssembly.GetType("Microsoft.HostCompute.Interop.HostComputeInterop");
+            if (hostComputeInteropType == null)
+            {
+                throw new PSInvalidOperationException(RemotingErrorIdStrings.CannotGetHostInteropTypes);
+            }
         }
 
         /// <summary>
@@ -3131,28 +3232,49 @@ namespace System.Management.Automation.Runspaces
                     //
                     // Hyper-V container (i.e., RuntimeId is not empty) uses Hyper-V socket transport.
                     // Windows Server container (i.e., RuntimeId is empty) uses named pipe transport for now.
+                    // This code executes `pwsh.exe` as it exists in the container which currently is
+                    // expected to be PowerShell Core as it's inbox in the container.
+                    // If `pwsh.exe` does not exist, fall back to `powershell.exe` which is Windows PowerShell.
                     //
-                    cmd = string.Format(System.Globalization.CultureInfo.InvariantCulture,
-                        @"{{""CommandLine"": ""powershell.exe {0} -NoLogo {1}"",""RestrictedToken"": {2}}}",
-                        (RuntimeId != Guid.Empty) ? "-so -NoProfile" : "-NamedPipeServerMode",
-                        String.IsNullOrEmpty(ConfigurationName) ? String.Empty : String.Concat("-Config ", ConfigurationName),
-                        (RunAsAdmin) ? "false" : "true");
-
-                    HCS_PROCESS_INFORMATION ProcessInformation = new HCS_PROCESS_INFORMATION();
-                    IntPtr Process = IntPtr.Zero;
-
-                    //
-                    // Create PowerShell process inside the container.
-                    //
-                    result = HcsCreateProcess(ComputeSystem, cmd, ref ProcessInformation, ref Process, ref resultString);
-                    if (result != 0)
+                    foreach (string executableToTry in Executables)
                     {
-                        processId = 0;
-                        error = result;
-                    }
-                    else
-                    {
-                        processId = Convert.ToInt32(ProcessInformation.ProcessId);
+                        cmd = GetContainerProcessCommand(executableToTry);
+
+                        HCS_PROCESS_INFORMATION ProcessInformation = new HCS_PROCESS_INFORMATION();
+                        IntPtr Process = IntPtr.Zero;
+
+                        //
+                        // Create PowerShell process inside the container.
+                        //
+                        result = HcsCreateProcess(ComputeSystem, cmd, ref ProcessInformation, ref Process, ref resultString);
+                        if (result == 0)
+                        {
+                            processId = Convert.ToInt32(ProcessInformation.ProcessId);
+
+                            // Reset error to 0 in case this is not the first iteration of the loop.
+                            error = 0;
+
+                            // the process was started, exit the loop.
+                            break;
+                        }
+                        else if (result == FileNotFoundHResult)
+                        {
+                            // "The system cannot find the file specified", try the next one
+                            // or exit the loop of none are left to try.
+                            // Set the process and error information in case we exit the loop.
+                            processId = 0;
+                            error = result;
+                            continue;
+                        }
+                        else
+                        {
+                            processId = 0;
+                            error = result;
+
+                            // the executable was found but did not work
+                            // exit the loop with the error state.
+                            break;
+                        }
                     }
                 }
             }
@@ -3162,7 +3284,7 @@ namespace System.Management.Automation.Runspaces
                 {
                     //
                     // The ComputeSystemExists call depends on the existence of microsoft.hostcompute.interop.dll,
-                    // which requires Containers feature to be enabled. In case Containers feature is 
+                    // which requires Containers feature to be enabled. In case Containers feature is
                     // not enabled, we need to output a corresponding error message to inform user.
                     //
                     ProcessId = 0;
@@ -3180,6 +3302,23 @@ namespace System.Management.Automation.Runspaces
 
             ProcessId = processId;
             ErrorCode = error;
+        }
+
+        /// <summary>
+        /// Get Command to launch container process based on instance properties.
+        /// </summary>
+        /// <param name="executable">The name of the executable to use in the command.</param>
+        /// <returns>The command to launch the container process.</returns>
+        private string GetContainerProcessCommand(string executable)
+        {
+            Executable = executable;
+            return string.Format(
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        @"{{""CommandLine"": ""{0} {1} -NoLogo {2}"",""RestrictedToken"": {3}}}",
+                        Executable, 
+                        (RuntimeId != Guid.Empty) ? "-SocketServerMode -NoProfile" : "-NamedPipeServerMode",
+                        string.IsNullOrEmpty(ConfigurationName) ? string.Empty : string.Concat("-Config ", ConfigurationName),
+                        RunAsAdmin ? "false" : "true");
         }
 
         /// <summary>
@@ -3226,7 +3365,23 @@ namespace System.Management.Automation.Runspaces
 
                     var computeSystemPropertiesHandle = getComputeSystemPropertiesInfo.Invoke(null, new object[] { ComputeSystem });
 
-                    RuntimeId = (Guid)computeSystemPropertiesType.GetProperty("RuntimeId").GetValue(computeSystemPropertiesHandle);
+                    // Since Hyper-V changed this from a property to a field, we can optimize for newest Windows to see if it's a field,
+                    // otherwise we fall back to old code to be compatible with older versions of Windows
+                    var fieldInfo = computeSystemPropertiesType.GetField("RuntimeId");
+                    if (fieldInfo != null)
+                    {
+                        RuntimeId = (Guid)fieldInfo.GetValue(computeSystemPropertiesHandle);
+                    }
+                    else
+                    {
+                        var propertyInfo = computeSystemPropertiesType.GetProperty("RuntimeId");
+                        if (propertyInfo == null)
+                        {
+                            throw new PSInvalidOperationException(RemotingErrorIdStrings.CannotGetHostInteropTypes);
+                        }
+
+                        RuntimeId = (Guid)propertyInfo.GetValue(computeSystemPropertiesHandle);
+                    }
 
                     //
                     // Get container object root for Windows Server container.
@@ -3273,7 +3428,7 @@ namespace System.Management.Automation.Runspaces
             // and do the work.
             //
             // For OneCore PowerShell, its ApartmentState is always MTA.
-            //        
+            //
 #if CORECLR
             threadProc();
 #else

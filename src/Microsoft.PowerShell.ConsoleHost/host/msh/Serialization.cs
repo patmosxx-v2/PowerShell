@@ -1,62 +1,46 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.IO;
 using System.Management.Automation;
 using System.Xml;
 
-
 using Dbg = System.Management.Automation.Diagnostics;
-
-
 
 namespace Microsoft.PowerShell
 {
     /// <summary>
-    ///
     /// Wraps Hitesh's xml serializer in such a way that it will select the proper serializer based on the data
     /// format.
-    ///
     /// </summary>
 
     internal class Serialization
     {
         /// <summary>
-        ///
         /// Describes the format of the data streamed between minishells, e.g. the allowed arguments to the minishell
         /// -outputformat and -inputformat command line parameters.
-        ///
         /// </summary>
 
         internal enum DataFormat
         {
             /// <summary>
-            ///
             /// text format -- i.e. stream text just as out-default would display it.
-            ///
             /// </summary>
 
             Text = 0,
 
             /// <summary>
-            ///
             /// XML-serialized format
-            ///
             /// </summary>
 
             XML = 1,
 
             /// <summary>
-            ///
             /// Indicates that the data should be discarded instead of processed.
-            ///
             /// </summary>
             None = 2
         }
-
-
 
         protected
         Serialization(DataFormat dataFormat, string streamName)
@@ -67,15 +51,11 @@ namespace Microsoft.PowerShell
             this.streamName = streamName;
         }
 
-
-
         protected static string XmlCliTag = "#< CLIXML";
 
         protected string streamName;
         protected DataFormat format;
     }
-
-
 
     internal
     class WrappedSerializer : Serialization
@@ -105,8 +85,6 @@ namespace Microsoft.PowerShell
                     break;
             }
         }
-
-
 
         internal
         void
@@ -138,7 +116,6 @@ namespace Microsoft.PowerShell
             }
         }
 
-
         internal
         void
         End()
@@ -162,14 +139,11 @@ namespace Microsoft.PowerShell
             }
         }
 
-
         internal TextWriter textWriter;
         private XmlWriter _xmlWriter;
         private Serializer _xmlSerializer;
         private bool _firstCall = true;
     }
-
-
 
     internal
     class WrappedDeserializer : Serialization
@@ -197,7 +171,7 @@ namespace Microsoft.PowerShell
             switch (format)
             {
                 case DataFormat.XML:
-                    _xmlReader = XmlReader.Create(textReader);
+                    _xmlReader = XmlReader.Create(textReader,  new XmlReaderSettings { XmlResolver = null });
                     _xmlDeserializer = new Deserializer(_xmlReader);
                     break;
                 case DataFormat.Text:
@@ -207,8 +181,6 @@ namespace Microsoft.PowerShell
                     break;
             }
         }
-
-
 
         internal
         object
@@ -250,8 +222,6 @@ namespace Microsoft.PowerShell
             return o;
         }
 
-
-
         internal
         bool
         AtEnd
@@ -279,8 +249,6 @@ namespace Microsoft.PowerShell
             }
         }
 
-
-
         internal
         void
         End()
@@ -297,7 +265,6 @@ namespace Microsoft.PowerShell
             }
         }
 
-
         internal TextReader textReader;
         private XmlReader _xmlReader;
         private Deserializer _xmlDeserializer;
@@ -305,5 +272,4 @@ namespace Microsoft.PowerShell
         private bool _atEnd;
     }
 }   // namespace
-
 

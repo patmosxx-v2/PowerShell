@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Globalization;
@@ -23,11 +22,10 @@ namespace Microsoft.PowerShell.Commands
     /// commands of the given name.  It returns an instance of CommandInfo for each
     /// command that is found.
     /// </summary>
-    ///
     [Cmdlet(VerbsCommon.Get, "Command", DefaultParameterSetName = "CmdletSet", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113309")]
     [OutputType(typeof(AliasInfo), typeof(ApplicationInfo), typeof(FunctionInfo),
                 typeof(CmdletInfo), typeof(ExternalScriptInfo), typeof(FilterInfo),
-                typeof(WorkflowInfo), typeof(string), typeof(PSObject))]
+                typeof(string), typeof(PSObject))]
     public sealed class GetCommandCommand : PSCmdlet
     {
         #region Definitions of cmdlet parameters
@@ -35,7 +33,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Gets or sets the path(s) or name(s) of the commands to retrieve
         /// </summary>
-        ///
         [Parameter(
             Position = 0,
             ValueFromPipeline = true,
@@ -66,21 +63,20 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
             }
-        } // Path
+        }
         private string[] _names;
         private bool _nameContainsWildcard;
 
         /// <summary>
         /// Gets or sets the verb parameter to the cmdlet
         /// </summary>
-        ///
         [Parameter(ValueFromPipelineByPropertyName = true, ParameterSetName = "CmdletSet")]
         public string[] Verb
         {
             get
             {
                 return _verbs;
-            } // get
+            }
 
             set
             {
@@ -90,14 +86,13 @@ namespace Microsoft.PowerShell.Commands
                 }
                 _verbs = value;
                 _verbPatterns = null;
-            } // set
-        } // Verb
+            }
+        }
         private string[] _verbs = Utils.EmptyArray<string>();
 
         /// <summary>
         /// Gets or sets the noun parameter to the cmdlet
         /// </summary>
-        ///
         [Parameter(ValueFromPipelineByPropertyName = true, ParameterSetName = "CmdletSet")]
         [ArgumentCompleter(typeof(NounArgumentCompleter))]
         public string[] Noun
@@ -105,7 +100,7 @@ namespace Microsoft.PowerShell.Commands
             get
             {
                 return _nouns;
-            } // get
+            }
 
             set
             {
@@ -115,14 +110,13 @@ namespace Microsoft.PowerShell.Commands
                 }
                 _nouns = value;
                 _nounPatterns = null;
-            } // set
-        } // Noun
+            }
+        }
         private string[] _nouns = Utils.EmptyArray<string>();
 
         /// <summary>
         /// Gets or sets the PSSnapin/Module parameter to the cmdlet
         /// </summary>
-        ///
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Cmdlets use arrays for parameters.")]
         [Parameter(ValueFromPipelineByPropertyName = true)]
         [Alias("PSSnapin")]
@@ -131,7 +125,7 @@ namespace Microsoft.PowerShell.Commands
             get
             {
                 return _modules;
-            } // get
+            }
 
             set
             {
@@ -143,7 +137,7 @@ namespace Microsoft.PowerShell.Commands
                 _modulePatterns = null;
 
                 _isModuleSpecified = true;
-            } // set
+            }
         }
         private string[] _modules = Utils.EmptyArray<string>();
         private bool _isModuleSpecified = false;
@@ -151,7 +145,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Gets or sets the FullyQualifiedModule parameter to the cmdlet
         /// </summary>
-        ///
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Cmdlets use arrays for parameters.")]
         [Parameter(ValueFromPipelineByPropertyName = true)]
         public ModuleSpecification[] FullyQualifiedModule
@@ -176,7 +169,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Gets or sets the type of the command to get
         /// </summary>
-        ///
         [Parameter(ValueFromPipelineByPropertyName = true, ParameterSetName = "AllCommandSet")]
         [Alias("Type")]
         public CommandTypes CommandType
@@ -184,14 +176,14 @@ namespace Microsoft.PowerShell.Commands
             get
             {
                 return _commandType;
-            } // get
+            }
 
             set
             {
                 _commandType = value;
                 _isCommandTypeSpecified = true;
-            } // set
-        } // Noun
+            }
+        }
         private CommandTypes _commandType = CommandTypes.All;
         private bool _isCommandTypeSpecified = false;
 
@@ -200,7 +192,6 @@ namespace Microsoft.PowerShell.Commands
         /// be returned. If negative, all matching commands that are found will
         /// be returned.
         /// </summary>
-        ///
         [Parameter(ValueFromPipelineByPropertyName = true)]
         public int TotalCount { get; set; } = -1;
 
@@ -208,7 +199,6 @@ namespace Microsoft.PowerShell.Commands
         /// The parameter that determines if the CommandInfo or the string
         /// definition of the command is output.
         /// </summary>
-        ///
         [Parameter(ValueFromPipelineByPropertyName = true)]
         public SwitchParameter Syntax
         {
@@ -235,7 +225,6 @@ namespace Microsoft.PowerShell.Commands
         /// The parameter that all additional arguments get bound to. These arguments are used
         /// when retrieving dynamic parameters from cmdlets that support them.
         /// </summary>
-        ///
         [Parameter(Position = 1, ValueFromRemainingArguments = true)]
         [AllowNull]
         [AllowEmptyCollection]
@@ -246,7 +235,6 @@ namespace Microsoft.PowerShell.Commands
         /// The parameter that determines if additional matching commands should be returned.
         /// (Additional matching functions and aliases are returned from module tables)
         /// </summary>
-        ///
         [Parameter(ValueFromPipelineByPropertyName = true)]
         public SwitchParameter All
         {
@@ -259,7 +247,6 @@ namespace Microsoft.PowerShell.Commands
         /// The parameter that determines if additional matching commands from available modules should be returned.
         /// If set to true, only those commands currently in the session are returned.
         /// </summary>
-        ///
         [Parameter(ValueFromPipelineByPropertyName = true)]
         public SwitchParameter ListImported
         {
@@ -368,7 +355,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// method that implements get-command
         /// </summary>
-        ///
         protected override void ProcessRecord()
         {
             // Module and FullyQualifiedModule should not be specified at the same time.
@@ -407,7 +393,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Writes out the accumulated matching commands
         /// </summary>
-        ///
         protected override void EndProcessing()
         {
             // We do not show the pithy aliases (not of the format Verb-Noun) and applications by default.
@@ -469,7 +454,7 @@ namespace Microsoft.PowerShell.Commands
             OutputResultsHelper(_accumulatedResults);
 
             object pssenderInfo = Context.GetVariableValue(SpecialVariables.PSSenderInfoVarPath);
-            if ((null != pssenderInfo) && (pssenderInfo is System.Management.Automation.Remoting.PSSenderInfo))
+            if ((pssenderInfo != null) && (pssenderInfo is System.Management.Automation.Remoting.PSSenderInfo))
             {
                 // Win8: 593295. Exchange has around 1000 cmdlets. During Import-PSSession,
                 // Get-Command  | select-object ..,HelpURI,... is run. HelpURI is a script property
@@ -531,6 +516,7 @@ namespace Microsoft.PowerShell.Commands
 
             _timer.Stop();
 
+#if LEGACYTELEMETRY
             // We want telementry on commands people look for but don't exist - this should give us an idea
             // what sort of commands people expect but either don't exist, or maybe should be installed by default.
             // The StartsWith is to avoid logging telemetry when suggestion mode checks the
@@ -539,6 +525,8 @@ namespace Microsoft.PowerShell.Commands
             {
                 Telemetry.Internal.TelemetryAPI.ReportGetCommandFailed(Name, _timer.ElapsedMilliseconds);
             }
+#endif
+
         }
 
         /// <summary>
@@ -565,14 +553,14 @@ namespace Microsoft.PowerShell.Commands
                 }
                 else
                 {
-                    return String.Compare(x.Name, y.Name, StringComparison.CurrentCultureIgnoreCase);
+                    return String.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
                 }
             }
         }
 
         private void AccumulateMatchingCmdlets()
         {
-            _commandType = CommandTypes.Cmdlet | CommandTypes.Function | CommandTypes.Filter | CommandTypes.Alias | CommandTypes.Workflow | CommandTypes.Configuration;
+            _commandType = CommandTypes.Cmdlet | CommandTypes.Function | CommandTypes.Filter | CommandTypes.Alias | CommandTypes.Configuration;
 
             Collection<string> commandNames = new Collection<string>();
             commandNames.Add("*");
@@ -681,7 +669,7 @@ namespace Microsoft.PowerShell.Commands
                 options |= SearchResolutionOptions.ResolveAliasPatterns;
             }
 
-            if ((this.CommandType & (CommandTypes.Function | CommandTypes.Filter | CommandTypes.Workflow | CommandTypes.Configuration)) != 0)
+            if ((this.CommandType & (CommandTypes.Function | CommandTypes.Filter | CommandTypes.Configuration)) != 0)
             {
                 options |= SearchResolutionOptions.ResolveFunctionPatterns;
             }
@@ -895,7 +883,6 @@ namespace Microsoft.PowerShell.Commands
                         }
                     }
 
-
                     // Only for this case, the loop should exit
                     // Get-Command Foo
                     if (isPattern || All || TotalCount != -1 || _isCommandTypeSpecified || _isModuleSpecified || _isFullyQualifiedModuleSpecified)
@@ -908,7 +895,6 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
             } while (true);
-
 
             if (All)
             {
@@ -942,15 +928,12 @@ namespace Microsoft.PowerShell.Commands
         /// Determines if the specific command information has already been
         /// written out based on the path or definition.
         /// </summary>
-        ///
         /// <param name="info">
         /// The command information to check for duplication.
         /// </param>
-        ///
         /// <returns>
         /// true if the command has already been written out.
         /// </returns>
-        ///
         private bool IsDuplicate(CommandInfo info)
         {
             bool result = false;
@@ -1108,14 +1091,13 @@ namespace Microsoft.PowerShell.Commands
                     isCommandMatch = true;
                 }
 
-                // If the command in question is a cmdlet or (a function/filter/workflow/configuration/alias and we are filtering on nouns or verbs),
-                // then do the verb/moun check
+                // If the command in question is a cmdlet or (a function/filter/configuration/alias and we are filtering on nouns or verbs),
+                // then do the verb/noun check
 
                 if (current.CommandType == CommandTypes.Cmdlet ||
                     ((_verbs.Length > 0 || _nouns.Length > 0) &&
                      (current.CommandType == CommandTypes.Function ||
                       current.CommandType == CommandTypes.Filter ||
-                      current.CommandType == CommandTypes.Workflow ||
                       current.CommandType == CommandTypes.Configuration ||
                       current.CommandType == CommandTypes.Alias)))
                 {
@@ -1251,15 +1233,12 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Gets matching commands from the module tables
         /// </summary>
-        ///
         /// <param name="commandName">
         /// The commandname to look for
         /// </param>
-        ///
         /// <returns>
         /// IEnumerable of CommandInfo objects
         /// </returns>
-        ///
         private IEnumerable<CommandInfo> GetMatchingCommandsFromModules(string commandName)
         {
             WildcardPattern matcher = WildcardPattern.Get(
@@ -1330,15 +1309,12 @@ namespace Microsoft.PowerShell.Commands
         /// Determines if the specific command information has already been
         /// added to the result from CommandSearcher
         /// </summary>
-        ///
         /// <param name="command">
         /// The command information to check for duplication.
         /// </param>
-        ///
         /// <returns>
         /// true if the command is present in the result.
         /// </returns>
-        ///
         private bool IsCommandInResult(CommandInfo command)
         {
             bool isPresent = false;
@@ -1346,10 +1322,10 @@ namespace Microsoft.PowerShell.Commands
             foreach (CommandInfo commandInfo in _accumulatedResults)
             {
                 if ((command.CommandType == commandInfo.CommandType &&
-                     (String.Compare(command.Name, commandInfo.Name, StringComparison.CurrentCultureIgnoreCase) == 0 ||
+                     (String.Compare(command.Name, commandInfo.Name, StringComparison.OrdinalIgnoreCase) == 0 ||
                       // If the command has been imported with a prefix, then just checking the names for duplication will not be enough.
                       // Hence, an additional check is done with the prefix information
-                      String.Compare(ModuleCmdletBase.RemovePrefixFromCommandName(commandInfo.Name, commandInfo.Prefix), command.Name, StringComparison.CurrentCultureIgnoreCase) == 0)
+                      String.Compare(ModuleCmdletBase.RemovePrefixFromCommandName(commandInfo.Name, commandInfo.Prefix), command.Name, StringComparison.OrdinalIgnoreCase) == 0)
                     ) && commandInfo.Module != null && commandHasModule &&
                     ( // We do reference equal comparison if both command are imported. If either one is not imported, we compare the module path
                      (commandInfo.IsImported && command.IsImported && commandInfo.Module.Equals(command.Module)) ||
@@ -1472,8 +1448,8 @@ namespace Microsoft.PowerShell.Commands
         private static PSObject GetParameterType(Type parameterType)
         {
             PSObject returnParameterType = new PSObject();
-            bool isEnum = parameterType.GetTypeInfo().IsEnum;
-            bool isArray = parameterType.GetTypeInfo().IsArray;
+            bool isEnum = parameterType.IsEnum;
+            bool isArray = parameterType.IsArray;
             returnParameterType.Properties.Add(new PSNoteProperty("FullName", parameterType.FullName));
             returnParameterType.Properties.Add(new PSNoteProperty("IsEnum", isEnum));
             returnParameterType.Properties.Add(new PSNoteProperty("IsArray", isArray));
@@ -1483,7 +1459,7 @@ namespace Microsoft.PowerShell.Commands
             returnParameterType.Properties.Add(new PSNoteProperty("EnumValues", enumValues));
 
             bool hasFlagAttribute = (isArray) ?
-                ((parameterType.GetTypeInfo().GetCustomAttributes(typeof(FlagsAttribute), true)).Count() > 0) : false;
+                ((parameterType.GetCustomAttributes(typeof(FlagsAttribute), true)).Count() > 0) : false;
             returnParameterType.Properties.Add(new PSNoteProperty("HasFlagAttribute", hasFlagAttribute));
 
             // Recurse into array elements.
@@ -1501,12 +1477,10 @@ namespace Microsoft.PowerShell.Commands
     }
 
     /// <summary>
-    ///
     /// </summary>
     public class NounArgumentCompleter : IArgumentCompleter
     {
         /// <summary>
-        ///
         /// </summary>
         public IEnumerable<CompletionResult> CompleteArgument(string commandName, string parameterName, string wordToComplete, CommandAst commandAst, IDictionary fakeBoundParameters)
         {

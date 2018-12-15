@@ -1,6 +1,5 @@
-/********************************************************************++
- * Copyright (c) Microsoft Corporation.  All rights reserved.
- * --********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Security.Principal;
 using System.Management.Automation.Runspaces;
@@ -8,7 +7,6 @@ using Dbg = System.Management.Automation.Diagnostics;
 using System.Management.Automation.Remoting;
 using System.Management.Automation.Internal;
 using System.Threading;
-
 
 namespace System.Management.Automation
 {
@@ -208,7 +206,7 @@ namespace System.Management.Automation
             RegisterDataStructureHandlerEventHandlers(DataStructureHandler);
 
             // set the runspace pool and invoke this powershell
-            if (null != rsToUse)
+            if (rsToUse != null)
             {
                 LocalPowerShell.Runspace = rsToUse;
                 if (extraPowerShell != null)
@@ -389,7 +387,7 @@ namespace System.Management.Automation
             {
                 // Since this is being invoked asynchronously on a single pipeline thread
                 // any invoke failures (such as possible debugger failures) need to be
-                // passed back to client or the original client invoke request will hang.
+                // passed back to client or the original client invoke request will not respond.
                 string failedCommand = LocalPowerShell.Commands.Commands[0].CommandText;
                 LocalPowerShell.Commands.Clear();
                 string msg = StringUtil.Format(
@@ -557,7 +555,7 @@ namespace System.Management.Automation
                     // send the output data to the client
                     DataStructureHandler.SendOutputDataToClient(data);
                 }
-            } // lock ..
+            }
         }
 
         /// <summary>
@@ -582,7 +580,7 @@ namespace System.Management.Automation
                     // send the error record to the client
                     DataStructureHandler.SendErrorRecordToClient(errorRecord);
                 }
-            } // lock ...
+            }
         }
 
         /// <summary>
@@ -607,7 +605,7 @@ namespace System.Management.Automation
                     // send the output data to the client
                     DataStructureHandler.SendProgressRecordToClient(data);
                 }
-            } // lock ..
+            }
         }
 
         /// <summary>
@@ -632,7 +630,7 @@ namespace System.Management.Automation
                     // send the output data to the client
                     DataStructureHandler.SendWarningRecordToClient(data);
                 }
-            } // lock ..
+            }
         }
 
         /// <summary>
@@ -657,7 +655,7 @@ namespace System.Management.Automation
                     // send the output data to the client
                     DataStructureHandler.SendVerboseRecordToClient(data);
                 }
-            } // lock ..
+            }
         }
 
         /// <summary>
@@ -682,7 +680,7 @@ namespace System.Management.Automation
                     // send the output data to the client
                     DataStructureHandler.SendDebugRecordToClient(data);
                 }
-            } // lock ..
+            }
         }
 
         /// <summary>
@@ -707,7 +705,7 @@ namespace System.Management.Automation
                     // send the output data to the client
                     DataStructureHandler.SendInformationRecordToClient(data);
                 }
-            } // lock ..
+            }
         }
 
         /// <summary>

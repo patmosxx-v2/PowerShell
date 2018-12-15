@@ -1,8 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
-
-
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Management.Automation.Language;
 using System.Management.Automation.Host;
@@ -65,9 +62,7 @@ namespace System.Management.Automation.Internal.Host
         }
 
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
         /// <value></value>
         /// <exception/>
@@ -88,15 +83,11 @@ namespace System.Management.Automation.Internal.Host
         }
 
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
         /// <exception cref="HostException">
-        ///
         /// if the UI property of the external host is null, possibly because the PSHostUserInterface is not
         ///     implemented by the external host
-        ///
         /// </exception>
         public override
         string
@@ -127,18 +118,12 @@ namespace System.Management.Automation.Internal.Host
             return result;
         }
 
-
-
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
         /// <exception cref="HostException">
-        ///
         /// if the UI property of the external host is null, possibly because the PSHostUserInterface is not
         ///     implemented by the external host
-        ///
         /// </exception>
 
         public override
@@ -171,20 +156,14 @@ namespace System.Management.Automation.Internal.Host
             return result;
         }
 
-
-
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
         /// <param name="value">
         /// </param>
         /// <exception cref="HostException">
-        ///
         /// if <paramref name="value"/> is not null and the UI property of the external host is null,
         ///     possibly because the PSHostUserInterface is not implemented by the external host
-        ///
         /// </exception>
 
         public override
@@ -204,12 +183,8 @@ namespace System.Management.Automation.Internal.Host
             _externalUI.Write(value);
         }
 
-
-
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
         /// <param name="foregroundColor">
         /// </param>
@@ -218,10 +193,8 @@ namespace System.Management.Automation.Internal.Host
         /// <param name="value">
         /// </param>
         /// <exception cref="HostException">
-        ///
         /// if <paramref name="value"/> is not null and the UI property of the external host is null,
         ///     possibly because the PSHostUserInterface is not implemented by the external host
-        ///
         /// </exception>
 
         public override
@@ -241,20 +214,14 @@ namespace System.Management.Automation.Internal.Host
             _externalUI.Write(foregroundColor, backgroundColor, value);
         }
 
-
-
         /// <summary>
-        ///
         /// See base class
-        ///
         /// <seealso cref="Write(string)"/>
         /// <seealso cref="WriteLine(string)"/>
         /// </summary>
         /// <exception cref="HostException">
-        ///
         /// if the UI property of the external host is null, possibly because the PSHostUserInterface is not
         ///     implemented by the external host
-        ///
         /// </exception>
 
         public override
@@ -269,20 +236,14 @@ namespace System.Management.Automation.Internal.Host
             _externalUI.WriteLine();
         }
 
-
-
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
         /// <param name="value">
         /// </param>
         /// <exception cref="HostException">
-        ///
         /// if <paramref name="value"/> is not null and the UI property of the external host is null,
         ///     possibly because the PSHostUserInterface is not implemented by the external host
-        ///
         /// </exception>
 
         public override
@@ -302,8 +263,6 @@ namespace System.Management.Automation.Internal.Host
             _externalUI.WriteLine(value);
         }
 
-
-
         public override
         void
         WriteErrorLine(string value)
@@ -321,12 +280,8 @@ namespace System.Management.Automation.Internal.Host
             _externalUI.WriteErrorLine(value);
         }
 
-
-
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
         /// <param name="foregroundColor">
         /// </param>
@@ -335,10 +290,8 @@ namespace System.Management.Automation.Internal.Host
         /// <param name="value">
         /// </param>
         /// <exception cref="HostException">
-        ///
         /// if <paramref name="value"/> is not null and the UI property of the external host is null,
         ///     possibly because the PSHostUserInterface is not implemented by the external host
-        ///
         /// </exception>
 
         public override
@@ -358,18 +311,12 @@ namespace System.Management.Automation.Internal.Host
             _externalUI.WriteLine(foregroundColor, backgroundColor, value);
         }
 
-
-
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
         /// <exception cref="HostException">
-        ///
         /// if <paramref name="message"/> is not null and the UI property of the external host is null,
         ///     possibly because the PSHostUserInterface is not implemented by the external host
-        ///
         /// </exception>
 
         public override
@@ -380,7 +327,6 @@ namespace System.Management.Automation.Internal.Host
         }
 
         /// <summary>
-        ///
         /// </summary>
         internal void WriteDebugRecord(DebugRecord record)
         {
@@ -406,26 +352,19 @@ namespace System.Management.Automation.Internal.Host
             }
         }
 
-
         /// <summary>
         /// Helper function for WriteDebugLine
         /// </summary>
         /// <param name="message"></param>
         /// <param name="preference"></param>
         /// <exception cref="ActionPreferenceStopException">
-        ///
         /// If the debug preference is set to ActionPreference.Stop
-        ///
         /// </exception>
         /// <exception cref="ActionPreferenceStopException">
-        ///
         /// If the debug preference is set to ActionPreference.Inquire and user requests to stop execution.
-        ///
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///
         /// If the debug preference is not a valid ActionPreference value.
-        ///
         /// </exception>
 
         internal
@@ -514,24 +453,16 @@ namespace System.Management.Automation.Internal.Host
             WriteDebugRecord(new DebugRecord(message));
         }
 
-
-
         /// <summary>
-        ///
         /// Ask the user whether to continue/stop or break to a nested prompt.
-        ///
         /// </summary>
         /// <param name="message">
-        ///
         /// Message to display to the user. This routine will append the text "Continue" to ensure that people know what question
         /// they are answering.
-        ///
         /// </param>
         /// <param name="actionPreference">
-        ///
         /// Preference setting which determines the behaviour.  This is by-ref and will be modified based upon what the user
         /// types. (e.g. YesToAll will change Inquire => NotifyContinue)
-        ///
         /// </param>
 
         private
@@ -596,18 +527,12 @@ namespace System.Management.Automation.Internal.Host
             return shouldContinue;
         }
 
-
-
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
         /// <exception cref="HostException">
-        ///
         /// if <paramref name="record"/> is not null and the UI property of the external host is null,
         ///     possibly because the PSHostUserInterface is not implemented by the external host
-        ///
         /// </exception>
 
         public override
@@ -620,7 +545,7 @@ namespace System.Management.Automation.Internal.Host
             }
 
             // Write to Information Buffers
-            if (null != _informationalBuffers)
+            if (_informationalBuffers != null)
             {
                 _informationalBuffers.AddProgress(record);
             }
@@ -633,18 +558,12 @@ namespace System.Management.Automation.Internal.Host
             _externalUI.WriteProgress(sourceId, record);
         }
 
-
-
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
         /// <exception cref="HostException">
-        ///
         /// if <paramref name="message"/> is not null and the UI property of the external host is null,
         ///     possibly because the PSHostUserInterface is not implemented by the external host
-        ///
         /// </exception>
 
         public override
@@ -660,7 +579,6 @@ namespace System.Management.Automation.Internal.Host
         }
 
         /// <summary>
-        ///
         /// </summary>
         internal void WriteVerboseRecord(VerboseRecord record)
         {
@@ -687,15 +605,11 @@ namespace System.Management.Automation.Internal.Host
         }
 
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
         /// <exception cref="HostException">
-        ///
         /// if <paramref name="message"/> is not null and the UI property of the external host is null,
         ///     possibly because the PSHostUserInterface is not implemented by the external host
-        ///
         /// </exception>
 
         public override void WriteWarningLine(string message)
@@ -709,7 +623,6 @@ namespace System.Management.Automation.Internal.Host
         }
 
         /// <summary>
-        ///
         /// </summary>
         internal void WriteWarningRecord(WarningRecord record)
         {
@@ -736,7 +649,6 @@ namespace System.Management.Automation.Internal.Host
         }
 
         /// <summary>
-        ///
         /// </summary>
         internal void WriteInformationRecord(InformationRecord record)
         {
@@ -790,9 +702,7 @@ namespace System.Management.Automation.Internal.Host
         }
 
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
         /// <param name="caption">
         /// </param>
@@ -801,20 +711,14 @@ namespace System.Management.Automation.Internal.Host
         /// <param name="descriptions">
         /// </param>
         /// <exception cref="ArgumentNullException">
-        ///
         /// If <paramref name="descriptions"/> is null.
-        ///
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///
         /// If <paramref name="descriptions"/>.Count is less than 1.
-        ///
         /// </exception>
         /// <exception cref="HostException">
-        ///
         /// if the UI property of the external host is null,
         ///     possibly because the PSHostUserInterface is not implemented by the external host
-        ///
         /// </exception>
 
         public override
@@ -857,13 +761,8 @@ namespace System.Management.Automation.Internal.Host
             return result;
         }
 
-
-
-
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
         /// <param name="caption"></param>
         /// <param name="message"></param>
@@ -871,10 +770,8 @@ namespace System.Management.Automation.Internal.Host
         /// <param name="defaultChoice">
         /// </param>
         /// <exception cref="HostException">
-        ///
         /// if the UI property of the external host is null,
         ///     possibly because the PSHostUserInterface is not implemented by the external host
-        ///
         /// </exception>
 
         public override
@@ -942,7 +839,7 @@ namespace System.Management.Automation.Internal.Host
             Collection<int> result = null;
             try
             {
-                if (null == hostForMultipleChoices)
+                if (hostForMultipleChoices == null)
                 {
                     // host did not implement this new interface..
                     // so work with V1 host API to get the behavior..
@@ -989,7 +886,7 @@ namespace System.Management.Automation.Internal.Host
             Collection<ChoiceDescription> choices,
             IEnumerable<int> defaultChoices)
         {
-            Dbg.Assert(null != _externalUI, "externalUI cannot be null.");
+            Dbg.Assert(_externalUI != null, "externalUI cannot be null.");
 
             if (choices == null)
             {
@@ -1003,7 +900,7 @@ namespace System.Management.Automation.Internal.Host
             }
 
             Dictionary<int, bool> defaultChoiceKeys = new Dictionary<int, bool>();
-            if (null != defaultChoices)
+            if (defaultChoices != null)
             {
                 foreach (int defaultChoice in defaultChoices)
                 {
@@ -1055,10 +952,10 @@ namespace System.Management.Automation.Internal.Host
             }
 
             // default choices
-            string defaultPrompt = "";
+            string defaultPrompt = string.Empty;
             if (defaultChoiceKeys.Count > 0)
             {
-                string prepend = "";
+                string prepend = string.Empty;
                 Text.StringBuilder defaultChoicesBuilder = new Text.StringBuilder();
                 foreach (int defaultChoice in defaultChoiceKeys.Keys)
                 {
@@ -1125,7 +1022,7 @@ namespace System.Management.Automation.Internal.Host
                     choicesSelected++;
                 }
                 // reset messageToBeDisplayed
-                messageToBeDisplayed = "";
+                messageToBeDisplayed = string.Empty;
             } while (true);
 
             return result;

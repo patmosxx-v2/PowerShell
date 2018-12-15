@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
@@ -55,7 +54,6 @@ namespace System.Management.Automation
             SetErrorCategory(ErrorCategory.MetadataError);
         }
 
-
         internal MetadataException(string errorId, Exception innerException, string resourceStr, params object[] arguments) :
             base(StringUtil.Format(resourceStr, arguments), innerException)
         {
@@ -72,15 +70,17 @@ namespace System.Management.Automation
     public class ValidationMetadataException : MetadataException
     {
         internal const string ValidateRangeElementType = "ValidateRangeElementType";
+        internal const string ValidateRangePositiveFailure = "ValidateRangePositiveFailure";
+        internal const string ValidateRangeNonNegativeFailure = "ValidateRangeNonNegativeFailure";
+        internal const string ValidateRangeNegativeFailure = "ValidateRangeNegativeFailure";
+        internal const string ValidateRangeNonPositiveFailure = "ValidateRangeNonPositiveFailure";
         internal const string ValidateRangeMinRangeMaxRangeType = "ValidateRangeMinRangeMaxRangeType";
         internal const string ValidateRangeNotIComparable = "ValidateRangeNotIComparable";
         internal const string ValidateRangeMaxRangeSmallerThanMinRange = "ValidateRangeMaxRangeSmallerThanMinRange";
         internal const string ValidateRangeGreaterThanMaxRangeFailure = "ValidateRangeGreaterThanMaxRangeFailure";
         internal const string ValidateRangeSmallerThanMinRangeFailure = "ValidateRangeSmallerThanMinRangeFailure";
 
-
         internal const string ValidateFailureResult = "ValidateFailureResult";
-
 
         internal const string ValidatePatternFailure = "ValidatePatternFailure";
         internal const string ValidateScriptFailure = "ValidateScriptFailure";
@@ -121,7 +121,6 @@ namespace System.Management.Automation
         /// <param name="innerException">the exceptions's inner exception</param>
         public ValidationMetadataException(string message, Exception innerException) : base(message, innerException) { }
 
-
         internal ValidationMetadataException(string errorId, Exception innerException, string resourceStr, params object[] arguments) :
             base(errorId, innerException, resourceStr, arguments)
         {
@@ -144,7 +143,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Make the positional binding swallow this exception when it's set to true
         /// </summary>
-        ///
         /// <remarks>
         /// This property is only used internally in the positional binding phase
         /// </remarks>
@@ -186,7 +184,6 @@ namespace System.Management.Automation
         /// <param name="innerException">the exceptions's inner exception</param>
         public ArgumentTransformationMetadataException(string message, Exception innerException) : base(message, innerException) { }
 
-
         internal ArgumentTransformationMetadataException(string errorId, Exception innerException, string resourceStr, params object[] arguments) :
             base(errorId, innerException, resourceStr, arguments)
         {
@@ -223,7 +220,6 @@ namespace System.Management.Automation
         /// <param name="message">the exception's message</param>
         /// <param name="innerException">the exceptions's inner exception</param>
         public ParsingMetadataException(string message, Exception innerException) : base(message, innerException) { }
-
 
         internal ParsingMetadataException(string errorId, Exception innerException, string resourceStr, params object[] arguments) :
             base(errorId, innerException, resourceStr, arguments)

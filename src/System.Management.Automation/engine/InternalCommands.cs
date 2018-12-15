@@ -1,8 +1,9 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
+using System.Dynamic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -17,6 +18,38 @@ using Dbg = System.Management.Automation.Diagnostics;
 
 namespace Microsoft.PowerShell.Commands
 {
+    /// <summary>
+    /// A thin wrapper over a property-getting Callsite, to allow reuse when possible.
+    /// </summary>
+    struct DynamicPropertyGetter
+    {
+        private CallSite<Func<CallSite, object, object>> _getValueDynamicSite;
+
+        // For the wildcard case, lets us know if we can reuse the callsite:
+        private string _lastUsedPropertyName;
+
+        public object GetValue(PSObject inputObject, string propertyName)
+        {
+            Dbg.Assert(!WildcardPattern.ContainsWildcardCharacters(propertyName), "propertyName should be pre-resolved by caller");
+
+            // If wildcards are involved, the resolved property name could potentially
+            // be different on every object... but probably not, so we'll attempt to
+            // reuse the callsite if possible.
+
+            if (!propertyName.Equals(_lastUsedPropertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                _lastUsedPropertyName = propertyName;
+                _getValueDynamicSite = CallSite<Func<CallSite, object, object>>.Create(
+                        PSGetMemberBinder.Get(
+                            propertyName,
+                            classScope: (Type) null,
+                            @static: false));
+            }
+
+            return _getValueDynamicSite.Target.Invoke(_getValueDynamicSite, inputObject);
+        }
+    }
+
     #region Built-in cmdlets that are used by or require direct access to the engine.
 
     /// <summary>
@@ -29,7 +62,7 @@ namespace Microsoft.PowerShell.Commands
     public sealed class ForEachObjectCommand : PSCmdlet
     {
         /// <summary>
-        /// This parameter specifies the current pipeline object 
+        /// This parameter specifies the current pipeline object
         /// </summary>
         [Parameter(ValueFromPipeline = true, ParameterSetName = "ScriptBlockSet")]
         [Parameter(ValueFromPipeline = true, ParameterSetName = "PropertyAndMethodSet")]
@@ -123,13 +156,13 @@ namespace Microsoft.PowerShell.Commands
 
         #endregion ScriptBlockSet
 
-
         #region PropertyAndMethodSet
 
         /// <summary>
         /// The property or method name
         /// </summary>
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "PropertyAndMethodSet")]
+        [ValidateTrustedData]
         [ValidateNotNullOrEmpty]
         public string MemberName
         {
@@ -138,12 +171,14 @@ namespace Microsoft.PowerShell.Commands
         }
         private string _propertyOrMethodName;
         private string _targetString;
+        private DynamicPropertyGetter _propGetter;
 
         /// <summary>
         /// The arguments passed to a method invocation
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Cmdlets use arrays for parameters.")]
         [Parameter(ParameterSetName = "PropertyAndMethodSet", ValueFromRemainingArguments = true)]
+        [ValidateTrustedData]
         [Alias("Args")]
         public object[] ArgumentList
         {
@@ -153,7 +188,6 @@ namespace Microsoft.PowerShell.Commands
         private object[] _arguments;
 
         #endregion PropertyAndMethodSet
-
 
         /// <summary>
         /// Execute the begin scriptblock at the start of processing
@@ -295,12 +329,12 @@ namespace Microsoft.PowerShell.Commands
                                 else
                                 {
                                     // we write null out because:
-                                    // PS C:\> “$null | ForEach-object {$_.aa} | ForEach-Object {$_ + 3}”
+                                    // PS C:\> $null | ForEach-object {$_.aa} | ForEach-Object {$_ + 3}
                                     // 3
                                     // so we also want
-                                    // PS C:\> “$null | ForEach-object aa | ForEach-Object {$_ + 3}”
+                                    // PS C:\> $null | ForEach-object aa | ForEach-Object {$_ + 3}
                                     // 3
-                                    // But if we don’t write anything to the pipeline when _inputObject is null,
+                                    // But if we don't write anything to the pipeline when _inputObject is null,
                                     // the result 3 will not be generated.
                                     WriteObject(null);
                                 }
@@ -354,80 +388,107 @@ namespace Microsoft.PowerShell.Commands
                             member = _inputObject.Members[_propertyOrMethodName];
                         }
 
-                        if (member == null)
+                        // member is a method
+                        if (member is PSMethodInfo)
                         {
-                            errorRecord = GenerateNameParameterError("Name", InternalCommandStrings.PropertyOrMethodNotFound,
-                                                                     "PropertyOrMethodNotFound", _inputObject,
-                                                                     _propertyOrMethodName);
-                        }
-                        else
-                        {
-                            // member is a method
-                            if (member is PSMethodInfo)
-                            {
-                                // first we check if the member is a ParameterizedProperty
-                                PSParameterizedProperty targetParameterizedProperty = member as PSParameterizedProperty;
-                                if (targetParameterizedProperty != null)
-                                {
-                                    // should process
-                                    string propertyAction = String.Format(CultureInfo.InvariantCulture,
-                                        InternalCommandStrings.ForEachObjectPropertyAction, targetParameterizedProperty.Name);
-
-                                    // ParameterizedProperty always take parameters, so we output the member.Value directly
-                                    if (ShouldProcess(_targetString, propertyAction))
-                                    {
-                                        WriteObject(member.Value);
-                                    }
-                                    return;
-                                }
-
-                                PSMethodInfo targetMethod = member as PSMethodInfo;
-                                Dbg.Assert(targetMethod != null, "targetMethod should not be null here.");
-                                try
-                                {
-                                    // should process
-                                    string methodAction = String.Format(CultureInfo.InvariantCulture,
-                                        InternalCommandStrings.ForEachObjectMethodActionWithoutArguments, targetMethod.Name);
-
-                                    if (ShouldProcess(_targetString, methodAction))
-                                    {
-                                        if (!BlockMethodInLanguageMode(InputObject))
-                                        {
-                                            object result = targetMethod.Invoke(Utils.EmptyArray<object>());
-                                            WriteToPipelineWithUnrolling(result);
-                                        }
-                                    }
-                                }
-                                catch (PipelineStoppedException)
-                                {
-                                    // PipelineStoppedException can be caused by select-object
-                                    throw;
-                                }
-                                catch (Exception ex)
-                                {
-                                    MethodException mex = ex as MethodException;
-                                    if (mex != null && mex.ErrorRecord != null && mex.ErrorRecord.FullyQualifiedErrorId == "MethodCountCouldNotFindBest")
-                                    {
-                                        WriteObject(targetMethod.Value);
-                                    }
-                                    else
-                                    {
-                                        WriteError(new ErrorRecord(ex, "MethodInvocationError", ErrorCategory.InvalidOperation, _inputObject));
-                                    }
-                                }
-                            }
-                            // member is a property
-                            else
+                            // first we check if the member is a ParameterizedProperty
+                            PSParameterizedProperty targetParameterizedProperty = member as PSParameterizedProperty;
+                            if (targetParameterizedProperty != null)
                             {
                                 // should process
                                 string propertyAction = String.Format(CultureInfo.InvariantCulture,
-                                    InternalCommandStrings.ForEachObjectPropertyAction, member.Name);
+                                    InternalCommandStrings.ForEachObjectPropertyAction, targetParameterizedProperty.Name);
+
+                                // ParameterizedProperty always take parameters, so we output the member.Value directly
+                                if (ShouldProcess(_targetString, propertyAction))
+                                {
+                                    WriteObject(member.Value);
+                                }
+                                return;
+                            }
+
+                            PSMethodInfo targetMethod = member as PSMethodInfo;
+                            Dbg.Assert(targetMethod != null, "targetMethod should not be null here.");
+                            try
+                            {
+                                // should process
+                                string methodAction = String.Format(CultureInfo.InvariantCulture,
+                                    InternalCommandStrings.ForEachObjectMethodActionWithoutArguments, targetMethod.Name);
+
+                                if (ShouldProcess(_targetString, methodAction))
+                                {
+                                    if (!BlockMethodInLanguageMode(InputObject))
+                                    {
+                                        object result = targetMethod.Invoke(Utils.EmptyArray<object>());
+                                        WriteToPipelineWithUnrolling(result);
+                                    }
+                                }
+                            }
+                            catch (PipelineStoppedException)
+                            {
+                                // PipelineStoppedException can be caused by select-object
+                                throw;
+                            }
+                            catch (Exception ex)
+                            {
+                                MethodException mex = ex as MethodException;
+                                if (mex != null && mex.ErrorRecord != null && mex.ErrorRecord.FullyQualifiedErrorId == "MethodCountCouldNotFindBest")
+                                {
+                                    WriteObject(targetMethod.Value);
+                                }
+                                else
+                                {
+                                    WriteError(new ErrorRecord(ex, "MethodInvocationError", ErrorCategory.InvalidOperation, _inputObject));
+                                }
+                            }
+                        }
+                        else
+                        {
+                            string resolvedPropertyName = null;
+                            bool isBlindDynamicAccess = false;
+                            if (member == null)
+                            {
+                                if ((_inputObject.BaseObject is IDynamicMetaObjectProvider) &&
+                                    !WildcardPattern.ContainsWildcardCharacters(_propertyOrMethodName))
+                                {
+                                    // Let's just try a dynamic property access. Note that if it
+                                    // comes to depending on dynamic access, we are assuming it is a
+                                    // property; we don't have ETS info to tell us up front if it
+                                    // even exists or not, let alone if it is a method or something
+                                    // else.
+                                    //
+                                    // Note that this is "truly blind"--the name did not show up in
+                                    // GetDynamicMemberNames(), else it would show up as a dynamic
+                                    // member.
+
+                                    resolvedPropertyName = _propertyOrMethodName;
+                                    isBlindDynamicAccess = true;
+                                }
+                                else
+                                {
+                                    errorRecord = GenerateNameParameterError("Name", InternalCommandStrings.PropertyOrMethodNotFound,
+                                                                             "PropertyOrMethodNotFound", _inputObject,
+                                                                             _propertyOrMethodName);
+                                }
+                            }
+                            else
+                            {
+                                // member is [presumably] a property (note that it could be a
+                                // dynamic property, if it shows up in GetDynamicMemberNames())
+                                resolvedPropertyName = member.Name;
+                            }
+
+                            if (!String.IsNullOrEmpty(resolvedPropertyName))
+                            {
+                                // should process
+                                string propertyAction = String.Format(CultureInfo.InvariantCulture,
+                                    InternalCommandStrings.ForEachObjectPropertyAction, resolvedPropertyName);
 
                                 if (ShouldProcess(_targetString, propertyAction))
                                 {
                                     try
                                     {
-                                        WriteToPipelineWithUnrolling(member.Value);
+                                        WriteToPipelineWithUnrolling(_propGetter.GetValue(InputObject, resolvedPropertyName));
                                     }
                                     catch (TerminateException) // The debugger is terminating the execution
                                     {
@@ -442,17 +503,54 @@ namespace Microsoft.PowerShell.Commands
                                         // PipelineStoppedException can be caused by select-object
                                         throw;
                                     }
-                                    catch (Exception)
+                                    catch (Exception ex)
                                     {
-                                        // When the property is not gettable or it throws an exception.
-                                        // e.g. when trying to access an assembly's location property, since dynamic assemblies are not backed up by a file,
-                                        // an exception will be thrown when accessing its location property. In this case, return null.
-                                        WriteObject(null);
+                                        // For normal property accesses, we do not generate an error
+                                        // here. The problem for truly blind dynamic accesses (the
+                                        // member did not show up in GetDynamicMemberNames) is that
+                                        // we can't tell the difference between "it failed because
+                                        // the property does not exist" (let's call this case 1) and
+                                        // "it failed because accessing it actually threw some
+                                        // exception" (let's call that case 2).
+                                        //
+                                        // PowerShell behavior for normal (non-dynamic) properties
+                                        // is different for these two cases: case 1 gets an error
+                                        // (which is possible because the ETS tells us up front if
+                                        // the property exists or not), and case 2 does not. (For
+                                        // normal properties, this catch block /is/ case 2.)
+                                        //
+                                        // For IDMOPs, we have the chance to attempt a "blind"
+                                        // access, but the cost is that we must have the same
+                                        // response to both cases (because we cannot distinguish
+                                        // between the two). So we have to make a choice: we can
+                                        // either swallow ALL errors (including "The property
+                                        // 'Blarg' does not exist"), or expose them all.
+                                        //
+                                        // Here, for truly blind dynamic access, we choose to
+                                        // preserve the behavior of showing "The property 'Blarg'
+                                        // does not exist" (case 1) errors than to suppress
+                                        // "FooException thrown when accessing Bloop property" (case
+                                        // 2) errors.
+
+                                        if (isBlindDynamicAccess)
+                                        {
+                                            errorRecord = new ErrorRecord(ex,
+                                                                          "DynamicPropertyAccessFailed_" + _propertyOrMethodName,
+                                                                          ErrorCategory.InvalidOperation,
+                                                                          InputObject);
+                                        }
+                                        else
+                                        {
+                                            // When the property is not gettable or it throws an exception.
+                                            // e.g. when trying to access an assembly's location property, since dynamic assemblies are not backed up by a file,
+                                            // an exception will be thrown when accessing its location property. In this case, return null.
+                                            WriteObject(null);
+                                        }
                                     }
                                 }
-                            } // end of member is a property
-                        } // member is not null
-                    } // no args provided
+                            }
+                        }
+                    }
 
                     if (errorRecord != null)
                     {
@@ -473,7 +571,7 @@ namespace Microsoft.PowerShell.Commands
                                 // so we also want
                                 // PS C:\> "string" | ForEach-Object aa | ForEach-Object {$_ + 3}
                                 // 3
-                                // But if we don’t write anything to the pipeline when no member is found,
+                                // But if we don't write anything to the pipeline when no member is found,
                                 // the result 3 will not be generated.
                                 WriteObject(null);
                             }
@@ -579,7 +677,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Get the value by taking _propertyOrMethodName as the key, if the 
+        /// Get the value by taking _propertyOrMethodName as the key, if the
         /// input object is a IDictionary.
         /// </summary>
         /// <returns></returns>
@@ -611,7 +709,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Unroll the object to be output. If it's of type IEnumerator, unroll and output it 
+        /// Unroll the object to be output. If it's of type IEnumerator, unroll and output it
         /// by calling WriteOutIEnumerator. If it's not, unroll and output it by calling WriteObject(obj, true)
         /// </summary>
         /// <param name="obj"></param>
@@ -649,7 +747,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Check if the language mode is the restrictedLanguageMode before invoking a method. 
+        /// Check if the language mode is the restrictedLanguageMode before invoking a method.
         /// Write out error message and return true if we are in restrictedLanguageMode.
         /// </summary>
         /// <returns></returns>
@@ -695,7 +793,7 @@ namespace Microsoft.PowerShell.Commands
         internal static ErrorRecord GenerateNameParameterError(string paraName, string resourceString, string errorId, object target, params object[] args)
         {
             string message;
-            if (null == args || 0 == args.Length)
+            if (args == null || 0 == args.Length)
             {
                 // Don't format in case the string contains literal curly braces
                 message = resourceString;
@@ -718,7 +816,6 @@ namespace Microsoft.PowerShell.Commands
 
             return errorRecord;
         }
-
 
         /// <summary>
         /// Execute the end scriptblock when the pipeline is complete
@@ -756,7 +853,7 @@ namespace Microsoft.PowerShell.Commands
     public sealed class WhereObjectCommand : PSCmdlet
     {
         /// <summary>
-        /// This parameter specifies the current pipeline object 
+        /// This parameter specifies the current pipeline object
         /// </summary>
         [Parameter(ValueFromPipeline = true)]
         public PSObject InputObject
@@ -782,7 +879,6 @@ namespace Microsoft.PowerShell.Commands
                 return _script;
             }
         }
-
 
         private string _property;
         /// <summary>
@@ -818,13 +914,13 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "CaseSensitiveNotInSet")]
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "IsSet")]
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "IsNotSet")]
+        [Parameter(Mandatory = true, Position = 0, ParameterSetName = "Not")]
         [ValidateNotNullOrEmpty]
         public string Property
         {
             set { _property = value; }
             get { return _property; }
         }
-
 
         private object _convertedValue;
         private object _value = true;
@@ -1205,6 +1301,16 @@ namespace Microsoft.PowerShell.Commands
             get { return _binaryOperator == TokenKind.IsNot; }
         }
 
+        /// <summary>
+        /// Binary operator -Not.
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "Not")]
+        public SwitchParameter Not
+        {
+            set { _binaryOperator = TokenKind.Not; }
+            get { return _binaryOperator == TokenKind.Not; }
+        }
+
         #endregion binary operator parameters
 
         private readonly CallSite<Func<CallSite, object, bool>> _toBoolSite =
@@ -1215,6 +1321,16 @@ namespace Microsoft.PowerShell.Commands
         {
             var site = CallSite<Func<CallSite, object, object, object>>.Create(PSBinaryOperationBinder.Get(expressionType, ignoreCase));
             return (x, y) => site.Target.Invoke(site, x, y);
+        }
+
+        private static Func<object, object, object> GetCallSiteDelegateBoolean(ExpressionType expressionType, bool ignoreCase)
+        {
+            // flip 'lval' and 'rval' in the scenario '... | Where-Object property' so as to make it
+            // equivalent to '... | Where-Object {$true -eq property}'. Because we want the property to
+            // be compared under the bool context. So that '"string" | Where-Object Length' would behave
+            // just like '"string" | Where-Object {$_.Length}'.
+            var site = CallSite<Func<CallSite, object, object, object>>.Create(binder: PSBinaryOperationBinder.Get(expressionType, ignoreCase));
+            return (x, y) => site.Target.Invoke(site, y, x);
         }
 
         private static Tuple<CallSite<Func<CallSite, object, IEnumerator>>, CallSite<Func<CallSite, object, object, object>>> GetContainsCallSites(bool ignoreCase)
@@ -1267,12 +1383,7 @@ namespace Microsoft.PowerShell.Commands
                     }
                     else
                     {
-                        // flip 'lval' and 'rval' in the scenario '... | Where-Object property' so as to make it
-                        // equivalent to '... | Where-Object {$true -eq property}'. Because we want the property to
-                        // be compared under the bool context. So that '"string" | Where-Object Length' would behave
-                        // just like '"string" | Where-Object {$_.Length}'.
-                        var site = CallSite<Func<CallSite, object, object, object>>.Create(PSBinaryOperationBinder.Get(ExpressionType.Equal, true));
-                        _operationDelegate = (x, y) => site.Target.Invoke(site, y, x);
+                        _operationDelegate = GetCallSiteDelegateBoolean(ExpressionType.Equal, ignoreCase: true);
                     }
                     break;
                 case TokenKind.Ceq:
@@ -1343,6 +1454,9 @@ namespace Microsoft.PowerShell.Commands
                     CheckLanguageMode();
                     _operationDelegate =
                         (lval, rval) => ParserOps.MatchOperator(Context, PositionUtilities.EmptyExtent, lval, rval, notMatch: true, ignoreCase: false);
+                    break;
+                case TokenKind.Not:
+                    _operationDelegate = GetCallSiteDelegateBoolean(ExpressionType.NotEqual, ignoreCase: true);
                     break;
                 // the second to last parameter in ContainsOperator has flipped semantics compared to others.
                 // "true" means "contains" while "false" means "notcontains"
@@ -1439,6 +1553,8 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
+        private DynamicPropertyGetter _propGetter;
+
         /// <summary>
         /// Execute the script block passing in the current pipeline object as
         /// it's only parameter.
@@ -1469,7 +1585,7 @@ namespace Microsoft.PowerShell.Commands
             else
             {
                 // Both -Property and -Value need to be specified if the user specifies the binary operation
-                if (_valueNotSpecified && (_binaryOperator != TokenKind.Ieq || !_forceBooleanEvaluation))
+                if (_valueNotSpecified && ((_binaryOperator != TokenKind.Ieq && _binaryOperator != TokenKind.Not) || !_forceBooleanEvaluation))
                 {
                     // The binary operation is specified explicitly by the user and the -Value parameter is
                     // not specified
@@ -1566,6 +1682,9 @@ namespace Microsoft.PowerShell.Commands
                 // has keys that can't be compared to property.
             }
 
+            string resolvedPropertyName = null;
+            bool isBlindDynamicAccess = false;
+
             ReadOnlyPSMemberInfoCollection<PSMemberInfo> members = GetMatchMembers();
             if (members.Count > 1)
             {
@@ -1585,7 +1704,21 @@ namespace Microsoft.PowerShell.Commands
             }
             else if (members.Count == 0)
             {
-                if (Context.IsStrictVersion(2))
+                if ((InputObject.BaseObject is IDynamicMetaObjectProvider) &&
+                    !WildcardPattern.ContainsWildcardCharacters(_property))
+                {
+                    // Let's just try a dynamic property access. Note that if it comes to
+                    // depending on dynamic access, we are assuming it is a property; we
+                    // don't have ETS info to tell us up front if it even exists or not,
+                    // let alone if it is a method or something else.
+                    //
+                    // Note that this is "truly blind"--the name did not show up in
+                    // GetDynamicMemberNames(), else it would show up as a dynamic member.
+
+                    resolvedPropertyName = _property;
+                    isBlindDynamicAccess = true;
+                }
+                else if (Context.IsStrictVersion(2))
                 {
                     WriteError(ForEachObjectCommand.GenerateNameParameterError("Property",
                                                                                InternalCommandStrings.PropertyNotFound,
@@ -1595,9 +1728,14 @@ namespace Microsoft.PowerShell.Commands
             }
             else
             {
+                resolvedPropertyName = members[0].Name;
+            }
+
+            if (!String.IsNullOrEmpty(resolvedPropertyName))
+            {
                 try
                 {
-                    return members[0].Value;
+                    return _propGetter.GetValue(_inputObject, resolvedPropertyName);
                 }
                 catch (TerminateException)
                 {
@@ -1607,10 +1745,45 @@ namespace Microsoft.PowerShell.Commands
                 {
                     throw;
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // When the property is not gettable or it throws an exception
-                    return null;
+                    // For normal property accesses, we do not generate an error here. The problem
+                    // for truly blind dynamic accesses (the member did not show up in
+                    // GetDynamicMemberNames) is that we can't tell the difference between "it
+                    // failed because the property does not exist" (let's call this case
+                    // 1) and "it failed because accessing it actually threw some exception" (let's
+                    // call that case 2).
+                    //
+                    // PowerShell behavior for normal (non-dynamic) properties is different for
+                    // these two cases: case 1 gets an error (if strict mode is on) (which is
+                    // possible because the ETS tells us up front if the property exists or not),
+                    // and case 2 does not. (For normal properties, this catch block /is/ case 2.)
+                    //
+                    // For IDMOPs, we have the chance to attempt a "blind" access, but the cost is
+                    // that we must have the same response to both cases (because we cannot
+                    // distinguish between the two). So we have to make a choice: we can either
+                    // swallow ALL errors (including "The property 'Blarg' does not exist"), or
+                    // expose them all.
+                    //
+                    // Here, for truly blind dynamic access, we choose to preserve the behavior of
+                    // showing "The property 'Blarg' does not exist" (case 1) errors than to
+                    // suppress "FooException thrown when accessing Bloop property" (case
+                    // 2) errors.
+
+                    if (isBlindDynamicAccess && Context.IsStrictVersion(2))
+                    {
+                        WriteError(new ErrorRecord(ex,
+                                                   "DynamicPropertyAccessFailed_" + _property,
+                                                   ErrorCategory.InvalidOperation,
+                                                   _inputObject));
+
+                        error = true;
+                    }
+                    else
+                    {
+                        // When the property is not gettable or it throws an exception
+                        return null;
+                    }
                 }
             }
 
@@ -1639,8 +1812,6 @@ namespace Microsoft.PowerShell.Commands
             return members;
         }
     }
-
-
 
     /// <summary>
     /// Implements a cmdlet that sets the script debugging options.
@@ -1733,7 +1904,7 @@ namespace Microsoft.PowerShell.Commands
     ///
     /// Note:
     ///
-    /// Unlike Set-PSDebug -strict, Set-StrictMode is not engine-wide, and only 
+    /// Unlike Set-PSDebug -strict, Set-StrictMode is not engine-wide, and only
     /// affects the scope it was defined in.
     /// </summary>
     [Cmdlet(VerbsCommon.Set, "StrictMode", DefaultParameterSetName = "Version", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113450")]
@@ -1835,7 +2006,6 @@ namespace Microsoft.PowerShell.Commands
         }
     }
     #endregion Set-StrictMode
-
 
     #endregion Built-in cmdlets that are used by or require direct access to the engine.
 }

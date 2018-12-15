@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections;
@@ -49,7 +48,7 @@ namespace Microsoft.PowerShell.Commands
     ///
     /// Execute a command in a set of remote machines by specifying the
     /// command and the list of machines
-    ///     $servers = 1..10 | %{"Server${_}"}
+    ///     $servers = 1..10 | ForEach-Object {"Server${_}"}
     ///     invoke-command -command {get-process} -computername $servers
     ///
     /// Create a new runspace and use it to execute a command on a remote machine
@@ -65,7 +64,7 @@ namespace Microsoft.PowerShell.Commands
     /// Create a collection of runspaces and use it to execute a command on a set
     /// of remote machines
     ///
-    ///     $serveruris = 1..8 | %{"http://Server${_}/"}
+    ///     $serveruris = 1..8 | ForEach-Object {"http://Server${_}/"}
     ///     $runspaces = New-PSSession -URI $serveruris
     ///     invoke-command -command {get-process} -Session $runspaces
     ///
@@ -156,7 +155,6 @@ namespace Microsoft.PowerShell.Commands
         ///      (a) Computer name
         ///      (b) IPv4 address : 132.3.4.5
         ///      (c) IPv6 address: 3ffe:8311:ffff:f70f:0:5efe:172.30.162.18
-        ///
         /// </summary>
         [Parameter(Position = 0,
                    ParameterSetName = InvokeCommandCommand.ComputerNameParameterSet)]
@@ -597,7 +595,6 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-
         /// <summary>
         /// Extended Session Options for controlling the session creation. Use
         /// "New-WSManSessionOption" cmdlet to supply value for this parameter.
@@ -785,14 +782,7 @@ namespace Microsoft.PowerShell.Commands
                 throw new InvalidOperationException(RemotingErrorIdStrings.AsJobAndDisconnectedError);
             }
 
-            if (this.InvokeAndDisconnect &&
-                (this.ComputerName == null || this.ComputerName.Length == 0) &&
-                (this.ConnectionUri == null || this.ConnectionUri.Length == 0))
-            {
-                throw new InvalidOperationException(RemotingErrorIdStrings.InvokeDisconnectedWithoutComputerName);
-            }
-
-            if (MyInvocation.BoundParameters.ContainsKey("SessionName") && !this.InvokeAndDisconnect)
+            if (MyInvocation.BoundParameters.ContainsKey(nameof(SessionName)) && !this.InvokeAndDisconnect)
             {
                 throw new InvalidOperationException(RemotingErrorIdStrings.SessionNameWithoutInvokeDisconnected);
             }
@@ -801,7 +791,7 @@ namespace Microsoft.PowerShell.Commands
             var hostDebugger = GetHostDebugger();
             if (hostDebugger == null)
             {
-                // Do not allow RemoteDebug if there is no host debugger available.  Otherwise script will hang indefinitely.
+                // Do not allow RemoteDebug if there is no host debugger available.  Otherwise script will not respond indefinitely.
                 RemoteDebug = false;
             }
             else if (hostDebugger.IsDebuggerSteppingEnabled)
@@ -946,7 +936,7 @@ namespace Microsoft.PowerShell.Commands
                     {
                         // Use remote steppable pipeline only for non-input piping case.
                         // Win8 Bug:898011 - We are restricting remote steppable pipeline because
-                        // of this bug in Win8 where hangs can occur during data piping.
+                        // of this bug in Win8 where not responding can occur during data piping.
                         // We are reverting to Win7 behavior for {icm | icm} and {proxycommand | proxycommand}
                         // cases. For ICM | % ICM case, we are using remote steppable pipeline.
                         if ((MyInvocation != null) && (MyInvocation.PipelinePosition == 1) && (MyInvocation.ExpectingInput == false))
@@ -1098,10 +1088,10 @@ namespace Microsoft.PowerShell.Commands
                                     }
                                 }
                                 break;
-                        } // switch ...
-                    } // else ...
+                        }
+                    }
                 }
-            } // if (!pipelineinvoked...
+            }
 
             if (InputObject != AutomationNull.Value && !_inputStreamClosed)
             {
@@ -1125,7 +1115,7 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
             }
-        } // ProcessRecord
+        }
 
         /// <summary>
         /// InvokeAsync would have been called in ProcessRecord. Wait here
@@ -1180,10 +1170,7 @@ namespace Microsoft.PowerShell.Commands
                         WriteJobResults(false);
 
                         // finally dispose the job.
-                        if (!_asjob)
-                        {
-                            _job.Dispose();
-                        }
+                        _job.Dispose();
 
                         // We no longer need to call ClearInvokeCommandOnRunspaces() here because
                         // this command might finish before the foreach block finishes. previously,
@@ -1230,15 +1217,13 @@ namespace Microsoft.PowerShell.Commands
                             WriteJobResults(false);
 
                             // finally dispose the job.
-                            if (!_asjob)
-                            {
-                                _job.Dispose();
-                            }
-                        } // if (needToCollect...
+                            _job.Dispose();
+
+                        }
                     }// else - job == null
                 }
             }// if (!async ...
-        } // EndProcessing
+        }
 
         /// <summary>
         /// This method is called when the user sends a stop signal to the
@@ -1325,7 +1310,7 @@ namespace Microsoft.PowerShell.Commands
         {
             _operationsComplete.Set();
             _throttleManager.ThrottleComplete -= new EventHandler<EventArgs>(HandleThrottleComplete);
-        } // HandleThrottleComplete
+        }
 
         /// <summary>
         /// Clears the internal invoke command instance on all
@@ -1631,7 +1616,12 @@ namespace Microsoft.PowerShell.Commands
         /// <param name="nonblocking">Write in a non-blocking manner</param>
         private void WriteJobResults(bool nonblocking)
         {
-            if (_job != null)
+            if (_job == null)
+            {
+                return;
+            }
+
+            try
             {
                 PipelineStoppedException caughtPipelineStoppedException = null;
                 _job.PropagateThrows = _propagateErrors;
@@ -1763,7 +1753,12 @@ namespace Microsoft.PowerShell.Commands
                                     session.Name, session.InstanceId));
                         }
                     }
-
+                }
+            }
+            finally
+            {
+                if (_job.JobStateInfo.State == JobState.Disconnected)
+                {
                     // Allow Invoke-Command to end even though not all remote pipelines
                     // finished.
                     HandleThrottleComplete(null, null);
@@ -2028,7 +2023,7 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
             }
-        } // Dispose
+        }
 
         #endregion IDisposable Overrides
     }

@@ -1,7 +1,5 @@
-
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
 using System.Collections;
@@ -12,7 +10,9 @@ using System.Globalization;
 using System.Management.Automation.Language;
 using System.Management.Automation.Runspaces;
 using System.Text.RegularExpressions;
+#if LEGACYTELEMETRY
 using Microsoft.PowerShell.Telemetry.Internal;
+#endif
 
 namespace System.Management.Automation
 {
@@ -64,7 +64,6 @@ namespace System.Management.Automation
         #region public methods
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="input"></param>
         /// <param name="cursorIndex"></param>
@@ -86,7 +85,6 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="input">The input to complete</param>
         /// <param name="cursorIndex">The index of the cursor in the input</param>
@@ -104,7 +102,6 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="ast">Ast for pre-parsed input</param>
         /// <param name="tokens">Tokens for pre-parsed input</param>
@@ -591,8 +588,10 @@ namespace System.Management.Automation
 
                     var completionResults = results ?? EmptyCompletionResult;
                     sw.Stop();
+#if LEGACYTELEMETRY
                     TelemetryAPI.ReportTabCompletionTelemetry(sw.ElapsedMilliseconds, completionResults.Count,
                         completionResults.Count > 0 ? completionResults[0].ResultType : CompletionResultType.Text);
+#endif
                     return new CommandCompletion(
                         new Collection<CompletionResult>(completionResults),
                         -1,
@@ -691,7 +690,6 @@ namespace System.Management.Automation
         /// exists for legacy purpose only. It is used only in a remote interactive session from Win8 to Win7. V3 and forward
         /// uses completely different completers.
         /// </summary>
-        ///
         /// <remarks>
         /// The implementation of file name completion is completely different on V2 and V3 for remote scenarios. On PSv3, the
         /// CompletionResults are generated always on the target machine, and
@@ -1081,14 +1079,14 @@ namespace System.Management.Automation
                 {
                     powershell.AddScript(String.Format(
                         CultureInfo.InvariantCulture,
-                        "& {{ trap {{ continue }} ; resolve-path {0} -Relative -WarningAction SilentlyContinue | %{{,($_,(get-item $_ -WarningAction SilentlyContinue),(convert-path $_ -WarningAction SilentlyContinue))}} }}",
+                        "& {{ trap {{ continue }} ; resolve-path {0} -Relative -WarningAction SilentlyContinue | ForEach-Object {{,($_,(get-item $_ -WarningAction SilentlyContinue),(convert-path $_ -WarningAction SilentlyContinue))}} }}",
                         path));
                 }
                 else
                 {
                     powershell.AddScript(String.Format(
                         CultureInfo.InvariantCulture,
-                        "& {{ trap {{ continue }} ; resolve-path {0} -WarningAction SilentlyContinue | %{{,($_,(get-item $_ -WarningAction SilentlyContinue),(convert-path $_ -WarningAction SilentlyContinue))}} }}",
+                        "& {{ trap {{ continue }} ; resolve-path {0} -WarningAction SilentlyContinue | ForEach-Object {{,($_,(get-item $_ -WarningAction SilentlyContinue),(convert-path $_ -WarningAction SilentlyContinue))}} }}",
                         path));
                 }
 
@@ -1178,10 +1176,7 @@ namespace System.Management.Automation
 
                 for (_sentenceIndex = 0; _sentenceIndex < _sentence.Length; ++_sentenceIndex)
                 {
-                    Diagnostics.Assert(
-                        (inSingleQuote && !inDoubleQuote)
-                        || (inDoubleQuote && !inSingleQuote)
-                        || (!inSingleQuote && !inDoubleQuote),
+                    Diagnostics.Assert(!(inSingleQuote && inDoubleQuote),
                         "Can't be in both single and double quotes");
 
                     char c = _sentence[_sentenceIndex];

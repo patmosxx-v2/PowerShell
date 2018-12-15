@@ -1,6 +1,5 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 //
 // This file contains all of the publicly visible parts of the PowerShell abstract syntax tree.
@@ -56,6 +55,7 @@ namespace System.Management.Automation.Language
         bool HasAnyScriptBlockAttributes();
         RuntimeDefinedParameterDictionary GetParameterMetadata(bool automaticPositions, ref bool usesCmdletBinding);
         IEnumerable<Attribute> GetScriptBlockAttributes();
+        IEnumerable<ExperimentalAttribute> GetExperimentalAttributes();
 
         bool UsesCmdletBinding();
         ReadOnlyCollection<ParameterAst> Parameters { get; }
@@ -680,7 +680,6 @@ namespace System.Management.Automation.Language
     #region Script Blocks
 
     /// <summary>
-    ///
     /// </summary>
     public class ScriptRequirements
     {
@@ -1368,6 +1367,64 @@ namespace System.Management.Automation.Language
                     var attributeAst = ParamBlock.Attributes[index];
                     yield return Compiler.GetAttribute(attributeAst);
                 }
+            }
+        }
+
+        IEnumerable<ExperimentalAttribute> IParameterMetadataProvider.GetExperimentalAttributes()
+        {
+            for (int index = 0; index < Attributes.Count; index++)
+            {
+                AttributeAst attributeAst = Attributes[index];
+                ExperimentalAttribute expAttr = GetExpAttributeHelper(attributeAst);
+                if (expAttr != null) { yield return expAttr; }
+            }
+
+            if (ParamBlock != null)
+            {
+                for (int index = 0; index < ParamBlock.Attributes.Count; index++)
+                {
+                    var attributeAst = ParamBlock.Attributes[index];
+                    var expAttr = GetExpAttributeHelper(attributeAst);
+                    if (expAttr != null) { yield return expAttr; }
+                }
+            }
+
+            ExperimentalAttribute GetExpAttributeHelper(AttributeAst attributeAst)
+            {
+                AttributeAst potentialExpAttr = null;
+                string expAttrTypeName = typeof(ExperimentalAttribute).FullName;
+                string attrAstTypeName = attributeAst.TypeName.Name;
+
+                if (TypeAccelerators.Get.TryGetValue(attrAstTypeName, out Type attrType) && attrType == typeof(ExperimentalAttribute))
+                {
+                    potentialExpAttr = attributeAst;
+                }
+                else if (expAttrTypeName.EndsWith(attrAstTypeName, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Handle two cases:
+                    //   1. declare the attribute using full type name;
+                    //   2. declare the attribute using partial type name due to 'using namespace'.
+                    int expAttrLength = expAttrTypeName.Length;
+                    int attrAstLength = attrAstTypeName.Length;
+                    if (expAttrLength == attrAstLength || expAttrTypeName[expAttrLength - attrAstLength - 1] == '.')
+                    {
+                        potentialExpAttr = attributeAst;
+                    }
+                }
+
+                if (potentialExpAttr != null)
+                {
+                    try
+                    {
+                        return Compiler.GetAttribute(potentialExpAttr) as ExperimentalAttribute;
+                    }
+                    catch (Exception)
+                    {
+                        // catch all and assume it's not a declaration of ExperimentalAttribute
+                    }
+                }
+
+                return null;
             }
         }
 
@@ -2735,7 +2792,6 @@ namespace System.Management.Automation.Language
             SetParent(Alias);
         }
 
-
         /// <summary>
         /// Construct a using module statement that aliases an item with module specification as hashtable.
         /// </summary>
@@ -3301,6 +3357,11 @@ namespace System.Management.Automation.Language
             return ((IParameterMetadataProvider)_functionDefinitionAst).GetScriptBlockAttributes();
         }
 
+        IEnumerable<ExperimentalAttribute> IParameterMetadataProvider.GetExperimentalAttributes()
+        {
+            return ((IParameterMetadataProvider)_functionDefinitionAst).GetExperimentalAttributes();
+        }
+
         bool IParameterMetadataProvider.UsesCmdletBinding()
         {
             return ((IParameterMetadataProvider)_functionDefinitionAst).UsesCmdletBinding();
@@ -3412,6 +3473,11 @@ namespace System.Management.Automation.Language
         public IEnumerable<Attribute> GetScriptBlockAttributes()
         {
             return ((IParameterMetadataProvider)Body).GetScriptBlockAttributes();
+        }
+
+        public IEnumerable<ExperimentalAttribute> GetExperimentalAttributes()
+        {
+            return ((IParameterMetadataProvider)Body).GetExperimentalAttributes();
         }
 
         public bool UsesCmdletBinding()
@@ -3615,7 +3681,7 @@ namespace System.Management.Automation.Language
             }
 
             var sb = new StringBuilder("param(");
-            string separator = "";
+            string separator = string.Empty;
 
             if (additionalNewUsingParams != null)
             {
@@ -3693,6 +3759,11 @@ namespace System.Management.Automation.Language
         IEnumerable<Attribute> IParameterMetadataProvider.GetScriptBlockAttributes()
         {
             return ((IParameterMetadataProvider)Body).GetScriptBlockAttributes();
+        }
+
+        IEnumerable<ExperimentalAttribute> IParameterMetadataProvider.GetExperimentalAttributes()
+        {
+            return ((IParameterMetadataProvider)Body).GetExperimentalAttributes();
         }
 
         ReadOnlyCollection<ParameterAst> IParameterMetadataProvider.Parameters
@@ -5598,9 +5669,7 @@ namespace System.Management.Automation.Language
 
         /// <summary>
         /// <para>Returns the name of the command invoked by this ast.</para>
-        ///
         /// <para>This command name may not be known statically, in which case null is returned.</para>
-        ///
         /// <para>
         /// For example, if the command name is in a variable: <example>&amp; $foo</example>, then the parser cannot know which command is executed.
         /// Similarly, if the command is being invoked in a module: <example>&amp; (gmo SomeModule) Bar</example>, then the parser does not know the
@@ -6061,7 +6130,6 @@ namespace System.Management.Automation.Language
         #endregion Visitors
     }
 
-
     /// <summary>
     /// Defines types of configuration document
     /// </summary>
@@ -6183,7 +6251,6 @@ namespace System.Management.Automation.Language
         }
 
         #endregion Visitors
-
 
         #region Internal methods/properties
 
@@ -6349,7 +6416,6 @@ namespace System.Management.Automation.Language
         #region static fields/methods
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="stmt"></param>
         /// <param name="resourceModulePairsToImport">Item1 - ResourceName, Item2 - ModuleName, Item3 - ModuleVersion</param>
@@ -8128,7 +8194,7 @@ namespace System.Management.Automation.Language
             {
                 Type generic = GetGenericType(TypeName.GetReflectionType());
 
-                if (generic != null && generic.GetTypeInfo().ContainsGenericParameters)
+                if (generic != null && generic.ContainsGenericParameters)
                 {
                     var argumentList = new List<Type>();
                     foreach (var arg in GenericArguments)
@@ -8175,7 +8241,7 @@ namespace System.Management.Automation.Language
         /// <returns></returns>
         internal Type GetGenericType(Type generic)
         {
-            if (generic == null || !generic.GetTypeInfo().ContainsGenericParameters)
+            if (generic == null || !generic.ContainsGenericParameters)
             {
                 if (TypeName.FullName.IndexOf("`", StringComparison.OrdinalIgnoreCase) == -1)
                 {
@@ -8202,21 +8268,19 @@ namespace System.Management.Automation.Language
             if (type == null)
             {
                 Type generic = TypeName.GetReflectionAttributeType();
-                TypeInfo genericTypeInfo = (generic != null) ? generic.GetTypeInfo() : null;
-                if (genericTypeInfo == null || !genericTypeInfo.ContainsGenericParameters)
+                if (generic == null || !generic.ContainsGenericParameters)
                 {
                     if (TypeName.FullName.IndexOf("`", StringComparison.OrdinalIgnoreCase) == -1)
                     {
                         var newTypeName = new TypeName(Extent,
                             string.Format(CultureInfo.InvariantCulture, "{0}Attribute`{1}", TypeName.FullName, GenericArguments.Count));
                         generic = newTypeName.GetReflectionType();
-                        genericTypeInfo = (generic != null) ? generic.GetTypeInfo() : null;
                     }
                 }
 
-                if (genericTypeInfo != null && genericTypeInfo.ContainsGenericParameters)
+                if (generic != null && generic.ContainsGenericParameters)
                 {
-                    type = genericTypeInfo.MakeGenericType((from arg in GenericArguments select arg.GetReflectionType()).ToArray());
+                    type = generic.MakeGenericType((from arg in GenericArguments select arg.GetReflectionType()).ToArray());
                     Interlocked.CompareExchange(ref _cachedType, type, null);
                 }
             }
@@ -8512,7 +8576,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// The name of the assembly.
         /// </summary>
-        public string AssemblyName { get { return _type.GetTypeInfo().Assembly.FullName; } }
+        public string AssemblyName { get { return _type.Assembly.FullName; } }
 
         /// <summary>
         /// Returns true if the type is an array, false otherwise.
@@ -8522,7 +8586,7 @@ namespace System.Management.Automation.Language
         /// <summary>
         /// Returns true if the type is a generic, false otherwise.
         /// </summary>
-        public bool IsGeneric { get { return _type.GetTypeInfo().IsGenericType; } }
+        public bool IsGeneric { get { return _type.IsGenericType; } }
 
         /// <summary>
         /// The extent of the typename.
@@ -9301,7 +9365,7 @@ namespace System.Management.Automation.Language
         }
 
         /// <summary>
-        /// The non-empty collection of asts of the elements of the array, or null if no elements were specified (e.g. <c>@()</c>).
+        /// The non-empty collection of asts of the elements of the array.
         /// </summary>
         public ReadOnlyCollection<ExpressionAst> Elements { get; private set; }
 
@@ -9415,7 +9479,6 @@ namespace System.Management.Automation.Language
 
         // Indicates that this ast was constructed as part of a schematized object instead of just a plain hash literal.
         internal bool IsSchemaElement { get; set; }
-
 
         #region Visitors
 
@@ -10056,36 +10119,4 @@ namespace System.Management.Automation.Language
     }
 
     #endregion Help
-}
-
-namespace System.Management.Automation.Internal
-{
-    using Runspaces;
-    using Language;
-
-    /// <summary>Internal interface used for workflow compilation.</summary>
-    [SuppressMessage("Microsoft.MSInternal", "CA903:InternalNamespaceShouldNotContainPublicTypes")]
-    public interface IAstToWorkflowConverter
-    {
-        /// <summary/>
-        List<ParseError> ValidateAst(FunctionDefinitionAst ast);
-
-        /// <summary/>
-        List<WorkflowInfo> CompileWorkflows(ScriptBlockAst ast, PSModuleInfo definingModule);
-
-        /// <summary/>
-        List<WorkflowInfo> CompileWorkflows(ScriptBlockAst ast, PSModuleInfo definingModule, InitialSessionState initialSessionState, out ParseException parsingErrors);
-
-        /// <summary/>
-        List<WorkflowInfo> CompileWorkflows(ScriptBlockAst ast, PSModuleInfo definingModule, InitialSessionState initialSessionState, PSLanguageMode? languageMode, out ParseException parsingErrors);
-
-        /// <summary/>
-        List<WorkflowInfo> CompileWorkflows(ScriptBlockAst ast, PSModuleInfo definingModule, string rootWorkflowName);
-
-        /// <summary/>
-        List<WorkflowInfo> CompileWorkflows(ScriptBlockAst ast, PSModuleInfo definingModule, InitialSessionState initialSessionState, out ParseException parsingErrors, string rootWorkflowName);
-
-        /// <summary/>
-        WorkflowInfo CompileWorkflow(string name, string definition, InitialSessionState initialSessionState);
-    }
 }

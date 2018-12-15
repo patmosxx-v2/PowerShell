@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -24,15 +23,12 @@ namespace System.Management.Automation
         /// Constructs a command searching enumerator that resolves the location
         /// of a command using the PATH environment variable.
         /// </summary>
-        ///
         /// <param name="patterns">
         /// The patterns to search for in the path.
         /// </param>
-        ///
         /// <param name="lookupPaths">
         /// The paths to directories in which to lookup the command.
         /// </param>
-        ///
         /// <param name="context">
         /// The execution context for the current engine instance.
         /// </param>
@@ -65,7 +61,7 @@ namespace System.Management.Automation
                     // Porting note: on non-Windows platforms, we want to always allow just 'commandName'
                     // as an acceptable command name. However, we also want to allow commands to be
                     // called with the .ps1 extension, so that 'script.ps1' can be called by 'script'.
-                    commandPatterns = new[] { commandName + ".ps1", commandName };
+                    commandPatterns = new[] { commandName, commandName + ".ps1" };
                 }
                 _postProcessEnumeratedFiles = CheckAgainstAcceptableCommandNames;
                 _acceptableCommandNames = acceptableCommandNames;
@@ -97,7 +93,6 @@ namespace System.Management.Automation
         /// Ensures that all the paths in the lookupPaths member are absolute
         /// file system paths.
         /// </summary>
-        ///
         private void ResolveCurrentDirectoryInLookupPaths()
         {
             var indexesToRemove = new SortedDictionary<int, int>();
@@ -151,7 +146,6 @@ namespace System.Management.Automation
                             "The relative path '{0}', could not resolve a home directory for the provider",
                             _lookupPaths[index]);
                     }
-
 
                     // Note, if the directory resolves to multiple paths, only the first is used.
 
@@ -229,42 +223,36 @@ namespace System.Management.Automation
                 int indexToRemove = indexesToRemove[removeIndex - 1];
                 _lookupPaths.RemoveAt(indexToRemove);
             }
-        } // ResolveCurrentDirectoryInLookupPaths
+        }
 
         /// <summary>
         /// Gets an instance of a command enumerator
         /// </summary>
-        ///
         /// <returns>
         /// An instance of this class as IEnumerator.
         /// </returns>
-        ///
         IEnumerator<string> IEnumerable<string>.GetEnumerator()
         {
             return this;
-        } // GetEnumerator
+        }
 
         /// <summary>
         /// Gets an instance of a command enumerator
         /// </summary>
-        ///
         /// <returns>
         /// An instance of this class as IEnumerator.
         /// </returns>
-        ///
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this;
-        } // GetEnumerator
+        }
 
         /// <summary>
         /// Moves the enumerator to the next command match
         /// </summary>
-        ///
         /// <returns>
         /// true if there was another command that matches, false otherwise.
         /// </returns>
-        ///
         public bool MoveNext()
         {
             bool result = false;
@@ -349,7 +337,7 @@ namespace System.Management.Automation
             } while (true);
 
             return result;
-        } // MoveNext
+        }
 
         /// <summary>
         /// Resets the enumerator to before the first command match
@@ -361,18 +349,16 @@ namespace System.Management.Automation
             _currentDirectoryResults = Utils.EmptyArray<string>();
             _currentDirectoryResultsEnumerator = _currentDirectoryResults.GetEnumerator();
             _justReset = true;
-        } // Reset
+        }
 
         /// <summary>
         /// Gets the path to the current command match.
         /// </summary>
         /// <value></value>
-        ///
         /// <exception cref="InvalidOperationException">
         /// The enumerator is positioned before the first element of
         /// the collection or after the last element.
         /// </exception>
-        ///
         string IEnumerator<string>.Current
         {
             get
@@ -384,7 +370,7 @@ namespace System.Management.Automation
 
                 return _currentDirectoryResultsEnumerator.Current;
             }
-        } // Current
+        }
 
         object IEnumerator.Current
         {
@@ -409,15 +395,12 @@ namespace System.Management.Automation
         /// Gets the matching files in the specified directories and resets
         /// the currentDirectoryResultsEnumerator to this new set of results.
         /// </summary>
-        ///
         /// <param name="pattern">
         /// The pattern used to find the matching files in the specified directory.
         /// </param>
-        ///
         /// <param name="directory">
         /// The path to the directory to find the files in.
         /// </param>
-        ///
         private void GetNewDirectoryResults(string pattern, string directory)
         {
             IEnumerable<string> result = null;
@@ -466,7 +449,7 @@ namespace System.Management.Automation
 
             _currentDirectoryResults = result ?? Utils.EmptyArray<string>();
             _currentDirectoryResultsEnumerator = _currentDirectoryResults.GetEnumerator();
-        } // GetMatchingPathsInDirectory
+        }
 
         private IEnumerable<string> CheckAgainstAcceptableCommandNames(string[] fileNames)
         {
@@ -576,6 +559,6 @@ namespace System.Management.Automation
         private Collection<string> _acceptableCommandNames;
 
         #endregion private members
-    } // CommandSearch
+    }
 }
 

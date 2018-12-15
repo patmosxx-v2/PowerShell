@@ -1,19 +1,14 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
-
-
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Management.Automation.Host;
 
 using Dbg = System.Management.Automation.Diagnostics;
 
-
 namespace Microsoft.PowerShell
 {
     /// <summary>
-    ///
     /// ProgressPane is a class that represents the "window" in which outstanding activities for which the host has received
     /// progress updates are shown.
     ///
@@ -23,14 +18,10 @@ namespace Microsoft.PowerShell
     class ProgressPane
     {
         /// <summary>
-        ///
         /// Constructs a new instance.
-        ///
         /// </summary>
         /// <param name="ui">
-        ///
         /// An implementation of the PSHostRawUserInterface with which the pane will be shown and hidden.
-        ///
         /// </param>
 
         internal
@@ -41,15 +32,10 @@ namespace Microsoft.PowerShell
             _rawui = ui.RawUI;
         }
 
-
-
         /// <summary>
-        ///
         /// Indicates whether the pane is visible on the screen buffer or not.
-        ///
         /// </summary>
         /// <value>
-        ///
         /// true if the pane is visible, false if not.
         ///
         ///</value>
@@ -64,13 +50,9 @@ namespace Microsoft.PowerShell
             }
         }
 
-
-
         /// <summary>
-        ///
         /// Shows the pane in the screen buffer.  Saves off the content of the region of the buffer that will be overwritten so
         /// that it can be restored again.
-        ///
         /// </summary>
 
         internal
@@ -107,12 +89,17 @@ namespace Microsoft.PowerShell
 
                 //if the cursor is at the bottom, create screen buffer space by scrolling
                 int scrollRows = rows - ((_rawui.BufferSize.Height - 1) - _location.Y);
-                for (int i = 0; i < rows; i++)
-                {
-                    Console.Out.Write('\n');
-                }
                 if (scrollRows > 0)
                 {
+                    // Scroll the console screen up by 'scrollRows'
+                    var bottomLocation = _location;
+                    bottomLocation.Y = _rawui.BufferSize.Height;
+                    _rawui.CursorPosition = bottomLocation;
+                    for (int i = 0; i < scrollRows; i++)
+                    {
+                        Console.Out.Write('\n');
+                    }
+
                     _location.Y -= scrollRows;
                     _savedCursor.Y -= scrollRows;
                 }
@@ -149,13 +136,9 @@ namespace Microsoft.PowerShell
             }
         }
 
-
-
         /// <summary>
-        ///
         /// Hides the pane by restoring the saved contents of the region of the buffer that the pane occupies.  If the pane is
         /// not showing, then does nothing.
-        ///
         /// </summary>
 
         internal
@@ -175,17 +158,11 @@ namespace Microsoft.PowerShell
             }
         }
 
-
-
         /// <summary>
-        ///
         /// Updates the pane with the rendering of the supplied PendingProgress, and shows it.
-        ///
         /// </summary>
         /// <param name="pendingProgress">
-        ///
         /// A PendingProgress instance that represents the outstanding activities that should be shown.
-        ///
         /// </param>
 
         internal
@@ -257,8 +234,6 @@ namespace Microsoft.PowerShell
             }
         }
 
-
-
         private Coordinates _location = new Coordinates(0, 0);
         private Coordinates _savedCursor;
         private Size _bufSize;
@@ -268,7 +243,4 @@ namespace Microsoft.PowerShell
         private ConsoleHostUserInterface _ui;
     }
 }   // namespace
-
-
-
 

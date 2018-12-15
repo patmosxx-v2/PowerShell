@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -258,7 +257,6 @@ namespace System.Management.Automation
             State = jobStateInfo.State;
             Reason = jobStateInfo.Reason;
         }
-
 
         #endregion constructors
 
@@ -558,7 +556,7 @@ namespace System.Management.Automation
         public string Command { get; }
 
         /// <summary>
-        /// Status of the  command execution.
+        /// Status of the command execution.
         /// </summary>
         public JobStateInfo JobStateInfo { get; private set; } = new JobStateInfo(JobState.NotStarted);
 
@@ -686,7 +684,7 @@ namespace System.Management.Automation
             }
             set
             {
-                if (null == value)
+                if (value == null)
                 {
                     throw PSTraceSource.NewArgumentNullException("Results");
                 }
@@ -1075,7 +1073,7 @@ namespace System.Management.Automation
             }
             set
             {
-                if (null == value)
+                if (value == null)
                 {
                     throw PSTraceSource.NewArgumentNullException("Output");
                 }
@@ -1109,7 +1107,7 @@ namespace System.Management.Automation
             }
             set
             {
-                if (null == value)
+                if (value == null)
                 {
                     throw PSTraceSource.NewArgumentNullException("Error");
                 }
@@ -1143,7 +1141,7 @@ namespace System.Management.Automation
             }
             set
             {
-                if (null == value)
+                if (value == null)
                 {
                     throw PSTraceSource.NewArgumentNullException("Progress");
                 }
@@ -1174,7 +1172,7 @@ namespace System.Management.Automation
             }
             set
             {
-                if (null == value)
+                if (value == null)
                 {
                     throw PSTraceSource.NewArgumentNullException("Verbose");
                 }
@@ -1208,7 +1206,7 @@ namespace System.Management.Automation
             }
             set
             {
-                if (null == value)
+                if (value == null)
                 {
                     throw PSTraceSource.NewArgumentNullException("Debug");
                 }
@@ -1241,7 +1239,7 @@ namespace System.Management.Automation
             }
             set
             {
-                if (null == value)
+                if (value == null)
                 {
                     throw PSTraceSource.NewArgumentNullException("Warning");
                 }
@@ -1275,7 +1273,7 @@ namespace System.Management.Automation
             }
             set
             {
-                if (null == value)
+                if (value == null)
                 {
                     throw PSTraceSource.NewArgumentNullException("Information");
                 }
@@ -1542,14 +1540,25 @@ namespace System.Management.Automation
         /// </summary>
         internal void CloseAllStreams()
         {
-            if (_resultsOwner) _results.Complete();
-            if (_outputOwner) _output.Complete();
-            if (_errorOwner) _error.Complete();
-            if (_progressOwner) _progress.Complete();
-            if (_verboseOwner) _verbose.Complete();
-            if (_warningOwner) _warning.Complete();
-            if (_debugOwner) _debug.Complete();
-            if (_informationOwner) _information.Complete();
+            // The Complete() method includes raising public notification events that third parties can
+            // handle and potentially throw exceptions on the notification thread.  We don't want to
+            // propagate those exceptions because it prevents this thread from completing its processing.
+            if (_resultsOwner) { try { _results.Complete(); } catch (Exception e) { TraceException(e); } }
+            if (_outputOwner) { try { _output.Complete(); } catch (Exception e) { TraceException(e); } }
+            if (_errorOwner) { try { _error.Complete(); } catch (Exception e) { TraceException(e); } }
+            if (_progressOwner) { try { _progress.Complete(); } catch (Exception e) { TraceException(e); } }
+            if (_verboseOwner) { try { _verbose.Complete(); } catch (Exception e) { TraceException(e); } }
+            if (_warningOwner) { try { _warning.Complete(); } catch (Exception e) { TraceException(e); } }
+            if (_debugOwner) { try { _debug.Complete(); } catch (Exception e) { TraceException(e); } }
+            if (_informationOwner) { try { _information.Complete(); } catch (Exception e) { TraceException(e); } }
+        }
+
+        private static void TraceException(Exception e)
+        {
+            using (PowerShellTraceSource tracer = PowerShellTraceSourceFactory.GetTraceSource())
+            {
+                tracer.TraceException(e);
+            }
         }
 
         /// <summary>
@@ -1570,7 +1579,7 @@ namespace System.Management.Automation
             }
 
             return returnJobList;
-        } // GetJobsForLocation
+        }
 
         #endregion Private/Internal Methods
 
@@ -1605,7 +1614,7 @@ namespace System.Management.Automation
                     // release the WaitHandle
                     lock (syncObject)
                     {
-                        if (null != _finished)
+                        if (_finished != null)
                         {
                             _finished.Dispose();
                             _finished = null;
@@ -1718,7 +1727,6 @@ namespace System.Management.Automation
             :
             this(remoteRunspaceInfos, runspaceHelpers, remoteCommand, 0, name)
         { }
-
 
         /// <summary>
         /// Internal constructor for initializing PSRemotingJob using
@@ -1875,7 +1883,7 @@ namespace System.Management.Automation
             }
 
             return returnJobList;
-        } // GetResultForComputer
+        }
 
         /// <summary>
         /// Get entity result for the specified runspace
@@ -1897,7 +1905,7 @@ namespace System.Management.Automation
                 }
             }
             return returnJobList;
-        } // GetResultForRunspace
+        }
 
         /// <summary>
         /// Get entity result for the specified helper object
@@ -1921,9 +1929,9 @@ namespace System.Management.Automation
             }
 
             return returnJobList;
-        } // GetResultForHelper
+        }
 
-        #endregion  internal methods
+        #endregion internal methods
 
         #region Connection Support
 
@@ -2182,7 +2190,6 @@ namespace System.Management.Automation
             }
         }
 
-
         private bool _stopIsCalled = false;
         /// <summary>
         /// Stop Job
@@ -2255,7 +2262,7 @@ namespace System.Management.Automation
                 foreach (Job job in this.ChildJobs)
                 {
                     PSRemotingChildJob rJob = job as PSRemotingChildJob;
-                    if (null != rJob)
+                    if (rJob != null)
                     {
                         rJob.HideComputerName = value;
                     }
@@ -2306,12 +2313,12 @@ namespace System.Management.Automation
             //                        }
             //                        break;
             //                    }
-            //                } // for (int ...
+            //                }
 
             //                setFinished = true;
-            //            } // if (finishedCount ...
-            //        } // lock...
-        } // SetStatusMessage
+            //            }
+            //        }
+        }
 
         #region finish logic
 
@@ -2707,7 +2714,6 @@ namespace System.Management.Automation
         /// Creates an instance of PSRemotingChildJob
         /// </summary>
         /// <param name="remoteCommand">command invoked by this job object</param>
-        ///
         /// <param name="helper"></param>
         /// <param name="throttleManager"></param>
         internal PSRemotingChildJob(string remoteCommand, ExecutionCmdletHelper helper, ThrottleManager throttleManager)
@@ -2722,7 +2728,7 @@ namespace System.Management.Automation
             _throttleManager = throttleManager;
 
             RemoteRunspace remoteRS = Runspace as RemoteRunspace;
-            if ((null != remoteRS) && (remoteRS.RunspaceStateInfo.State == RunspaceState.BeforeOpen))
+            if ((remoteRS != null) && (remoteRS.RunspaceStateInfo.State == RunspaceState.BeforeOpen))
             {
                 remoteRS.URIRedirectionReported += HandleURIDirectionReported;
             }
@@ -2845,7 +2851,7 @@ namespace System.Management.Automation
             get
             {
                 //ISSUE implement this.
-                return "";
+                return string.Empty;
             }
         }
 
@@ -2874,7 +2880,6 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        ///
         /// </summary>
         public Runspace Runspace { get; }
 
@@ -2898,7 +2903,7 @@ namespace System.Management.Automation
                 foreach (Job job in this.ChildJobs)
                 {
                     PSRemotingChildJob rJob = job as PSRemotingChildJob;
-                    if (null != rJob)
+                    if (rJob != null)
                     {
                         rJob.HideComputerName = value;
                     }
@@ -3092,7 +3097,7 @@ namespace System.Management.Automation
                     }
                 }
             }// if (hostCallsStream...
-        } // HandleHostCalls
+        }
 
         /// <summary>
         /// Handle changes in pipeline states
@@ -3101,7 +3106,7 @@ namespace System.Management.Automation
         /// <param name="e"></param>
         protected virtual void HandlePipelineStateChanged(object sender, PipelineStateEventArgs e)
         {
-            if ((null != Runspace) && (e.PipelineStateInfo.State != PipelineState.Running))
+            if ((Runspace != null) && (e.PipelineStateInfo.State != PipelineState.Running))
             {
                 // since we got state changed event..we dont need to listen on
                 // URI redirections anymore
@@ -3155,7 +3160,7 @@ namespace System.Management.Automation
             //DoFinish has logic to check if it has been already called and second call
             //becomes noOp.
             DoFinish();
-        } // HandleThrottleComplete
+        }
 
         /// <summary>
         /// Handle the operation complete event
@@ -3322,7 +3327,7 @@ namespace System.Management.Automation
                 failureErrorRecord = new ErrorRecord(failureException, targetObject,
                                 fullyQualifiedErrorId, ErrorCategory.OpenError,
                                 null, null, null, null, null, errorDetails, null);
-            } // if (runspace...
+            }
             else if (pipeline.PipelineStateInfo.State == PipelineState.Failed)
             {
                 object targetObject = runspace.ConnectionInfo.ComputerName;
@@ -3355,8 +3360,8 @@ namespace System.Management.Automation
                     OriginInfo originInfo = new OriginInfo(computerName, runspaceId);
 
                     failureErrorRecord = new RemotingErrorRecord(errorRecord, originInfo);
-                } // if (exception != null...
-            } // if (pipeline...
+                }
+            }
         }
 
         /// <summary>
@@ -3875,34 +3880,12 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Sets the parent debugger, breakpoints, function source and other
-        /// debugging context information.
+        /// Sets the parent debugger, breakpoints, and other debugging context information.
         /// </summary>
         /// <param name="parent">Parent debugger</param>
         /// <param name="breakPoints">List of breakpoints</param>
         /// <param name="startAction">Debugger mode</param>
         /// <param name="host">PowerShell host</param>
-        /// <param name="path">Current path</param>
-        /// <param name="functionSourceMap">Function to source map</param>
-        public override void SetParent(
-            Debugger parent,
-            IEnumerable<Breakpoint> breakPoints,
-            DebuggerResumeAction? startAction,
-            PSHost host,
-            PathInfo path,
-            Dictionary<string, DebugSource> functionSourceMap)
-        {
-            // For now always enable step mode debugging.
-            SetDebuggerStepMode(true);
-        }
-
-        /// <summary>
-        /// Sets the parent debugger and breakpoints.
-        /// </summary>
-        /// <param name="parent">Parent debugger</param>
-        /// <param name="breakPoints">List of breakpoints</param>
-        /// <param name="startAction">Debugger mode</param>
-        /// <param name="host">host</param>
         /// <param name="path">Current path</param>
         public override void SetParent(
             Debugger parent,
@@ -4072,7 +4055,7 @@ namespace System.Management.Automation
                 ExecutionCmdletHelper helper = operation as ExecutionCmdletHelper;
 
                 RemoteRunspace remoteRS = helper.Pipeline.Runspace as RemoteRunspace;
-                if (null != remoteRS)
+                if (remoteRS != null)
                 {
                     remoteRS.StateChanged += HandleRunspaceStateChanged;
 
@@ -4120,7 +4103,7 @@ namespace System.Management.Automation
             {
                 // cleanup remote runspace related handlers
                 RemoteRunspace remoteRS = helper.PipelineRunspace as RemoteRunspace;
-                if (null != remoteRS)
+                if (remoteRS != null)
                 {
                     remoteRS.StateChanged -= HandleRunspaceStateChanged;
                     remoteRS.URIRedirectionReported -= HandleURIDirectionReported;
@@ -4298,7 +4281,7 @@ namespace System.Management.Automation
             RemoteRunspace remoteRS = sender as RemoteRunspace;
             // remote runspace must be connected (or connection failed)
             // we dont need URI redirection any more..so clear it
-            if (null != remoteRS)
+            if (remoteRS != null)
             {
                 if (e.RunspaceStateInfo.State != RunspaceState.Opening)
                 {

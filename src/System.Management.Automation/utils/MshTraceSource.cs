@@ -1,6 +1,6 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #define TRACE
 
 using System.Reflection;
@@ -12,12 +12,10 @@ namespace System.Management.Automation
     /// An PSTraceSource is a representation of a System.Diagnostics.TraceSource instance
     /// that is used the the Monad components to produce trace output.
     /// </summary>
-    ///
     /// <remarks>
     /// It is permitted to subclass <see cref="PSTraceSource"/>
     /// but there is no established scenario for doing this, nor has it been tested.
     /// </remarks>
-    ///
     /// <!--
     /// IF YOU ARE NOT PART OF THE MONAD DEVELOPMENT TEAM PLEASE
     /// DO NOT USE THIS CLASS!!!!!
@@ -29,10 +27,7 @@ namespace System.Management.Automation
     ///
     /// For instance, the Exception flag will enable tracing on these methods:
     ///     TraceException
-    ///
-    ///
     /// </summary>
-    ///
     /// <remarks>
     /// To get an instance of this class a user should define a public static
     /// field of the type PSTraceSource, decorated it with an attribute of
@@ -59,23 +54,19 @@ namespace System.Management.Automation
         /// <summary>
         /// A helper to get an instance of the PSTraceSource class
         /// </summary>
-        ///
         /// <param name="name">
         /// The name of the category that this class
         /// will control the tracing for.
         /// </param>
-        ///
         /// <param name="description">
         /// The description to describe what the category
         /// is used for.
         /// </param>
-        ///
         /// <returns>
         /// An instance of the PSTraceSource class which is initialized
         /// to trace for the specified category. If multiple callers ask for the same category,
         /// the same PSTraceSource will be returned.
         /// </returns>
-        ///
         internal static PSTraceSource GetTracer(
             string name,
             string description)
@@ -86,27 +77,22 @@ namespace System.Management.Automation
         /// <summary>
         /// A helper to get an instance of the PSTraceSource class
         /// </summary>
-        ///
         /// <param name="name">
         /// The name of the category that this class
         /// will control the tracing for.
         /// </param>
-        ///
         /// <param name="description">
         /// The description to describe what the category
         /// is used for.
         /// </param>
-        ///
         /// <param name="traceHeaders">
         /// If true, the line headers will be traced, if false, only the trace message will be traced.
         /// </param>
-        ///
         /// <returns>
         /// An instance of the PSTraceSource class which is initialized
         /// to trace for the specified category. If multiple callers ask for the same category,
         /// the same PSTraceSource will be returned.
         /// </returns>
-        ///
         internal static PSTraceSource GetTracer(
             string name,
             string description,
@@ -178,11 +164,6 @@ namespace System.Management.Automation
                     PSTraceSource.TraceCatalog[result.FullName] = result;
                 }
 
-#if !CORECLR    // System.AppDomain is not in ProjectK
-                // Trace the global header if this is the first
-                // trace object for the AppDomain and tracing flags
-                // are enabled.
-
                 if (result.Options != PSTraceSourceOptions.None &&
                     traceHeaders)
                 {
@@ -191,7 +172,6 @@ namespace System.Management.Automation
                     // Trace the object specific tracer information
                     result.TracerObjectHeader(Assembly.GetCallingAssembly());
                 }
-#endif
                 return result;
             }
         }
@@ -235,7 +215,6 @@ namespace System.Management.Automation
         }
 
         #region TraceFlags.New*Exception methods/helpers
-
 
         /// <summary>
         /// Traces the Message and StackTrace properties of the exception
@@ -359,12 +338,8 @@ namespace System.Management.Automation
         /// <returns>Exception instance ready to throw</returns>
         internal static PSInvalidOperationException NewInvalidOperationException()
         {
-#if CORECLR //TODO:CORECLR StackTrace is not in CoreCLR
-            string message = string.Empty;
-#else
             string message = StringUtil.Format(AutomationExceptions.InvalidOperation,
                     new System.Diagnostics.StackTrace().GetFrame(1).GetMethod().Name);
-#endif
             var e = new PSInvalidOperationException(message);
 
             return e;
@@ -434,12 +409,8 @@ namespace System.Management.Automation
         /// <returns>Exception instance ready to throw</returns>
         internal static PSNotSupportedException NewNotSupportedException()
         {
-#if CORECLR //TODO:CORECLR StackTrace is not in CoreCLR
-            string message = string.Empty;
-#else
             string message = StringUtil.Format(AutomationExceptions.NotSupported,
                 new System.Diagnostics.StackTrace().GetFrame(0).ToString());
-#endif
             var e = new PSNotSupportedException(message);
 
             return e;
@@ -450,15 +421,12 @@ namespace System.Management.Automation
         /// and returns the new exception. This is not allowed to call other
         /// Throw*Exception variants, since they call this.
         /// </summary>
-        ///
         /// <param name="resourceString">
         /// The template string for this error
         /// </param>
-        ///
         /// <param name="args">
         /// Objects corresponding to {0}, {1}, etc. in the resource string
         /// </param>
-        ///
         /// <returns>Exception instance ready to throw</returns>
         internal static PSNotSupportedException NewNotSupportedException(
             string resourceString,
@@ -483,12 +451,8 @@ namespace System.Management.Automation
         /// <returns>Exception instance ready to throw</returns>
         internal static PSNotImplementedException NewNotImplementedException()
         {
-#if CORECLR //TODO:CORECLR StackTrace is not in CoreCLR
-            string message = string.Empty;
-#else
             string message = StringUtil.Format(AutomationExceptions.NotImplemented,
                 new System.Diagnostics.StackTrace().GetFrame(0).ToString());
-#endif
             var e = new PSNotImplementedException(message);
 
             return e;
@@ -554,7 +518,6 @@ namespace System.Management.Automation
 
             return e;
         }
-
 
         /// <summary>
         /// Traces the Message and StackTrace properties of the exception

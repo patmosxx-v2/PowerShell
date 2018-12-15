@@ -1,14 +1,11 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
-
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using Dbg = System.Management.Automation;
 using System.Management.Automation.Internal;
 using System.Security.Cryptography.X509Certificates;
 using System.ComponentModel;
 using DWORD = System.UInt32;
-
 
 namespace System.Management.Automation
 {
@@ -193,19 +190,12 @@ namespace System.Management.Automation
         ///
         /// Call this to create a validated time-stamped signature object.
         /// </summary>
-        ///
         /// <param name="filePath"> this signature is found in this file </param>
-        ///
         /// <param name="error"> win32 error code </param>
-        ///
         /// <param name="signer"> cert of the signer </param>
-        ///
         /// <param name="timestamper"> cert of the time stamper </param>
-        ///
         /// <returns> constructed object </returns>
-        ///
         /// <remarks>  </remarks>
-        ///
         internal Signature(string filePath,
                            DWORD error,
                            X509Certificate2 signer,
@@ -223,15 +213,10 @@ namespace System.Management.Automation
         ///
         /// Call this to create a validated signature object.
         /// </summary>
-        ///
         /// <param name="filePath"> this signature is found in this file </param>
-        ///
         /// <param name="signer"> cert of the signer </param>
-        ///
         /// <returns> constructed object </returns>
-        ///
         /// <remarks>  </remarks>
-        ///
         internal Signature(string filePath,
                            X509Certificate2 signer)
         {
@@ -246,17 +231,11 @@ namespace System.Management.Automation
         ///
         /// Call this ctor when creating an invalid signature object
         /// </summary>
-        ///
         /// <param name="filePath"> this signature is found in this file </param>
-        ///
         /// <param name="error"> win32 error code </param>
-        ///
         /// <param name="signer"> cert of the signer </param>
-        ///
         /// <returns> constructed object </returns>
-        ///
         /// <remarks>  </remarks>
-        ///
         internal Signature(string filePath,
                            DWORD error,
                            X509Certificate2 signer)
@@ -272,15 +251,10 @@ namespace System.Management.Automation
         ///
         /// Call this ctor when creating an invalid signature object
         /// </summary>
-        ///
         /// <param name="filePath"> this signature is found in this file </param>
-        ///
         /// <param name="error"> win32 error code </param>
-        ///
         /// <returns> constructed object </returns>
-        ///
         /// <remarks>  </remarks>
-        ///
         internal Signature(string filePath, DWORD error)
         {
             Utils.CheckArgForNullOrEmpty(filePath, "filePath");
@@ -308,7 +282,6 @@ namespace System.Management.Automation
                                                       error,
                                                       filePath);
         }
-
 
         private static SignatureStatus GetSignatureStatusFromWin32Error(DWORD error)
         {

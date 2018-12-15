@@ -1,8 +1,5 @@
-/********************************************************************++
-
-Copyright (c) Microsoft Corporation.  All rights reserved.
-
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Management.Automation;
@@ -11,16 +8,14 @@ using System.Management.Automation.Internal;
 namespace Microsoft.PowerShell.Commands
 {
     /// <summary>
-    ///
-    /// Base class for a variety of commandlets that take color parameters
-    ///
+    /// Base class for a variety of commandlets that take color parameters.
     /// </summary>
 
     public
     class ConsoleColorCmdlet : PSCmdlet
     {
         /// <summary>
-        /// Default ctor
+        /// Default ctor.
         /// </summary>
         public ConsoleColorCmdlet()
         {
@@ -28,9 +23,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        ///
-        /// The -ForegroundColor parameter
-        ///
+        /// The -ForegroundColor parameter.
         /// </summary>
         /// <value></value>
 
@@ -63,10 +56,7 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-
-
         /// <summary>
-        ///
         /// </summary>
         /// <value></value>
 

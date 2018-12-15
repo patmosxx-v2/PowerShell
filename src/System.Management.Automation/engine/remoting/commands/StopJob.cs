@@ -1,6 +1,5 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
@@ -64,7 +63,6 @@ namespace Microsoft.PowerShell.Commands
         private bool _passThru;
 
         /// <summary>
-        ///
         /// </summary>
         public override String[] Command
         {
@@ -161,17 +159,6 @@ namespace Microsoft.PowerShell.Commands
                     else
                     {
                         job.StopJob();
-                        var parentJob = job as ContainerParentJob;
-                        if (parentJob != null && parentJob.ExecutionError.Count > 0)
-                        {
-                            foreach (
-                                var e in
-                                    parentJob.ExecutionError.Where(
-                                        e => e.FullyQualifiedErrorId == "ContainerParentJobStopError"))
-                            {
-                                WriteError(e);
-                            }
-                        }
                     }
                 }
             }
@@ -201,7 +188,6 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        ///
         /// </summary>
         protected override void StopProcessing()
         {
@@ -269,7 +255,6 @@ namespace Microsoft.PowerShell.Commands
         #region Dispose
 
         /// <summary>
-        ///
         /// </summary>
         public void Dispose()
         {
@@ -278,7 +263,6 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="disposing"></param>
         protected void Dispose(bool disposing)

@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Management.Automation.Language;
@@ -21,26 +20,39 @@ namespace System.Management.Automation
         /// <summary>
         /// Default constructor
         /// </summary>
-        ///
-
         internal CommandProcessorBase()
         {
         }
 
         /// <summary>
-        /// Initializes the base command processor class with the command metadata
+        /// Initializes the base command processor class with the command metadata.
         /// </summary>
-        ///
         /// <param name="commandInfo">
         /// The metadata about the command to run.
         /// </param>
-        ///
-        internal CommandProcessorBase(
-            CommandInfo commandInfo)
+        internal CommandProcessorBase(CommandInfo commandInfo)
         {
             if (commandInfo == null)
             {
                 throw PSTraceSource.NewArgumentNullException("commandInfo");
+            }
+
+            if (commandInfo is IScriptCommandInfo scriptCommand)
+            {
+                ExperimentalAttribute expAttribute = scriptCommand.ScriptBlock.ExperimentalAttribute;
+                if (expAttribute != null && expAttribute.ToHide)
+                {
+                    string errorTemplate = expAttribute.ExperimentAction == ExperimentAction.Hide
+                        ? DiscoveryExceptions.ScriptDisabledWhenFeatureOn
+                        : DiscoveryExceptions.ScriptDisabledWhenFeatureOff;
+                    string errorMsg = StringUtil.Format(errorTemplate, expAttribute.ExperimentName);
+                    ErrorRecord errorRecord = new ErrorRecord(
+                        new InvalidOperationException(errorMsg),
+                        "ScriptCommandDisabled",
+                        ErrorCategory.InvalidOperation,
+                        commandInfo);
+                    throw new CmdletInvocationException(errorRecord);
+                }
             }
 
             CommandInfo = commandInfo;
@@ -52,12 +64,12 @@ namespace System.Management.Automation
 
         private InternalCommand _command;
 
-        // marker of whether BeginProcessing() has already run,
-        // also used by CommandProcessor
+        // Marker of whether BeginProcessing() has already run,
+        // also used by CommandProcessor.
         internal bool RanBeginAlready;
 
-        // marker of whether this command has already been added to
-        // a PipelineProcessor.  It is an error to add the same command
+        // Marker of whether this command has already been added to
+        // a PipelineProcessor. It is an error to add the same command
         // more than once.
         internal bool AddedToPipelineAlready
         {
@@ -95,9 +107,8 @@ namespace System.Management.Automation
         /// <summary>
         /// If this flag is true, the commands in this Pipeline will redirect
         /// the global error output pipe to the command's error output pipe.
-        ///
-        /// (see the comment in Pipeline.RedirectShellErrorOutputPipe for an
-        /// explanation of why this flag is needed)
+        /// (See the comment in Pipeline.RedirectShellErrorOutputPipe for an
+        /// explanation of why this flag is needed).
         /// </summary>
         internal bool RedirectShellErrorOutputPipe { get; set; } = false;
 
@@ -164,7 +175,8 @@ namespace System.Management.Automation
         /// <param name="scriptBlock">The script block being dotted</param>
         /// <param name="languageMode">The current language mode</param>
         /// <param name="invocationInfo">The invocation info about the command</param>
-        protected static void ValidateCompatibleLanguageMode(ScriptBlock scriptBlock,
+        protected static void ValidateCompatibleLanguageMode(
+            ScriptBlock scriptBlock,
             PSLanguageMode languageMode,
             InvocationInfo invocationInfo)
         {
@@ -216,7 +228,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Etw activity for this pipeline
+        /// Etw activity for this pipeline.
         /// </summary>
         internal Guid PipelineActivityId { get; set; } = Guid.Empty;
 
@@ -243,7 +255,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Creates a command processor for "get-help [helpTarget]"
+        /// Creates a command processor for "get-help [helpTarget]".
         /// </summary>
         /// <param name="context">context for the command processor</param>
         /// <param name="helpTarget">help target</param>
@@ -265,13 +277,13 @@ namespace System.Management.Automation
 
             CommandProcessorBase helpCommandProcessor = context.CreateCommand("get-help", false);
             var cpi = CommandParameterInternal.CreateParameterWithArgument(
-                PositionUtilities.EmptyExtent, "Name", "-Name:",
-                PositionUtilities.EmptyExtent, helpTarget,
+                /*parameterAst*/null, "Name", "-Name:",
+                /*argumentAst*/null, helpTarget,
                 false);
             helpCommandProcessor.AddParameter(cpi);
             cpi = CommandParameterInternal.CreateParameterWithArgument(
-                PositionUtilities.EmptyExtent, "Category", "-Category:",
-                PositionUtilities.EmptyExtent, helpCategory.ToString(),
+                /*parameterAst*/null, "Category", "-Category:",
+                /*argumentAst*/null, helpCategory.ToString(),
                 false);
             helpCommandProcessor.AddParameter(cpi);
             return helpCommandProcessor;
@@ -295,7 +307,7 @@ namespace System.Management.Automation
         internal SessionStateInternal CommandSessionState { get; set; }
 
         /// <summary>
-        /// Gets sets the session state scope for this command processor object
+        /// Gets or sets the session state scope for this command processor object.
         /// </summary>
         protected internal SessionStateScope CommandScope { get; protected set; }
 
@@ -336,7 +348,6 @@ namespace System.Management.Automation
         /// Restores the current session state scope to the scope which was active when SetCurrentScopeToExecutionScope
         /// was called.
         /// </summary>
-        ///
         internal void RestorePreviousScope()
         {
             OnRestorePreviousScope();
@@ -360,7 +371,6 @@ namespace System.Management.Automation
         /// host interfaces. These will be sent to the parameter binder controller
         /// for processing.
         /// </summary>
-        ///
         internal Collection<CommandParameterInternal> arguments = new Collection<CommandParameterInternal>();
 
         /// <summary>
@@ -373,7 +383,7 @@ namespace System.Management.Automation
         {
             Diagnostics.Assert(parameter != null, "Caller to verify parameter argument");
             arguments.Add(parameter);
-        } // AddParameter
+        }
 
         /// <summary>
         /// Prepares the command for execution.
@@ -382,7 +392,7 @@ namespace System.Management.Automation
         internal abstract void Prepare(IDictionary psDefaultParameterValues);
 
         /// <summary>
-        /// Write warning message for an obsolete command
+        /// Write warning message for an obsolete command.
         /// </summary>
         /// <param name="obsoleteAttr"></param>
         private void HandleObsoleteCommand(ObsoleteAttribute obsoleteAttr)
@@ -527,7 +537,6 @@ namespace System.Management.Automation
         /// the ProcessRecord abstract method that derived command processors
         /// override.
         /// </summary>
-        ///
         internal void DoExecute()
         {
             ExecutionContext.CheckStackDepth();
@@ -551,7 +560,7 @@ namespace System.Management.Automation
         /// Internally it calls EndProcessing() of the InternalCommand.
         /// </summary>
         /// <exception cref="PipelineStoppedException">
-        /// a terminating error occurred, or the pipeline was otherwise stopped
+        /// A terminating error occurred, or the pipeline was otherwise stopped.
         /// </exception>
         internal virtual void Complete()
         {
@@ -577,12 +586,11 @@ namespace System.Management.Automation
                 // wrap it and bubble it up.
                 throw ManageInvocationException(e);
             }
-        } // Complete
+        }
 
         /// <summary>
-        /// Calls the virtual Complete method after setting the appropriate session state scope
+        /// Calls the virtual Complete method after setting the appropriate session state scope.
         /// </summary>
-        ///
         internal void DoComplete()
         {
             Pipe oldErrorOutputPipe = _context.ShellFunctionErrorOutputPipe;
@@ -644,12 +652,11 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// for diagnostic purposes
+        /// For diagnostic purposes.
         /// </summary>
-        /// <returns></returns>
         public override string ToString()
         {
-            if (null != CommandInfo)
+            if (CommandInfo != null)
                 return CommandInfo.ToString();
             return "<NullCommandInfo>"; // does not require localization
         }
@@ -665,13 +672,11 @@ namespace System.Management.Automation
         ///
         /// This default implementation reads the next pipeline object and sets
         /// it as the CurrentPipelineObject in the InternalCommand.
+        /// Does not throw.
         /// </summary>
-        ///
         /// <returns>
         /// True if read succeeds.
         /// </returns>
-        ///
-        /// does not throw
         internal virtual bool Read()
         {
             // Prepare the default value parameter list if this is the first call to Read
@@ -705,17 +710,14 @@ namespace System.Management.Automation
         /// PipelineProcessor.SynchronousExecute, and writes it to
         /// the error variable.
         /// </summary>
-        ///
         /// <param name="e">
         /// The exception to wrap in a CmdletInvocationException or
         /// CmdletProviderInvocationException.
         /// </param>
-        ///
         /// <returns>
         /// Always returns PipelineStoppedException.  The caller should
         /// throw this exception.
         /// </returns>
-        ///
         /// <remarks>
         /// Almost all exceptions which occur during pipeline invocation
         /// are wrapped in CmdletInvocationException before they are stored
@@ -751,7 +753,7 @@ namespace System.Management.Automation
         {
             try
             {
-                if (null != Command)
+                if (Command != null)
                 {
                     do // false loop
                     {
@@ -862,11 +864,9 @@ namespace System.Management.Automation
         /// PipelineProcessor.SynchronousExecute, and writes it to
         /// the error variable.
         /// </summary>
-        ///
         /// <param name="e">
         /// The exception which occurred during script execution
         /// </param>
-        ///
         /// <exception cref="PipelineStoppedException">
         /// ManageScriptException throws PipelineStoppedException if-and-only-if
         /// the exception is a RuntimeException, otherwise it returns.
@@ -874,7 +874,7 @@ namespace System.Management.Automation
         /// </exception>
         internal void ManageScriptException(RuntimeException e)
         {
-            if (null != Command && null != commandRuntime.PipelineProcessor)
+            if (Command != null && commandRuntime.PipelineProcessor != null)
             {
                 commandRuntime.PipelineProcessor.RecordFailure(e, Command);
 
@@ -893,7 +893,7 @@ namespace System.Management.Automation
         /// </summary>
         internal void ForgetScriptException()
         {
-            if (null != Command && null != commandRuntime.PipelineProcessor)
+            if (Command != null && commandRuntime.PipelineProcessor != null)
             {
                 commandRuntime.PipelineProcessor.ForgetFailure();
             }
@@ -931,7 +931,7 @@ namespace System.Management.Automation
                 // whether IDisposable is implemented, in order to avoid
                 // this expensive reflection cast.
                 IDisposable id = Command as IDisposable;
-                if (null != id)
+                if (id != null)
                 {
                     id.Dispose();
                 }
@@ -941,7 +941,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Finalizer for class CommandProcessorBase
+        /// Finalizer for class CommandProcessorBase.
         /// </summary>
         ~CommandProcessorBase()
         {
@@ -951,4 +951,3 @@ namespace System.Management.Automation
         #endregion IDispose
     }
 }
-

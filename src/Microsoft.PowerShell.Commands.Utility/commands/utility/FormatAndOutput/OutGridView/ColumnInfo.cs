@@ -1,6 +1,5 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -42,7 +41,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Auxiliar used in GetValue methods since the list does not deal well with unlimited sized lines
+        /// Auxiliar used in GetValue methods since the list does not deal well with unlimited sized lines.
         /// </summary>
         /// <param name="src">source string</param>
         /// <returns>the source string limited in the number of lines</returns>

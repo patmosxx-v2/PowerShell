@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections;
@@ -27,7 +26,6 @@ namespace Microsoft.PowerShell.Commands
         /// at a time.  To read all blocks at once, set this value
         /// to a negative number.
         /// </summary>
-        ///
         [Parameter(ValueFromPipelineByPropertyName = true)]
         public long ReadCount { get; set; } = 1;
 
@@ -35,7 +33,6 @@ namespace Microsoft.PowerShell.Commands
         /// The number of content items to retrieve. By default this
         /// value is -1 which means read all the content
         /// </summary>
-        ///
         [Parameter(ValueFromPipelineByPropertyName = true)]
         [Alias("First", "Head")]
         public long TotalCount
@@ -43,14 +40,14 @@ namespace Microsoft.PowerShell.Commands
             get
             {
                 return _totalCount;
-            } // get
+            }
 
             set
             {
                 _totalCount = value;
                 _totalCountSpecified = true;
             }
-        } // TotalCount
+        }
         private bool _totalCountSpecified = false;
 
         /// <summary>
@@ -75,16 +72,13 @@ namespace Microsoft.PowerShell.Commands
         /// that require dynamic parameters should override this method and return the
         /// dynamic parameter object.
         /// </summary>
-        ///
         /// <param name="context">
         /// The context under which the command is running.
         /// </param>
-        ///
         /// <returns>
         /// An object representing the dynamic parameters for the cmdlet or null if there
         /// are none.
         /// </returns>
-        ///
         internal override object GetDynamicParameters(CmdletProviderContext context)
         {
             if (Path != null && Path.Length > 0)
@@ -92,7 +86,7 @@ namespace Microsoft.PowerShell.Commands
                 return InvokeProvider.Content.GetContentReaderDynamicParameters(Path[0], context);
             }
             return InvokeProvider.Content.GetContentReaderDynamicParameters(".", context);
-        } // GetDynamicParameters
+        }
 
         #endregion Parameters
 
@@ -256,7 +250,7 @@ namespace Microsoft.PowerShell.Commands
                             }
                         } while (results != null && results.Count > 0 && ((TotalCount < 0) || countRead < TotalCount));
                     }
-                } // foreach holder in contentStreams
+                }
             }
             finally
             {
@@ -267,7 +261,7 @@ namespace Microsoft.PowerShell.Commands
                 // Empty the content holder array
                 contentStreams = new List<ContentHolder>();
             }
-        } // ProcessRecord
+        }
 
         /// <summary>
         /// Scan forwards to get the tail content
@@ -422,6 +416,6 @@ namespace Microsoft.PowerShell.Commands
         }
         #endregion Command code
 
-    } // GetContentCommand
-} // namespace Microsoft.PowerShell.Commands
+    }
+}
 

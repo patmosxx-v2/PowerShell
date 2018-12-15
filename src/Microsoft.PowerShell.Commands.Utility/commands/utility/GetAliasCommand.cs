@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
@@ -12,9 +11,8 @@ using System.Diagnostics.CodeAnalysis;
 namespace Microsoft.PowerShell.Commands
 {
     /// <summary>
-    /// The implementation of the "get-alias" cmdlet
+    /// The implementation of the "get-alias" cmdlet.
     /// </summary>
-    ///
     [Cmdlet(VerbsCommon.Get, "Alias", DefaultParameterSetName = "Default", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113306")]
     [OutputType(typeof(AliasInfo))]
     public class GetAliasCommand : PSCmdlet
@@ -22,9 +20,8 @@ namespace Microsoft.PowerShell.Commands
         #region Parameters
 
         /// <summary>
-        /// The Name parameter for the command
+        /// The Name parameter for the command.
         /// </summary>
-        ///
         [Parameter(ParameterSetName = "Default", Position = 0, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
         [ValidateNotNullOrEmpty()]
         public string[] Name
@@ -35,9 +32,8 @@ namespace Microsoft.PowerShell.Commands
         private string[] _names = new string[] { "*" };
 
         /// <summary>
-        /// The Exclude parameter for the command
+        /// The Exclude parameter for the command.
         /// </summary>
-        ///
         [Parameter]
         public string[] Exclude
         {
@@ -50,7 +46,6 @@ namespace Microsoft.PowerShell.Commands
         /// The scope parameter for the command determines
         /// which scope the aliases are retrieved from.
         /// </summary>
-        ///
         [Parameter]
         public string Scope { get; set; }
 
@@ -69,7 +64,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// The main processing loop of the command.
         /// </summary>
-        ///
         protected override void ProcessRecord()
         {
             if (ParameterSetName.Equals("Definition"))
@@ -85,8 +79,8 @@ namespace Microsoft.PowerShell.Commands
                 {
                     WriteMatches(aliasName, "Default");
                 }
-            }//parameterset else
-        } // ProcessRecord
+            }
+        }
         #endregion Command code
 
         private void WriteMatches(string value, string parametersetname)
@@ -109,8 +103,6 @@ namespace Microsoft.PowerShell.Commands
             {
                 aliasTable = SessionState.Internal.GetAliasTable();
             }
-
-
 
             bool matchfound = false;
             bool ContainsWildcard = WildcardPattern.ContainsWildcardCharacters(value);
@@ -202,6 +194,5 @@ namespace Microsoft.PowerShell.Commands
                 WriteError(er);
             }
         }
-    } // class GetAliasCommand
-}//Microsoft.PowerShell.Commands
-
+    }
+}

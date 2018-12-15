@@ -1,29 +1,27 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using System.Globalization;
-using System.Collections.ObjectModel;
-using System.Net;
-using System.ComponentModel;
-using System.Management.Automation.Internal;
-using System.Diagnostics;
-using System.Threading;
-using System.IO;
-using System.Xml;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.IO.Compression;
+using System.Management.Automation.Configuration;
+using System.Management.Automation.Internal;
+using System.Net;
+using System.Net.Http;
 using System.Runtime.Serialization;
+using System.Security;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Schema;
+
 using Microsoft.PowerShell.Commands;
 using Microsoft.Win32;
-using System.Security;
-#if CORECLR
-using System.IO.Compression;
-using System.Net.Http;
-using System.Threading.Tasks;
-#else
-using System.Xml.Schema;
-#endif
 
 namespace System.Management.Automation.Help
 {
@@ -128,7 +126,7 @@ namespace System.Management.Automation.Help
         /// <returns></returns>
         internal string GetExceptionMessage(UpdatableHelpCommandType commandType)
         {
-            string message = "";
+            string message = string.Empty;
             SortedSet<string> sortedModules = new SortedSet<string>(Modules, StringComparer.CurrentCultureIgnoreCase);
             SortedSet<string> sortedCultures = new SortedSet<string>(Cultures, StringComparer.CurrentCultureIgnoreCase);
             string modules = String.Join(", ", sortedModules);
@@ -219,7 +217,6 @@ namespace System.Management.Automation.Help
         /// </summary>
         internal int ProgressPercent { get; }
 
-
         /// <summary>
         /// Module name
         /// </summary>
@@ -236,12 +233,7 @@ namespace System.Management.Automation.Help
     /// </summary>
     internal class UpdatableHelpSystem : IDisposable
     {
-#if CORECLR
         private TimeSpan _defaultTimeout;
-#else
-        private AutoResetEvent _completionEvent;
-        private bool _completed;
-#endif
         private Collection<UpdatableHelpProgressEventArgs> _progressEvents;
         private bool _stopping;
         private object _syncObject;
@@ -258,12 +250,7 @@ namespace System.Management.Automation.Help
         internal UpdatableHelpSystem(UpdatableHelpCommandBase cmdlet, bool useDefaultCredentials)
         {
             WebClient = new WebClient();
-#if CORECLR
             _defaultTimeout = new TimeSpan(0, 0, 30);
-#else
-            _completionEvent = new AutoResetEvent(false);
-            _completed = false;
-#endif
             _progressEvents = new Collection<UpdatableHelpProgressEventArgs>();
             Errors = new Collection<Exception>();
             _stopping = false;
@@ -349,7 +336,6 @@ namespace System.Management.Automation.Help
                 OnProgressChanged(this, new UpdatableHelpProgressEventArgs(CurrentModule, commandType, StringUtil.Format(
                     HelpDisplayStrings.UpdateProgressLocating), 0));
 
-#if CORECLR
                 string xml;
                 using (HttpClientHandler handler = new HttpClientHandler())
                 {
@@ -365,9 +351,7 @@ namespace System.Management.Automation.Help
                         }
                     }
                 }
-#else
-                string xml = WebClient.DownloadString(uri);
-#endif
+
                 UpdatableHelpInfo helpInfo = CreateHelpInfo(xml, moduleName, moduleGuid,
                                                             currentCulture: culture, pathOverride: null, verbose: true,
                                                             shouldResolveUri: true, ignoreValidationException: false);
@@ -433,7 +417,6 @@ namespace System.Management.Automation.Help
                         return uri;
                     }
 
-#if CORECLR
                     using (HttpClientHandler handler = new HttpClientHandler())
                     {
                         handler.AllowAutoRedirect = false;
@@ -488,64 +471,6 @@ namespace System.Management.Automation.Help
                             }
                         }
                     }
-#else
-                    HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(uri);
-
-                    request.AllowAutoRedirect = false;
-                    request.Timeout = 30000;
-
-                    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-
-                    WebHeaderCollection headers = response.Headers;
-
-                    try
-                    {
-                        if (response.StatusCode == HttpStatusCode.Found ||
-                            response.StatusCode == HttpStatusCode.Redirect ||
-                            response.StatusCode == HttpStatusCode.Moved ||
-                            response.StatusCode == HttpStatusCode.MovedPermanently)
-                        {
-                            Uri responseUri = new Uri(headers["Location"], UriKind.RelativeOrAbsolute);
-
-                            if (responseUri.IsAbsoluteUri)
-                            {
-                                uri = responseUri.ToString();
-                            }
-                            else
-                            {
-                                uri = uri.Replace(request.Address.AbsolutePath, responseUri.ToString());
-                            }
-
-                            uri = uri.Trim();
-
-                            if (verbose)
-                            {
-                                _cmdlet.WriteVerbose(StringUtil.Format(RemotingErrorIdStrings.URIRedirectWarningToHost, uri));
-                            }
-
-                            if (uri.EndsWith("/", StringComparison.OrdinalIgnoreCase))
-                            {
-                                return uri;
-                            }
-                        }
-                        else if (response.StatusCode == HttpStatusCode.OK)
-                        {
-                            if (uri.EndsWith("/", StringComparison.OrdinalIgnoreCase))
-                            {
-                                return uri;
-                            }
-                            else
-                            {
-                                throw new UpdatableHelpSystemException("InvalidHelpInfoUri", StringUtil.Format(HelpDisplayStrings.InvalidHelpInfoUri, uri),
-                                    ErrorCategory.InvalidOperation, null, null);
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        response.Close();
-                    }
-#endif
                 }
             }
             catch (UriFormatException e)
@@ -610,9 +535,7 @@ namespace System.Management.Automation.Help
             try
             {
                 document = CreateValidXmlDocument(xml, HelpInfoXmlNamespace, HelpInfoXmlSchema,
-#if !CORECLR
                     new ValidationEventHandler(HelpInfoValidationHandler),
-#endif
                     true);
             }
             catch (UpdatableHelpSystemException e)
@@ -674,7 +597,6 @@ namespace System.Management.Automation.Help
                 }
             }
 
-
             if (!String.IsNullOrEmpty(currentCulture) && helpInfo.HelpContentUriCollection.Count == 0)
             {
                 // throw exception
@@ -685,46 +607,6 @@ namespace System.Management.Automation.Help
 
             return helpInfo;
         }
-
-#if CORECLR
-
-        /// <summary>
-        /// Creates a valid xml document
-        /// </summary>
-        /// <param name="xml">input xml</param>
-        /// <param name="ns">schema namespace</param>
-        /// <param name="schema">xml schema</param>
-        /// <param name="helpInfo">HelpInfo or HelpContent?</param>
-        private XmlDocument CreateValidXmlDocument(string xml, string ns, string schema, bool helpInfo)
-        {
-            XmlReaderSettings settings = new XmlReaderSettings();
-
-            XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
-            XmlDocument document = new XmlDocument();
-
-            try
-            {
-                document.Load(reader);
-            }
-            catch (XmlException e)
-            {
-                if (helpInfo)
-                {
-                    throw new UpdatableHelpSystemException(HelpInfoXmlValidationFailure,
-                        StringUtil.Format(HelpDisplayStrings.HelpInfoXmlValidationFailure, e.Message),
-                        ErrorCategory.InvalidData, null, e);
-                }
-                else
-                {
-                    throw new UpdatableHelpSystemException("HelpContentXmlValidationFailure",
-                        StringUtil.Format(HelpDisplayStrings.HelpContentXmlValidationFailure, e.Message),
-                        ErrorCategory.InvalidData, null, e);
-                }
-            }
-            return document;
-        }
-
-#else
 
         /// <summary>
         /// Creates a valid xml document
@@ -808,8 +690,6 @@ namespace System.Management.Automation.Help
             }
         }
 
-#endif
-
         #endregion
 
         #region Help Content Retrieval
@@ -819,16 +699,7 @@ namespace System.Management.Automation.Help
         /// </summary>
         internal void CancelDownload()
         {
-#if CORECLR
             _cancelTokenSource.Cancel();
-#else
-            if (WebClient.IsBusy)
-            {
-                WebClient.CancelAsync();
-                _completed = true;
-                _completionEvent.Set();
-            }
-#endif
             _stopping = true;
         }
 
@@ -892,17 +763,11 @@ namespace System.Management.Automation.Help
 
             string uri = helpContentUri + fileName;
 
-#if CORECLR
             return DownloadHelpContentHttpClient(uri, Path.Combine(path, fileName), commandType);
-#else
-            return DownloadHelpContentWebClient(uri, Path.Combine(path, fileName), culture, commandType);
-#endif
         }
 
-#if CORECLR
         /// <summary>
-        /// Downloads the help content and saves it to a directory. The goal is to achieve
-        /// functional parity with WebClient.DownloadFileAsync() using CoreCLR-compatible APIs.
+        /// Downloads the help content and saves it to a directory.
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="fileName"></param>
@@ -982,34 +847,6 @@ namespace System.Management.Automation.Help
                 }
             }
         }
-
-#else
-
-        /// <summary>
-        /// Downloads help content and saves it in the specified file.
-        /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="fileName"></param>
-        /// <param name="culture"></param>
-        /// <param name="commandType"></param>
-        /// <returns></returns>
-        private bool DownloadHelpContentWebClient(string uri, string fileName, string culture, UpdatableHelpCommandType commandType)
-        {
-            WebClient.DownloadFileAsync(new Uri(uri), fileName, culture);
-
-            OnProgressChanged(this, new UpdatableHelpProgressEventArgs(CurrentModule, commandType, StringUtil.Format(
-                HelpDisplayStrings.UpdateProgressConnecting), 100));
-
-            while (!_completed || WebClient.IsBusy)
-            {
-                _completionEvent.WaitOne();
-
-                SendProgressEvents(commandType);
-            }
-
-            return (Errors.Count == 0);
-        }
-#endif
 
         private void SendProgressEvents(UpdatableHelpCommandType commandType)
         {
@@ -1254,14 +1091,9 @@ namespace System.Management.Automation.Help
 
             try
             {
-                using (FileStream archiveFileStream = new FileStream(source, IO.FileMode.Open, FileAccess.Read))
-                using (ZipArchive zipArchive = new ZipArchive(archiveFileStream, ZipArchiveMode.Read, false))
+                using (ZipArchive zipArchive = ZipFile.Open(source, ZipArchiveMode.Read))
                 {
-                    foreach (ZipArchiveEntry entry in zipArchive.Entries)
-                    {
-                        string extractPath = Path.Combine(destination, entry.FullName);
-                        entry.ExtractToFile(extractPath);
-                    }
+                    zipArchive.ExtractToDirectory(destination);
                     sucessfulDecompression = true;
                 }
             }
@@ -1391,11 +1223,7 @@ namespace System.Management.Automation.Help
         {
             installed = new Collection<string>();
 
-#if CORECLR // TODO:CORECLR Disabling this because XML Schemas are not supported for CoreCLR
-            string xsd = "Remove this when adding schema support";
-#else
             string xsd = LoadStringFromPath(_cmdlet, xsdPath, null);
-#endif
 
             // We only accept txt files and xml files
             foreach (string file in Directory.GetFiles(sourcePath))
@@ -1505,9 +1333,7 @@ namespace System.Management.Automation.Help
                                 }
 
                                 CreateValidXmlDocument(node.OuterXml, targetNamespace, xsd,
-#if !CORECLR
                                     new ValidationEventHandler(HelpContentValidationHandler),
-#endif
                                     false);
                             }
                         }
@@ -1629,31 +1455,32 @@ namespace System.Management.Automation.Help
         /// <returns></returns>
         internal static string GetFilePath(string path)
         {
+            FileInfo item = new FileInfo(path);
+
+            // We use 'FileInfo.Attributes' (not 'FileInfo.Exist')
+            // because we want to get exceptions
+            // like UnauthorizedAccessException or IOException.
+            if ((int)item.Attributes != -1)
+            {
+                return path;
+            }
 #if UNIX
             // On Linux, file paths are case sensitive.
             // The user does not have control over the files (HelpInfo.xml, .zip, and cab) that are generated by the Publishing team.
             // The logic below is to support updating help content via sourcepath parameter for case insensitive files.
-            FileInfo item = new FileInfo(path);
-            string directoryPath = item.Directory.FullName;
+            var dirInfo = item.Directory;
             string fileName = item.Name;
 
             // Prerequisite: The directory in the given path must exist and it is case sensitive.
-            if (Utils.NativeDirectoryExists(directoryPath))
+            if (dirInfo.Exists)
             {
                 // Get the list of files in the directory.
-                string[] fileList = Directory.GetFiles(directoryPath);
-                foreach (string filePath in fileList)
+                FileInfo[] fileList = dirInfo.GetFiles(searchPattern: fileName, new System.IO.EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive });
+
+                if (fileList.Length > 0)
                 {
-                    if (filePath.EndsWith(fileName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return filePath;
-                    }
+                    return fileList[0].FullName;
                 }
-            }
-#else
-            if (Utils.NativeFileExists(path))
-            {
-                return path;
             }
 #endif
             return null;
@@ -1665,14 +1492,9 @@ namespace System.Management.Automation.Help
         /// <returns></returns>
         internal string GetDefaultSourcePath()
         {
-            try
-            {
-                return ConfigPropertyAccessor.Instance.GetDefaultSourcePath();
-            }
-            catch (SecurityException)
-            {
-                return null;
-            }
+            var updatableHelpSetting = Utils.GetPolicySetting<UpdatableHelp>(Utils.SystemWideOnlyConfig);
+            string defaultSourcePath = updatableHelpSetting?.DefaultSourcePath;
+            return String.IsNullOrEmpty(defaultSourcePath) ? null : defaultSourcePath;
         }
 
         /// <summary>
@@ -1682,7 +1504,7 @@ namespace System.Management.Automation.Help
         {
             try
             {
-                ConfigPropertyAccessor.Instance.SetDisablePromptToUpdateHelp(true);
+                PowerShellConfig.Instance.SetDisablePromptToUpdateHelp(true);
             }
             catch (UnauthorizedAccessException)
             {
@@ -1712,7 +1534,7 @@ namespace System.Management.Automation.Help
                     return false;
                 }
 
-                return ConfigPropertyAccessor.Instance.GetDisablePromptToUpdateHelp();
+                return PowerShellConfig.Instance.GetDisablePromptToUpdateHelp();
             }
             catch (SecurityException)
             {
@@ -1814,7 +1636,6 @@ namespace System.Management.Automation.Help
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="cmdlet"></param>
         /// <param name="path"></param>

@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections;
@@ -16,14 +15,11 @@ using System.Management.Automation;
 namespace Microsoft.PowerShell
 {
     /// <summary>
-    ///
     /// MshSecurityMshSnapin (or MshSecurityMshSnapinInstaller) is a class for facilitating registry
     /// of necessary information for monad security mshsnapin.
     ///
     /// This class will be built with monad security dll
-    ///
     /// </summary>
-    ///
     [RunInstaller(true)]
     public sealed class PSSecurityPSSnapIn : PSSnapIn
     {

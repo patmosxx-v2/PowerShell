@@ -1,8 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
-
-
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.ObjectModel;
@@ -10,13 +7,10 @@ using System.IO;
 using System.Management.Automation;
 using System.Management.Automation.Internal;
 
-
 namespace Microsoft.PowerShell.Commands
 {
     /// <summary>
-    ///
     /// Implements the start-transcript cmdlet
-    ///
     /// </summary>
 
     [Cmdlet(VerbsLifecycle.Start, "Transcript", SupportsShouldProcess = true, DefaultParameterSetName = "ByPath", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113408")]
@@ -24,11 +18,9 @@ namespace Microsoft.PowerShell.Commands
     public sealed class StartTranscriptCommand : PSCmdlet
     {
         /// <summary>
-        ///
         /// The name of the file in which to write the transcript. If not provided, the file indicated by the variable
         /// $TRANSCRIPT is used.  If neither the filename is supplied or $TRANSCRIPT is not set, the filename shall be $HOME/My
         /// Documents/PowerShell_transcript.YYYYMMDDmmss.txt
-        ///
         /// </summary>
         /// <value></value>
 
@@ -51,7 +43,7 @@ namespace Microsoft.PowerShell.Commands
         /// The literal name of the file in which to write the transcript.
         /// </summary>
         [Parameter(Position = 0, ParameterSetName = "ByLiteralPath")]
-        [Alias("PSPath")]
+        [Alias("PSPath","LP")]
         [ValidateNotNullOrEmpty]
         public string LiteralPath
         {
@@ -79,9 +71,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        ///
         /// Describes the current state of the activity.
-        ///
         /// </summary>
         /// <value></value>
 
@@ -147,9 +137,7 @@ namespace Microsoft.PowerShell.Commands
             get; set;
         }
 
-
         /// <summary>
-        ///
         /// Starts the transcription
         /// </summary>
         protected override void BeginProcessing()
@@ -224,10 +212,10 @@ namespace Microsoft.PowerShell.Commands
                         }
                     }
 
-                    // If they didn't specify -Append, delete the file
+                    // If they didn't specify -Append, empty the file
                     if (!_shouldAppend)
                     {
-                        System.IO.File.Delete(effectiveFilePath);
+                        System.IO.File.WriteAllText(effectiveFilePath, string.Empty);
                     }
                 }
 
@@ -343,6 +331,4 @@ namespace Microsoft.PowerShell.Commands
         private bool _isFilenameSet;
     }
 }
-
-
 

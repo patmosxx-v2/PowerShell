@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
@@ -85,6 +84,11 @@ namespace Microsoft.PowerShell.Commands
 
             if (FullyQualifiedName != null)
             {
+                // TODO:
+                // Paths in the module name may fail here because
+                // they the wrong directory separator or are relative.
+                // Fix with the code below:
+                // FullyQualifiedName = FullyQualifiedName.Select(ms => ms.WithNormalizedName(Context, SessionState.Path.CurrentLocation.Path)).ToArray();
                 foreach (var m in Context.Modules.GetModules(FullyQualifiedName, false))
                 {
                     modulesToRemove.Add(m, new List<PSModuleInfo> { m });
@@ -137,7 +141,7 @@ namespace Microsoft.PowerShell.Commands
             Dictionary<PSModuleInfo, List<PSModuleInfo>> actualModulesToRemove = new Dictionary<PSModuleInfo, List<PSModuleInfo>>();
 
             // We want to remove the modules starting from the nested modules
-            // If we start from the parent module, the nested modules do not get removed and are left hanging in the parent modules's sessionstate.
+            // If we start from the parent module, the nested modules do not get removed and are left orphaned in the parent modules's sessionstate.
             foreach (var entry in modulesToRemove)
             {
                 List<PSModuleInfo> moduleList = new List<PSModuleInfo>();
@@ -260,7 +264,7 @@ namespace Microsoft.PowerShell.Commands
                     Dbg.Assert(pList.Value != null, "There should never be a null list of entries in the provider table");
                     foreach (ProviderInfo pInfo in pList.Value)
                     {
-                        string implTypeAssemblyLocation = pInfo.ImplementingType.GetTypeInfo().Assembly.Location;
+                        string implTypeAssemblyLocation = pInfo.ImplementingType.Assembly.Location;
                         if (implTypeAssemblyLocation.Equals(module.Path, StringComparison.OrdinalIgnoreCase))
                         {
                             foreach (PSDriveInfo dInfo in Context.TopLevelSessionState.GetDrivesForProvider(pInfo.FullName))
@@ -365,4 +369,4 @@ namespace Microsoft.PowerShell.Commands
         }
     }
     #endregion Remove-Module
-} // Microsoft.PowerShell.Commands
+}

@@ -1,6 +1,5 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
@@ -211,7 +210,7 @@ namespace Microsoft.PowerShell.ScheduledJob
         /// <summary>
         /// Do begin processing.
         /// </summary>
-        protected override void  BeginProcessing()
+        protected override void BeginProcessing()
         {
             base.BeginProcessing();
 
@@ -273,22 +272,22 @@ namespace Microsoft.PowerShell.ScheduledJob
         {
             TimeSpan? repInterval = null;
             TimeSpan? repDuration = null;
-            if (MyInvocation.BoundParameters.ContainsKey("RepetitionInterval") || MyInvocation.BoundParameters.ContainsKey("RepetitionDuration") ||
-                MyInvocation.BoundParameters.ContainsKey("RepeatIndefinitely"))
+            if (MyInvocation.BoundParameters.ContainsKey(nameof(RepetitionInterval)) || MyInvocation.BoundParameters.ContainsKey(nameof(RepetitionDuration)) ||
+                MyInvocation.BoundParameters.ContainsKey(nameof(RepeatIndefinitely)))
             {
-                if (MyInvocation.BoundParameters.ContainsKey("RepeatIndefinitely"))
+                if (MyInvocation.BoundParameters.ContainsKey(nameof(RepeatIndefinitely)))
                 {
-                    if (MyInvocation.BoundParameters.ContainsKey("RepetitionDuration"))
+                    if (MyInvocation.BoundParameters.ContainsKey(nameof(RepetitionDuration)))
                     {
                         throw new PSArgumentException(ScheduledJobErrorStrings.InvalidRepeatIndefinitelyParams);
                     }
-                    if (!MyInvocation.BoundParameters.ContainsKey("RepetitionInterval"))
+                    if (!MyInvocation.BoundParameters.ContainsKey(nameof(RepetitionInterval)))
                     {
                         throw new PSArgumentException(ScheduledJobErrorStrings.InvalidRepetitionRepeatParams);
                     }
                     _repDuration = TimeSpan.MaxValue;
                 }
-                else if (!MyInvocation.BoundParameters.ContainsKey("RepetitionInterval") || !MyInvocation.BoundParameters.ContainsKey("RepetitionDuration"))
+                else if (!MyInvocation.BoundParameters.ContainsKey(nameof(RepetitionInterval)) || !MyInvocation.BoundParameters.ContainsKey(nameof(RepetitionDuration)))
                 {
                     throw new PSArgumentException(ScheduledJobErrorStrings.InvalidRepetitionParams);
                 }

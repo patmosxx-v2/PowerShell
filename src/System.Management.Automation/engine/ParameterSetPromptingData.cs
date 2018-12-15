@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.Generic;
 
@@ -10,7 +9,6 @@ namespace System.Management.Automation
     /// This class holds the data for missing mandatory parameters for each parameter set as we
     /// are trying to process which parameter set to use based on the missing mandatory parameters
     /// </summary>
-    ///
     internal class ParameterSetPromptingData
     {
         internal ParameterSetPromptingData(uint parameterSet, bool isDefaultSet)
@@ -22,13 +20,11 @@ namespace System.Management.Automation
         /// <summary>
         /// True if this parameter set represents the default parameter set
         /// </summary>
-        ///
         internal bool IsDefaultSet { get; }
 
         /// <summary>
         /// The parameter set this data represents
         /// </summary>
-        ///
         internal uint ParameterSet { get; } = 0;
 
         /// <summary>
@@ -56,7 +52,6 @@ namespace System.Management.Automation
         /// </summary>
         internal Dictionary<MergedCompiledCommandParameter, ParameterSetSpecificMetadata> PipelineableMandatoryByPropertyNameParameters
         { get; } = new Dictionary<MergedCompiledCommandParameter, ParameterSetSpecificMetadata>();
-
 
         /// <summary>
         /// Gets the parameters that do not take pipeline input and are mandatory in this parameter set

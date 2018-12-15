@@ -1,7 +1,5 @@
-/*============================================================================
- * Copyright (C) Microsoft Corporation, All rights reserved.
- *============================================================================
- */
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #region Using directives
 
@@ -185,8 +183,6 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                 originInfo);
 
             DebugHelper.WriteLogEx("Created RemotingErrorRecord.", 0);
-            // errorRecord.SetInvocationInfo(jobContext.CmdletInvocationInfo);
-            // errorRecord.PreserveInvocationInfoOnce = true;
             return errorRecord;
         }
 
@@ -415,7 +411,6 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                 return invocationContext;
             }
         }
-
 
         /// <summary>
         /// <see cref="CimResultConte"/>

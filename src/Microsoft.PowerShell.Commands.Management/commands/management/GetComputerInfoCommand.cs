@@ -1,6 +1,5 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #if !UNIX
 
@@ -199,7 +198,7 @@ namespace Microsoft.PowerShell.Commands
                 systemInfo.networkAdapters = GetNetworkAdapters(session);
 
                 UpdateProgress(null);   // close the progress bar
-            } // end of using(CimSession...)
+            }
 
             var infoOutput = CreateFullOutputObject(systemInfo, osInfo, miscInfo);
 
@@ -437,7 +436,14 @@ namespace Microsoft.PowerShell.Commands
                                                                 CIMHelper.ClassNames.DeviceGuard);
 
                 if (wmiGuard != null)
+                {
+                    var smartStatus = EnumConverter<DeviceGuardSmartStatus>.Convert((int?)wmiGuard.VirtualizationBasedSecurityStatus ?? 0);
+                    if (smartStatus != null)
+                    {
+                        status = (DeviceGuardSmartStatus)smartStatus;
+                    }
                     guard = wmiGuard.AsOutputType;
+                }
             }
 
             return new DeviceGuardInfo
@@ -564,7 +570,6 @@ namespace Microsoft.PowerShell.Commands
             // get amount of memory physically installed
             //TODO: Local machine only. Check for that?
             rv.physicallyInstalledMemory = GetPhysicallyInstalledSystemMemory();
-
 
             // get time zone
             // we'll use .Net's TimeZoneInfo for now. systeminfo uses Caption from Win32_TimeZone
@@ -1045,7 +1050,7 @@ namespace Microsoft.PowerShell.Commands
                                                 {
                                                     return string.Compare(s,
                                                                           name,
-                                                                          StringComparison.CurrentCultureIgnoreCase) == 0;
+                                                                          StringComparison.OrdinalIgnoreCase) == 0;
                                                 };
                     var propertyName = availableProperties.Find(pred);
 
@@ -3258,7 +3263,7 @@ namespace Microsoft.PowerShell.Commands
 
         /// <summary>
         /// If a HyperVisor is not present, indicates the state of the
-        /// requirement that the processor supports  Intel or AMD Virtual
+        /// requirement that the processor supports Intel or AMD Virtual
         /// Machine Monitor extensions
         /// </summary>
         public bool? HyperVRequirementVMMonitorModeExtensions { get; internal set; }
@@ -5101,17 +5106,10 @@ namespace Microsoft.PowerShell.Commands
     {
         private static class PInvokeDllNames
         {
-#if CORECLR
             public const string GetPhysicallyInstalledSystemMemoryDllName = "api-ms-win-core-sysinfo-l1-2-1.dll";
             public const string LCIDToLocaleNameDllName = "kernelbase.dll";
             public const string PowerDeterminePlatformRoleExDllName = "api-ms-win-power-base-l1-1-0.dll";
             public const string GetFirmwareTypeDllName = "api-ms-win-core-kernel32-legacy-l1-1-1";
-#else
-            public const string GetPhysicallyInstalledSystemMemoryDllName = "kernel32.dll";
-            public const string LCIDToLocaleNameDllName = "kernel32.dll";
-            public const string PowerDeterminePlatformRoleExDllName = "Powrprof.dll";
-            public const string GetFirmwareTypeDllName = "kernel32.dll";
-#endif
         }
 
         public const int LOCALE_NAME_MAX_LENGTH = 85;
@@ -5119,7 +5117,6 @@ namespace Microsoft.PowerShell.Commands
         public const uint POWER_PLATFORM_ROLE_V2 = 0x2;
 
         public const UInt32 S_OK = 0;
-
 
         /// <summary>
         /// Import WINAPI function PowerDeterminePlatformRoleEx
@@ -5170,14 +5167,6 @@ namespace Microsoft.PowerShell.Commands
         /// <returns>An hresult indicating success or failure.</returns>
         [DllImport("slc.dll", CharSet = CharSet.Unicode)]
         internal static extern int SLGetWindowsInformationDWORD(string licenseProperty, out int propertyValue);
-        /*
-         * SLGetWindowsInformationDWORD function returns
-         * S_OK (0x00000000): If the method succeeds
-         * SL_E_RIGHT_NOT_GRANTED (0xC004F013): The caller does not have the permissions necessary to call this function.
-         * SL_E_DATATYPE_MISMATCHED (0xC004F013): The value portion of the name-value pair is not a DWORD.
-        [DllImport("Slc.dll", EntryPoint = "SLGetWindowsInformationDWORD", CharSet = CharSet.Unicode)]
-        public static extern UInt32 SLGetWindowsInformationDWORD(string pwszValueName, ref int pdwValue);
-         */
     }
     #endregion Native
 }

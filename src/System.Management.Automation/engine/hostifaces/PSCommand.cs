@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Management.Automation.Runspaces;
 using Dbg = System.Management.Automation.Diagnostics;
@@ -87,7 +86,7 @@ namespace System.Management.Automation
         /// </exception>
         public PSCommand AddCommand(string command)
         {
-            if (null == command)
+            if (command == null)
             {
                 throw PSTraceSource.NewArgumentNullException("cmdlet");
             }
@@ -130,7 +129,7 @@ namespace System.Management.Automation
         /// </exception>
         public PSCommand AddCommand(string cmdlet, bool useLocalScope)
         {
-            if (null == cmdlet)
+            if (cmdlet == null)
             {
                 throw PSTraceSource.NewArgumentNullException("cmdlet");
             }
@@ -146,7 +145,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Add a piece of script  to construct a command pipeline.
+        /// Add a piece of script to construct a command pipeline.
         /// For example, to construct a command string "get-process | foreach { $_.Name }"
         ///     <code>
         ///         PSCommand command = new PSCommand("get-process").
@@ -171,7 +170,7 @@ namespace System.Management.Automation
         /// </exception>
         public PSCommand AddScript(string script)
         {
-            if (null == script)
+            if (script == null)
             {
                 throw PSTraceSource.NewArgumentNullException("script");
             }
@@ -187,7 +186,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Add a piece of script  to construct a command pipeline.
+        /// Add a piece of script to construct a command pipeline.
         /// For example, to construct a command string "get-process | foreach { $_.Name }"
         ///     <code>
         ///         PSCommand command = new PSCommand("get-process").
@@ -215,7 +214,7 @@ namespace System.Management.Automation
         /// </exception>
         public PSCommand AddScript(string script, bool useLocalScope)
         {
-            if (null == script)
+            if (script == null)
             {
                 throw PSTraceSource.NewArgumentNullException("script");
             }
@@ -252,7 +251,7 @@ namespace System.Management.Automation
         /// </exception>
         public PSCommand AddCommand(Command command)
         {
-            if (null == command)
+            if (command == null)
             {
                 throw PSTraceSource.NewArgumentNullException("command");
             }
@@ -297,7 +296,7 @@ namespace System.Management.Automation
         /// </exception>
         public PSCommand AddParameter(string parameterName, object value)
         {
-            if (null == _currentCommand)
+            if (_currentCommand == null)
             {
                 throw PSTraceSource.NewInvalidOperationException(PSCommandStrings.ParameterRequiresCommand,
                                                                  new object[] { "PSCommand" });
@@ -337,7 +336,7 @@ namespace System.Management.Automation
         /// </exception>
         public PSCommand AddParameter(string parameterName)
         {
-            if (null == _currentCommand)
+            if (_currentCommand == null)
             {
                 throw PSTraceSource.NewInvalidOperationException(PSCommandStrings.ParameterRequiresCommand,
                                                                  new object[] { "PSCommand" });
@@ -357,7 +356,6 @@ namespace System.Management.Automation
         ///         PSCommand command = new PSCommand("get-process").
         ///                                     AddCommand("select-object").AddParameter("name");
         ///     </code>
-        ///
         /// This will add the value "name" to the positional parameter list of "select-object"
         /// cmdlet. When the command is invoked, this value will get bound to positional parameter 0
         /// of the "select-object" cmdlet which is "Property".
@@ -378,7 +376,7 @@ namespace System.Management.Automation
         /// </remarks>
         public PSCommand AddArgument(object value)
         {
-            if (null == _currentCommand)
+            if (_currentCommand == null)
             {
                 throw PSTraceSource.NewInvalidOperationException(PSCommandStrings.ParameterRequiresCommand,
                                                                  new object[] { "PSCommand" });

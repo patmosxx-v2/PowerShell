@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Globalization;
@@ -20,7 +19,6 @@ namespace Microsoft.PowerShell.Commands
     public class GetWmiObjectCommand : WmiBaseCmdlet
     {
         #region Parameters
-
 
         /// <summary>
         /// The WMI class to query
@@ -401,9 +399,9 @@ namespace Microsoft.PowerShell.Commands
                         WriteError(errorRecord);
                         continue;
                     }
-                } // foreach computerName
+                }
             }
-        } // BeginProcessing
+        }
 
         /// <summary>
         /// Get the class name from a query string
@@ -427,6 +425,6 @@ namespace Microsoft.PowerShell.Commands
         }
 
         #endregion Command code
-    } // GetWmiObjectCommand
-} // namespace Microsoft.PowerShell.Commands
+    }
+}
 

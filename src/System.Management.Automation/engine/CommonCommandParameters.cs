@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Management.Automation.Remoting;
@@ -18,16 +17,13 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Constructs an instance with the specified command instance
         /// </summary>
-        ///
         /// <param name="commandRuntime">
         /// The instance of the command that the parameters should set the
         /// user feedback properties on when the parameters get bound.
         /// </param>
-        ///
         /// <exception cref="ArgumentNullException">
         /// If <paramref name="cmdlet"/> is null.
         /// </exception>
-        ///
         internal CommonParameters(MshCommandRuntime commandRuntime)
         {
             if (commandRuntime == null)
@@ -35,48 +31,15 @@ namespace System.Management.Automation.Internal
                 throw PSTraceSource.NewArgumentNullException("commandRuntime");
             }
             _commandRuntime = commandRuntime;
-        } // ctor
+        }
+
         #endregion ctor
-
-        internal static string[] CommonWorkflowParameters = { "PSComputerName", "JobName", "PSApplicationName", "PSCredential", "PSPort", "PSConfigurationName",
-                                                              "PSConnectionURI", "PSSessionOption", "PSAuthentication", "PSAuthenticationLevel", "PSCertificateThumbprint",
-                                                              "PSConnectionRetryCount", "PSConnectionRetryIntervalSec", "PSRunningTimeoutSec", "PSElapsedTimeoutSec",
-                                                              "PSPersist", "PSPrivateMetadata", "InputObject", "PSParameterCollection",
-                                                              "AsJob", "PSUseSSL", "PSAllowRedirection" };
-
-#if !CORECLR // Workflow Not Supported On CSS
-        internal static Type[] CommonWorkflowParameterTypes = {
-             /* PSComputerName */ typeof(string[]),
-             /* JobName */ typeof(string),
-             /* PSApplicationName */ typeof(string),
-             /* PSCredential */ typeof(PSCredential),
-             /* PSPort */ typeof(uint),
-             /* PSConfigurationName */ typeof(string),
-             /* PSConnectionURI */ typeof(string[]),
-             /* PSSessionOption */ typeof(PSSessionOption),
-             /* PSAuthentication */ typeof(AuthenticationMechanism),
-             /* PSAuthenticationLevel */ typeof(AuthenticationLevel),
-             /* PSCertificateThumbprint */ typeof(string),
-             /* PSConnectionRetryCount */ typeof(uint),
-             /* PSConnectionRetryIntervalSec */ typeof(uint),
-             /* ??? PSRunningTimeoutSec */ typeof(int),
-             /* ??? PSElapsedTimeoutSec */ typeof(int),
-             /* PSPersist */ typeof(bool),
-             /* ??? PSPrivateMetadata */ typeof(object),
-             /* ??? InputObject */ typeof(object),
-             /* ??? PSParameterCollection */ typeof(Hashtable),
-             /* AsJob */ typeof(bool),
-             /* PSUseSSL */ typeof(bool),
-             /* PSAllowRedirection */ typeof(bool),
-        };
-#endif
 
         #region parameters
 
         /// <summary>
         /// Gets or sets the value of the Verbose parameter for the cmdlet.
         /// </summary>
-        ///
         /// <remarks>
         /// This parameter
         /// tells the command to articulate the actions it performs while executing.
@@ -92,7 +55,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Gets or sets the value of the Debug parameter for the cmdlet.
         /// </summary>
-        ///
         /// <remarks>
         /// This parameter tells the command to provide Programmer/Support type
         /// messages to understand what is really occuring and give the user the
@@ -109,7 +71,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Gets or sets the value of the ErrorAction parameter for the cmdlet.
         /// </summary>
-        ///
         /// <remarks>
         /// This parameter tells the command what to do when an error occurs.
         /// </remarks>
@@ -124,7 +85,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Gets or sets the value of the WarningAction parameter for the cmdlet.
         /// </summary>
-        ///
         /// <remarks>
         /// This parameter tells the command what to do when a warning
         /// occurs.
@@ -140,7 +100,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Gets or sets the value of the InformationAction parameter for the cmdlet.
         /// </summary>
-        ///
         /// <remarks>
         /// This parameter tells the command what to do when an informational record occurs.
         /// </remarks>
@@ -155,12 +114,10 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Gets or sets the value of the ErrorVariable parameter for the cmdlet.
         /// </summary>
-        ///
         /// <remarks>
         /// This parameter tells the command which variable to populate with the errors.
         /// Use +varname to append to the variable rather than clearing it.
         /// </remarks>
-        ///
         /// <!--
         /// 897599-2003/10/20-JonN Need to figure out how to get a working
         /// commandline parameter without making it a public property
@@ -177,7 +134,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Gets or sets the value of the WarningVariable parameter for the cmdlet.
         /// </summary>
-        ///
         /// <remarks>
         /// This parameter tells the command which variable to populate with the warnings.
         /// Use +varname to append to the variable rather than clearing it.
@@ -194,7 +150,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Gets or sets the value of the InformationVariable parameter for the cmdlet.
         /// </summary>
-        ///
         /// <remarks>
         /// This parameter tells the command which variable to populate with the informational output.
         /// Use +varname to append to the variable rather than clearing it.
@@ -211,7 +166,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Gets or sets the OutVariable parameter for the cmdlet.
         /// </summary>
-        ///
         /// <remarks>
         /// This parameter tells the command to set all success output in the specified variable.
         /// Similar to the way -errorvariable sets all errors to a variable name.
@@ -230,7 +184,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Gets or sets the OutBuffer parameter for the cmdlet.
         /// </summary>
-        ///
         /// <remarks>
         /// This parameter configures the number of objects to buffer before calling the downstream Cmdlet
         /// </remarks>
@@ -246,7 +199,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Gets or sets the PipelineVariable parameter for the cmdlet.
         /// </summary>
-        ///
         /// <remarks>
         /// This parameter defines a variable to hold the current pipeline output the command
         /// as it passes down the pipeline:
@@ -288,6 +240,6 @@ namespace System.Management.Automation.Internal
                 }
             }
         }
-    } // class UserFeedbackParameters
+    }
 }
 

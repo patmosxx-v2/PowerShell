@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Globalization;
@@ -554,4 +553,4 @@ namespace System.Management.Automation
         internal string Name { get; set; }
         internal List<string> CommandsToPostFilter { get; set; }
     }
-} // System.Management.Automation
+}

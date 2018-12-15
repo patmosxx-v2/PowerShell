@@ -1,13 +1,11 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 namespace System.Management.Automation
 {
     /// <summary>
     /// Holds the #defines for any special strings used in session state.
     /// </summary>
-    ///
     internal static class StringLiterals
     {
         // constants
@@ -24,7 +22,6 @@ namespace System.Management.Automation
         /// Porting note: IO.Path.DirectorySeparatorChar is correct for all platforms. On Windows,
         /// it is '\', and on Linux, it is '/', as expected.
         /// </summary>
-        ///
         internal static readonly char DefaultPathSeparator = System.IO.Path.DirectorySeparatorChar;
         internal static readonly string DefaultPathSeparatorString = DefaultPathSeparator.ToString();
 
@@ -36,7 +33,6 @@ namespace System.Management.Automation
         /// be "slash agnostic", we need to use the assumption that a '\' is the alternate path
         /// separator on Linux.
         /// </summary>
-        ///
         internal static readonly char AlternatePathSeparator = Platform.IsWindows ? '/' : '\\';
         internal static readonly string AlternatePathSeparatorString = AlternatePathSeparator.ToString();
 
@@ -44,14 +40,12 @@ namespace System.Management.Automation
         /// The default path prefix for remote paths. This is to mimic
         /// UNC paths in the file system.
         /// </summary>
-        ///
         internal const string DefaultRemotePathPrefix = "\\\\";
 
         /// <summary>
         /// The alternate path prefix for remote paths. This is to mimic
         /// UNC paths in the file system.
         /// </summary>
-        ///
         internal const string AlternateRemotePathPrefix = "//";
 
         /// <summary>
@@ -85,15 +79,6 @@ namespace System.Management.Automation
         /// session state string used as resource name in exceptions
         /// </summary>
         internal const string SessionState = "SessionState";
-
-#if RELATIONSHIP_SUPPORTED
-        // 2004/11/24-JeffJon - Relationships have been removed from the Exchange release
-
-        /// <summary>
-        /// The file extension (including the dot) of the relationship provider description file
-        /// </summary>
-        internal const string RelationshipProviderFileExtension = ".relationshipprovider";
-#endif
 
         /// <summary>
         /// The file extension (including the dot) of an PowerShell script file
@@ -138,7 +123,7 @@ namespace System.Management.Automation
         /// <summary>
         /// The file extension (including the dot) of an workflow dependent assembly
         /// </summary>
-        internal const string DependentWorkflowAssemblyExtension = ".dll";
+        internal const string PowerShellILAssemblyExtension = ".dll";
 
         /// <summary>
         /// The file extension (including the dot) of an workflow dependent Ngen assembly
@@ -185,7 +170,7 @@ namespace System.Management.Automation
         /// <summary>
         /// The escape character used in the language.
         /// </summary>
-        internal const string EscapeCharacter = "`";
+        internal const char EscapeCharacter = '`';
 
         /// <summary>
         /// The default cmdlet adapter for cmdletization / cdxml modules

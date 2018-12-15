@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
 using System.Management.Automation;
@@ -29,33 +28,33 @@ namespace Microsoft.PowerShell.Commands
             get
             {
                 return _paths;
-            } // get
+            }
 
             set
             {
                 _paths = value;
-            } // set
-        } // Path
+            }
+        }
 
         /// <summary>
         /// Gets or sets the literal path parameter to the command
         /// </summary>
         [Parameter(ParameterSetName = "LiteralPath",
                    Mandatory = true, ValueFromPipeline = false, ValueFromPipelineByPropertyName = true)]
-        [Alias("PSPath")]
+        [Alias("PSPath", "LP")]
         public string[] LiteralPath
         {
             get
             {
                 return _paths;
-            } // get
+            }
 
             set
             {
                 base.SuppressWildcardExpansion = true;
                 _paths = value;
-            } // set
-        } // LiteralPath
+            }
+        }
 
         #endregion Parameters
 
@@ -123,10 +122,9 @@ namespace Microsoft.PowerShell.Commands
                     continue;
                 }
             }
-        } // ProcessRecord
+        }
         #endregion Command code
 
-
-    } // ConvertPathCommand
-} // namespace Microsoft.PowerShell.Commands
+    }
+}
 

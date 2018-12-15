@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.IO;
 using System.Collections;
@@ -83,7 +82,7 @@ namespace System.Management.Automation
                 if (this.HelpSystem.LastHelpCategory == HelpCategory.Provider)
                 {
                     ErrorRecord errorRecord = new ErrorRecord(e, "ProviderLoadError", ErrorCategory.ResourceUnavailable, null);
-                    errorRecord.ErrorDetails = new ErrorDetails(typeof(ProviderHelpProvider).GetTypeInfo().Assembly, "HelpErrors", "ProviderLoadError", helpRequest.Target, e.Message);
+                    errorRecord.ErrorDetails = new ErrorDetails(typeof(ProviderHelpProvider).Assembly, "HelpErrors", "ProviderLoadError", helpRequest.Target, e.Message);
                     this.HelpSystem.LastErrors.Add(errorRecord);
                 }
             }
@@ -119,7 +118,6 @@ namespace System.Management.Automation
             }
         }
 
-
         private static string GetProviderAssemblyPath(ProviderInfo providerInfo)
         {
             if (providerInfo == null)
@@ -128,7 +126,7 @@ namespace System.Management.Automation
             if (providerInfo.ImplementingType == null)
                 return null;
 
-            return Path.GetDirectoryName(providerInfo.ImplementingType.GetTypeInfo().Assembly.Location);
+            return Path.GetDirectoryName(providerInfo.ImplementingType.Assembly.Location);
         }
 
         /// <summary>
@@ -137,7 +135,6 @@ namespace System.Management.Automation
         /// This will avoid one help file getting loaded again and again.
         /// (Which should not happen unless some provider is pointing
         /// to a help file that actually doesn't contain the help for it).
-        ///
         /// </summary>
         private readonly Hashtable _helpFiles = new Hashtable();
 
@@ -300,7 +297,7 @@ namespace System.Management.Automation
             PSSnapinQualifiedName snapinQualifiedNameForPattern =
                 PSSnapinQualifiedName.GetInstance(pattern);
 
-            if (null == snapinQualifiedNameForPattern)
+            if (snapinQualifiedNameForPattern == null)
             {
                 yield break;
             }

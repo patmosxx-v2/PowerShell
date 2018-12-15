@@ -1,6 +1,5 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
@@ -92,7 +91,7 @@ namespace Microsoft.PowerShell.Commands
         private static readonly string[] s_controlPanelItemFilterList = new string[] { "Folder Options", "Taskbar and Start Menu" };
         private const string TestHeadlessServerScript = @"
 $result = $false
-$serverManagerModule = Get-Module -ListAvailable | ? {$_.Name -eq 'ServerManager'}
+$serverManagerModule = Get-Module -ListAvailable | Where-Object {$_.Name -eq 'ServerManager'}
 if ($serverManagerModule -ne $null)
 {
     Import-Module ServerManager
@@ -254,7 +253,7 @@ $result
             {
                 Dbg.Assert(installation != null, "the CurrentVersion subkey should exist");
 
-                string installationType = (string)installation.GetValue("InstallationType", "");
+                string installationType = (string)installation.GetValue("InstallationType", string.Empty);
 
                 if (installationType.Equals("Server Core"))
                 {
@@ -430,7 +429,7 @@ $result
                     string errMsg = withCategoryFilter
                                         ? ControlPanelResources.NoControlPanelItemFoundWithNullCanonicalNameWithCategory
                                         : ControlPanelResources.NoControlPanelItemFoundWithNullCanonicalName;
-                    ErrorRecord error = new ErrorRecord(new InvalidOperationException(errMsg), "",
+                    ErrorRecord error = new ErrorRecord(new InvalidOperationException(errMsg), string.Empty,
                                                         ErrorCategory.InvalidArgument, CanonicalNames);
                     WriteError(error);
                 }
@@ -605,7 +604,6 @@ $result
         #endregion "Parameters"
 
         /// <summary>
-        ///
         /// </summary>
         protected override void ProcessRecord()
         {
@@ -722,7 +720,6 @@ $result
         #endregion "Parameters"
 
         /// <summary>
-        ///
         /// </summary>
         protected override void ProcessRecord()
         {

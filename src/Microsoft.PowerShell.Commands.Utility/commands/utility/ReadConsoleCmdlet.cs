@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections;
@@ -15,9 +14,7 @@ using System.Text;
 namespace Microsoft.PowerShell.Commands
 {
     /// <summary>
-    ///
     /// Retrieves input from the host virtual console and writes it to the pipeline output.
-    ///
     /// </summary>
 
     [Cmdlet(VerbsCommunications.Read, "Host", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113371")]
@@ -25,9 +22,7 @@ namespace Microsoft.PowerShell.Commands
     public sealed class ReadHostCommand : PSCmdlet
     {
         /// <summary>
-        ///
         /// Constructs a new instance.
-        ///
         /// </summary>
 
         public
@@ -39,9 +34,7 @@ namespace Microsoft.PowerShell.Commands
         #region Parameters
 
         /// <summary>
-        ///
         /// The objects to display on the host before collecting input.
-        ///
         /// </summary>
 
         [Parameter(Position = 0, ValueFromRemainingArguments = true)]
@@ -62,9 +55,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        ///
         /// Set to no echo the input as is is typed.
-        ///
         /// </summary>
 
         [Parameter]
@@ -84,14 +75,10 @@ namespace Microsoft.PowerShell.Commands
         }
         #endregion Parameters
 
-
         #region Cmdlet Overrides
 
         /// <summary>
-        ///
-        /// Write the prompt, then collect a line of input from the host, then
-        /// output it to the output stream.
-        ///
+        /// Write the prompt, then collect a line of input from the host, then output it to the output stream.
         /// </summary>
         protected override void BeginProcessing()
         {
@@ -143,7 +130,7 @@ namespace Microsoft.PowerShell.Commands
                 Collection<FieldDescription> fdc = new Collection<FieldDescription>();
                 fdc.Add(fd);
 
-                Dictionary<string, PSObject> result = Host.UI.Prompt("", "", fdc);
+                Dictionary<string, PSObject> result = Host.UI.Prompt(string.Empty, string.Empty, fdc);
                 // Result can be null depending on the host implementation. One typical
                 // example of a null return is for a canceled dialog.
                 if (result != null)
@@ -171,10 +158,7 @@ namespace Microsoft.PowerShell.Commands
 
         #endregion Cmdlet Overrides
 
-
-
         private object _prompt = null;
         private Boolean _safe = false;
     }
-}   // namespace Microsoft.PowerShell.Commands
-
+}

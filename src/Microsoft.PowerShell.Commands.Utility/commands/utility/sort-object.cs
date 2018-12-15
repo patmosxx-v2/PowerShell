@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.Generic;
 using System.Management.Automation;
@@ -8,12 +7,11 @@ using System.Management.Automation;
 namespace Microsoft.PowerShell.Commands
 {
     /// <summary>
-    ///
     /// </summary>
     [Cmdlet("Sort",
             "Object",
             HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113403",
-            DefaultParameterSetName="Default",
+            DefaultParameterSetName = "Default",
             RemotingCapability = RemotingCapability.None)]
     public sealed class SortObjectCommand : OrderObjectBase
     {
@@ -43,15 +41,15 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// This param specifies you only want the top N items returned.
         /// </summary>
-        [Parameter(ParameterSetName="Default")]
-        [ValidateRange(1,int.MaxValue)]
+        [Parameter(ParameterSetName = "Default")]
+        [ValidateRange(1, int.MaxValue)]
         public int Top { get; set; } = 0;
 
         /// <summary>
         /// This param specifies you only want the bottom N items returned.
         /// </summary>
-        [Parameter(ParameterSetName="Bottom", Mandatory=true)]
-        [ValidateRange(1,int.MaxValue)]
+        [Parameter(ParameterSetName = "Bottom", Mandatory = true)]
+        [ValidateRange(1, int.MaxValue)]
         public int Bottom { get; set; } = 0;
 
         /// <summary>
@@ -86,7 +84,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Sort unsorted OrderByPropertyEntry data using a full sort
+        /// Sort unsorted OrderByPropertyEntry data using a full sort.
         /// </summary>
         private int FullSort(List<OrderByPropertyEntry> dataToSort, OrderByPropertyComparer comparer)
         {
@@ -109,7 +107,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Sort unsorted OrderByPropertyEntry data using an indexed min-/max-heap sort
+        /// Sort unsorted OrderByPropertyEntry data using an indexed min-/max-heap sort.
         /// </summary>
         private int Heapify(List<OrderByPropertyEntry> dataToSort, OrderByPropertyComparer orderByPropertyComparer)
         {
@@ -225,7 +223,6 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        ///
         /// </summary>
         protected override void EndProcessing()
         {

@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Threading;
 using System.Collections.Generic;
@@ -125,7 +124,7 @@ namespace System.Management.Automation.Remoting
         private void HandleFatalError(Exception ex)
         {
             // Event handlers should not throw exceptions.  But if they do we need to
-            // handle them here to prevent the state machine from hanging when there are pending
+            // handle them here to prevent the state machine from not responding when there are pending
             // events to process.
 
             // Enqueue a fatal error event if such an exception occurs; clear all existing events.. we are going to terminate the session
@@ -313,7 +312,7 @@ namespace System.Management.Automation.Remoting
                         }
                     }
                     break;
-            } // switch...
+            }
         }
 
         /// <summary>
@@ -334,7 +333,7 @@ namespace System.Management.Automation.Remoting
                 new PSRemotingDataStructureException(RemotingErrorIdStrings.ClientKeyExchangeFailed);
 
             RaiseEvent(new RemoteSessionStateMachineEventArgs(RemoteSessionEvent.KeyReceiveFailed, exception));
-        } // SetStateHandler
+        }
 
         /// <summary>
         /// Handler to be used in cases, where raising an event to
@@ -441,7 +440,6 @@ namespace System.Management.Automation.Remoting
             _stateMachineHandle[(int)RemoteSessionState.EstablishedAndKeySent, (int)RemoteSessionEvent.KeyReceiveFailed] += SetStateToClosedHandler; //
             _stateMachineHandle[(int)RemoteSessionState.EstablishedAndKeyRequested, (int)RemoteSessionEvent.KeySendFailed] += SetStateToClosedHandler;
 
-
             //TODO: All these are potential unexpected state transitions.. should have a way to track these calls..
             // should atleast put a dbg assert in this handler
             for (int i = 0; i < _stateMachineHandle.GetLength(0); i++)
@@ -498,7 +496,6 @@ namespace System.Management.Automation.Remoting
         /// <param name="clearQueuedEvents">
         /// optional bool indicating whether to clear currently queued events
         /// </param>
-        ///
         /// <exception cref="ArgumentNullException">
         /// If the parameter is null.
         /// </exception>
@@ -535,7 +532,6 @@ namespace System.Management.Automation.Remoting
         /// <param name="arg">
         /// The parameter contains the actual FSM event.
         /// </param>
-        ///
         /// <exception cref="ArgumentNullException">
         /// If the parameter is null.
         /// </exception>
@@ -585,7 +581,6 @@ namespace System.Management.Automation.Remoting
         /// <param name="arg">
         /// This parameter contains the FSM event.
         /// </param>
-        ///
         /// <exception cref="PSArgumentNullException">
         /// If the parameter <paramref name="arg"/> is null.
         /// </exception>
@@ -610,7 +605,6 @@ namespace System.Management.Automation.Remoting
             }
         }
 
-
         /// <summary>
         /// This is the handler for ConnectSession event of the FSM. This is the beginning of everything
         /// else. From this moment on, the FSM will proceeds step by step to eventually reach
@@ -620,7 +614,6 @@ namespace System.Management.Automation.Remoting
         /// <param name="arg">
         /// This parameter contains the FSM event.
         /// </param>
-        ///
         /// <exception cref="PSArgumentNullException">
         /// If the parameter <paramref name="arg"/> is null.
         /// </exception>
@@ -650,7 +643,6 @@ namespace System.Management.Automation.Remoting
         /// <param name="arg">
         /// This parameter contains the FSM event.
         /// </param>
-        ///
         /// <exception cref="ArgumentNullException">
         /// If the parameter <paramref name="arg"/> is null.
         /// </exception>
@@ -702,7 +694,6 @@ namespace System.Management.Automation.Remoting
         /// <param name="arg">
         /// This parameter contains the FSM event.
         /// </param>
-        ///
         /// <exception cref="ArgumentNullException">
         /// If the parameter <paramref name="arg"/> is null.
         /// </exception>

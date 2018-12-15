@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -18,6 +17,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Microsoft.PowerShell.Commands;
+using Microsoft.PowerShell.Commands.Internal.Format;
 
 // ReSharper disable UnusedMember.Global
 
@@ -51,6 +51,14 @@ namespace System.Management.Automation
                 {
                     throw InterpreterError.NewInterpreterException(null, typeof(RuntimeException),
                         null, "CantInvokeInNonImportedModule", ParserStrings.CantInvokeInNonImportedModule, mi.Name);
+                }
+                else if (((invocationToken == TokenKind.Ampersand) || (invocationToken == TokenKind.Dot)) && (mi.LanguageMode != context.LanguageMode))
+                {
+                    // Disallow FullLanguage "& (Get-Module MyModule) MyPrivateFn" from ConstrainedLanguage because it always
+                    // runs "internal" origin and so has access to all functions, including non-exported functions.
+                    // Otherwise we end up leaking non-exported functions that run in FullLanguage.
+                    throw InterpreterError.NewInterpreterException(null, typeof(RuntimeException), null,
+                        "CantInvokeCallOperatorAcrossLanguageBoundaries", ParserStrings.CantInvokeCallOperatorAcrossLanguageBoundaries);
                 }
                 commandSessionState = mi.SessionState.Internal;
                 commandIndex += 1;
@@ -162,7 +170,7 @@ namespace System.Management.Automation
 
                 if (cpi.ArgumentSplatted)
                 {
-                    foreach (var splattedCpi in Splat(cpi.ArgumentValue, cpi.ArgumentExtent))
+                    foreach (var splattedCpi in Splat(cpi.ArgumentValue, cpi.ArgumentAst))
                     {
                         commandProcessor.AddParameter(splattedCpi);
                     }
@@ -293,9 +301,18 @@ namespace System.Management.Automation
             return commandProcessor;
         }
 
-        internal static IEnumerable<CommandParameterInternal> Splat(object splattedValue, IScriptExtent splatExtent)
+        internal static IEnumerable<CommandParameterInternal> Splat(object splattedValue, Ast splatAst)
         {
             splattedValue = PSObject.Base(splattedValue);
+
+            var markUntrustedData = false;
+            if (ExecutionContext.HasEverUsedConstrainedLanguage)
+            {
+                // If the value to be splatted is untrusted, then make sure sub-values held by it are
+                // also marked as untrusted.
+                markUntrustedData = ExecutionContext.IsMarkedAsUntrusted(splattedValue);
+            }
+
             IDictionary splattedTable = splattedValue as IDictionary;
             if (splattedTable != null)
             {
@@ -305,9 +322,10 @@ namespace System.Management.Automation
                     object parameterValue = de.Value;
                     string parameterText = GetParameterText(parameterName);
 
+                    if (markUntrustedData) { ExecutionContext.MarkObjectAsUntrusted(parameterValue); }
                     yield return CommandParameterInternal.CreateParameterWithArgument(
-                        splatExtent, parameterName, parameterText,
-                        splatExtent, parameterValue, false);
+                        splatAst, parameterName, parameterText,
+                        splatAst, parameterValue, false);
                 }
             }
             else
@@ -317,17 +335,18 @@ namespace System.Management.Automation
                 {
                     foreach (object obj in enumerableValue)
                     {
-                        yield return SplatEnumerableElement(obj, splatExtent);
+                        if (markUntrustedData) { ExecutionContext.MarkObjectAsUntrusted(obj); }
+                        yield return SplatEnumerableElement(obj, splatAst);
                     }
                 }
                 else
                 {
-                    yield return SplatEnumerableElement(splattedValue, splatExtent);
+                    yield return SplatEnumerableElement(splattedValue, splatAst);
                 }
             }
         }
 
-        private static CommandParameterInternal SplatEnumerableElement(object splattedArgument, IScriptExtent splatExtent)
+        private static CommandParameterInternal SplatEnumerableElement(object splattedArgument, Ast splatAst)
         {
             var psObject = splattedArgument as PSObject;
             if (psObject != null)
@@ -336,11 +355,11 @@ namespace System.Management.Automation
                 var baseObj = psObject.BaseObject;
                 if (prop != null && prop.Value is string && baseObj is string)
                 {
-                    return CommandParameterInternal.CreateParameter(splatExtent, (string)prop.Value, (string)baseObj);
+                    return CommandParameterInternal.CreateParameter((string)prop.Value, (string)baseObj, splatAst);
                 }
             }
 
-            return CommandParameterInternal.CreateArgument(splatExtent, splattedArgument);
+            return CommandParameterInternal.CreateArgument(splattedArgument, splatAst);
         }
 
         private static string GetParameterText(string parameterName)
@@ -410,7 +429,7 @@ namespace System.Management.Automation
                     commandProcessor = AddCommand(pipelineProcessor, pipeElements[i], pipeElementAsts[i],
                                                   commandRedirection, context);
                 }
-    
+
                 var cmdletInfo = commandProcessor?.CommandInfo as CmdletInfo;
                 if (cmdletInfo?.ImplementingType == typeof(OutNullCommand))
                 {
@@ -420,7 +439,7 @@ namespace System.Management.Automation
                         // Out-Null is the only command, bail without running anything
                         return;
                     }
-    
+
                     // Out-Null is the last command, rewrite command before Out-Null to a null pipe, but
                     // only if it didn't redirect anything, e.g. `Get-Stuff > o.txt | Out-Null`
                     var nextToLastCommand = pipelineProcessor.Commands[commandsCount - 2];
@@ -493,7 +512,7 @@ namespace System.Management.Automation
                 System.Text.StringBuilder updatedScriptblock = new System.Text.StringBuilder(cmdPrefix.Length + scriptblockBodyString.Length + 18);
                 updatedScriptblock.Append(cmdPrefix);
                 int position = 0;
-                // Prefix variables in the scriptblock with $using: 
+                // Prefix variables in the scriptblock with $using:
                 foreach (var v in variables)
                 {
                     var vName = ((VariableExpressionAst) v).VariablePath.UserPath;
@@ -502,7 +521,7 @@ namespace System.Management.Automation
                         continue;
                     // Skip PowerShell magic variables
                     if (Regex.Match(vName,
-                            "^(global:){0,1}(PID|PSVersionTable|PSEdition|PSHOME|HOST|TRUE|FALSE|NULL)$", 
+                            "^(global:){0,1}(PID|PSVersionTable|PSEdition|PSHOME|HOST|TRUE|FALSE|NULL)$",
                                 RegexOptions.IgnoreCase|RegexOptions.CultureInvariant).Success == false
                     )
                     {
@@ -519,8 +538,8 @@ namespace System.Management.Automation
                 commandProcessor = context.CommandDiscovery.LookupCommandProcessor(
                     commandInfo, CommandOrigin.Internal, false, context.EngineSessionState);
                 var parameter = CommandParameterInternal.CreateParameterWithArgument(
-                    pipelineAst.Extent, "ScriptBlock", null,
-                    pipelineAst.Extent, sb,
+                    /*parameterAst*/pipelineAst, "ScriptBlock", null,
+                    /*argumentAst*/pipelineAst, sb,
                     false);
                 commandProcessor.AddParameter(parameter);
                 pipelineProcessor.Add(commandProcessor);
@@ -646,7 +665,7 @@ namespace System.Management.Automation
                         var exprAst = (ExpressionAst)commandElement;
                         var argument = Compiler.GetExpressionValue(exprAst, isTrusted, context);
                         var splatting = (exprAst is VariableExpressionAst && ((VariableExpressionAst)exprAst).Splatted);
-                        commandParameters.Add(CommandParameterInternal.CreateArgument(exprAst.Extent, argument, splatting));
+                        commandParameters.Add(CommandParameterInternal.CreateArgument(argument, exprAst, splatting));
                     }
 
                     var redirections = new List<CommandRedirection>();
@@ -709,14 +728,14 @@ namespace System.Management.Automation
 
             if (argumentAst == null)
             {
-                return CommandParameterInternal.CreateParameter(errorPos, commandParameterAst.ParameterName, errorPos.Text);
+                return CommandParameterInternal.CreateParameter(commandParameterAst.ParameterName, errorPos.Text, commandParameterAst);
             }
 
             object argumentValue = Compiler.GetExpressionValue(argumentAst, isTrusted, context);
             bool spaceAfterParameter = (errorPos.EndLineNumber != argumentAst.Extent.StartLineNumber ||
                                         errorPos.EndColumnNumber != argumentAst.Extent.StartColumnNumber);
-            return CommandParameterInternal.CreateParameterWithArgument(errorPos, commandParameterAst.ParameterName,
-                                                                        errorPos.Text, argumentAst.Extent, argumentValue,
+            return CommandParameterInternal.CreateParameterWithArgument(commandParameterAst, commandParameterAst.ParameterName,
+                                                                        errorPos.Text, argumentAst, argumentValue,
                                                                         spaceAfterParameter);
         }
 
@@ -1115,16 +1134,16 @@ namespace System.Management.Automation
             // Unicode is still the default, but now may be overridden
 
             var cpi = CommandParameterInternal.CreateParameterWithArgument(
-                PositionUtilities.EmptyExtent, "Filepath", "-Filepath:",
-                PositionUtilities.EmptyExtent, File,
+                /*parameterAst*/null, "Filepath", "-Filepath:",
+                /*argumentAst*/null, File,
                 false);
             commandProcessor.AddParameter(cpi);
 
             if (this.Appending)
             {
                 cpi = CommandParameterInternal.CreateParameterWithArgument(
-                    PositionUtilities.EmptyExtent, "Append", "-Append:",
-                    PositionUtilities.EmptyExtent, true,
+                    /*parameterAst*/null, "Append", "-Append:",
+                    /*argumentAst*/null, true,
                     false);
                 commandProcessor.AddParameter(cpi);
             }
@@ -1156,6 +1175,23 @@ namespace System.Management.Automation
                 parentPipelineProcessor.AddRedirectionPipe(PipelineProcessor);
             }
             return new Pipe(context, PipelineProcessor);
+        }
+
+        /// <summary>
+        /// After file redirection is done, we need to call 'DoComplete' on the pipeline processor,
+        /// so that 'EndProcessing' of Out-File can be called to wrap up the file write operation.
+        /// </summary>
+        /// <remark>
+        /// 'StartStepping' is called after creating the pipeline processor.
+        /// 'Step' is called when an object is added to the pipe created with the pipeline processor.
+        /// </remark>
+        internal void CallDoCompleteForExpression()
+        {
+            // The pipe returned from 'GetRedirectionPipe' could be a NullPipe
+            if (PipelineProcessor != null)
+            {
+                PipelineProcessor.DoComplete();
+            }
         }
 
         private bool _disposed;
@@ -1196,8 +1232,12 @@ namespace System.Management.Automation
                 ScriptBlock scriptBlock = scriptBlockExpressionWrapper.GetScriptBlock(
                     context, functionDefinitionAst.IsFilter);
 
-                context.EngineSessionState.SetFunctionRaw(functionDefinitionAst.Name,
-                                                          scriptBlock, context.EngineSessionState.CurrentScope.ScopeOrigin);
+                var expAttribute = scriptBlock.ExperimentalAttribute;
+                if (expAttribute == null || expAttribute.ToShow)
+                {
+                    context.EngineSessionState.SetFunctionRaw(functionDefinitionAst.Name,
+                        scriptBlock, context.EngineSessionState.CurrentScope.ScopeOrigin);
+                }
             }
             catch (Exception exception)
             {
@@ -1209,40 +1249,6 @@ namespace System.Management.Automation
 
                 InterpreterError.UpdateExceptionErrorRecordPosition(rte, functionDefinitionAst.Extent);
                 throw;
-            }
-        }
-
-        internal static void DefineWorkflows(ExecutionContext context, ScriptBlockAst scriptBlockAst)
-        {
-            ParseException parseErrors = null;
-
-            try
-            {
-                var converterInstance = Utils.GetAstToWorkflowConverterAndEnsureWorkflowModuleLoaded(context);
-                PSLanguageMode? languageMode = (context != null) ? context.LanguageMode : (PSLanguageMode?) null;
-                var workflows = converterInstance.CompileWorkflows(scriptBlockAst, context.EngineSessionState.Module, null, languageMode, out parseErrors);
-                foreach (var workflow in workflows)
-                {
-                    context.EngineSessionState.SetWorkflowRaw(workflow,
-                                                              context.EngineSessionState.CurrentScope.ScopeOrigin);
-                }
-            }
-            catch (Exception exception)
-            {
-                var rte = exception as RuntimeException;
-                if (rte == null)
-                {
-                    throw ExceptionHandlingOps.ConvertToRuntimeException(exception, scriptBlockAst.Extent);
-                }
-
-                InterpreterError.UpdateExceptionErrorRecordPosition(rte, scriptBlockAst.Extent);
-                throw;
-            }
-
-            if (parseErrors != null && parseErrors.Errors != null)
-            {
-                InterpreterError.UpdateExceptionErrorRecordPosition(parseErrors, scriptBlockAst.Extent);
-                throw parseErrors;
             }
         }
     }
@@ -1289,7 +1295,7 @@ namespace System.Management.Automation
 
                 if (errorKeyString.Length > 40)
                 {
-                    errorKeyString = errorKeyString.Substring(0, 40) + "...";
+                    errorKeyString = errorKeyString.Substring(0, 40) + PSObjectHelper.Ellipsis;
                 }
 
                 throw InterpreterError.NewInterpreterException(hashtable, typeof(RuntimeException), errorExtent,
@@ -2040,7 +2046,7 @@ namespace System.Management.Automation
 
                     try
                     {
-                        if (generic != null && generic.GetTypeInfo().ContainsGenericParameters)
+                        if (generic != null && generic.ContainsGenericParameters)
                             generic.MakeGenericType(typeArgs);
                     }
                     catch (Exception e)
@@ -2170,14 +2176,13 @@ namespace System.Management.Automation
         ///
         /// class C1 {}
         /// function foo { class C2 {} }
-        /// 1..10 | % { foo }
+        /// 1..10 | ForEach-Object { foo }
         ///
         /// DefinePowerShellTypes() would be called for two TypeDefinitionAsts at the same time and Types for C1 and C2 would be created at the same assembly.
         /// AddPowerShellTypesToTheScope() would be called for root script first and then for foo\C2, once we call function foo.
         /// Note that AddPowerShellTypesToTheScope() would be call on every foo call, 10 times.
         ///
         /// This method also should be called for 'using module' statements. Then added types would have a different name.
-        ///
         /// </summary>
         /// <param name="types"></param>
         /// <param name="context"></param>
@@ -2206,7 +2211,7 @@ namespace System.Management.Automation
                 if (t.IsClass)
                 {
                     var helperType =
-                        t.Type.GetTypeInfo().Assembly.GetType(t.Type.FullName + "_<staticHelpers>");
+                        t.Type.Assembly.GetType(t.Type.FullName + "_<staticHelpers>");
                     Diagnostics.Assert(helperType != null, "no corresponding " + t.Type.FullName + "_<staticHelpers> type found");
                     foreach (var p in helperType.GetFields(BindingFlags.Static | BindingFlags.NonPublic))
                     {
@@ -2482,7 +2487,6 @@ namespace System.Management.Automation
                         rest.Add(Current(enumerator));
                     }
 
-
                     return rest.ToArray();
                 }
 
@@ -2661,7 +2665,6 @@ namespace System.Management.Automation
             return matches;
         }
 
-
         /// <summary>
         /// Implements the ForEach() operator.
         /// </summary>
@@ -2706,7 +2709,7 @@ namespace System.Management.Automation
                     }
 
                     // If it's a generic type then make sure it only has one type argument
-                    if (targetType.GetTypeInfo().IsGenericType)
+                    if (targetType.IsGenericType)
                     {
                         Type[] ta = targetType.GetGenericArguments();
                         if (ta.Length != 1)
@@ -3199,23 +3202,18 @@ namespace System.Management.Automation
         internal static IEnumerator GetCOMEnumerator(object obj)
         {
             object targetValue = PSObject.Base(obj);
-            try
-            {
-                IEnumerable enumerable = targetValue as IEnumerable;
-                if (enumerable != null)
-                {
-                    var enumerator = enumerable.GetEnumerator();
-                    if (enumerator != null)
-                    {
-                        return enumerator;
-                    }
-                }
-            }
-            catch (Exception)
-            {
-            }
 
-            return targetValue as IEnumerator ?? NonEnumerableObjectEnumerator.Create(obj);
+            // We use ComEnumerator to enumerate COM collections because the following code doesn't work in .NET Core
+            //   IEnumerable enumerable = targetValue as IEnumerable;
+            //   if (enumerable != null)
+            //   {
+            //       var enumerator = enumerable.GetEnumerator();
+            //       ...
+            //   }
+            // The call to 'GetEnumerator()' throws exception because COM is not supported in .NET Core.
+            // See https://github.com/dotnet/corefx/issues/19731 for more information.
+            // When COM support is back to .NET Core, we need to change back to the original implementation.
+            return ComEnumerator.Create(targetValue) ?? NonEnumerableObjectEnumerator.Create(obj);
         }
 
         internal static IEnumerator GetGenericEnumerator<T>(IEnumerable<T> enumerable)
@@ -3238,7 +3236,6 @@ namespace System.Management.Automation
                     e.Message);
             }
         }
-
 
         /// <summary>
         /// A routine used to advance an enumerator and catch errors that might occur

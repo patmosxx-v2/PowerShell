@@ -1,6 +1,5 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Management;
@@ -19,7 +18,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// The WMI Object to use
         /// </summary>
-        ///
         [Parameter(ValueFromPipeline = true, Mandatory = true, ParameterSetName = "object")]
         public ManagementObject InputObject
         {

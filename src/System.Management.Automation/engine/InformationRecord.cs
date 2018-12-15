@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Runtime.Serialization;
 using System.Collections.Generic;
@@ -8,15 +7,11 @@ using System.Collections.Generic;
 namespace System.Management.Automation
 {
     /// <summary>
-    ///
     /// Defines a data structure used to represent informational context destined for the host or user.
-    ///
     /// </summary>
     /// <remarks>
-    ///
     /// InformationRecords are passed to <see cref="System.Management.Automation.Cmdlet.WriteInformation(Object, string[])"/>,
     /// which, according to host or user preference, forwards that information on to the host for rendering to the user.
-    ///
     /// </remarks>
     /// <seealso cref="System.Management.Automation.Cmdlet.WriteInformation(Object, string[])"/>
 
@@ -24,9 +19,7 @@ namespace System.Management.Automation
     public class InformationRecord
     {
         /// <summary>
-        ///
         /// Initializes a new instance of the InformationRecord class.
-        ///
         /// </summary>
         /// <param name="messageData">The object to be transmitted to the host.</param>
         /// <param name="source">The source of the message (i.e.: script path, function name, etc.)</param>
@@ -40,10 +33,7 @@ namespace System.Management.Automation
             this.ManagedThreadId = (uint)System.Threading.Thread.CurrentThread.ManagedThreadId;
         }
 
-        /// <summary>
-        /// Added to enable ClrFacade.GetUninitializedObject to instantiate an uninitialized version of this class.
-        /// </summary>
-        internal InformationRecord() { }
+        private InformationRecord() { }
 
         /// <summary>
         /// Copy constructor
@@ -248,7 +238,6 @@ namespace System.Management.Automation
         /// The background color of the message
         /// </summary>
         public ConsoleColor? BackgroundColor { get; set; }
-
 
         /// <summary>
         /// Returns a string-based representation of the host information message

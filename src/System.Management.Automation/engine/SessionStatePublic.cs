@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.Generic;
 using System.Management.Automation.Runspaces;
@@ -18,15 +17,12 @@ namespace System.Management.Automation
         /// <summary>
         /// The internal constructor for this object. It should be the only one that gets called.
         /// </summary>
-        ///
         /// <param name="sessionState">
         /// An instance of SessionState that the APIs should work against.
         /// </param>
-        ///
         /// <exception cref="ArgumentNullException">
         /// If <paramref name="sessionState"/> is null.
         /// </exception>
-        ///
         internal SessionState(SessionStateInternal sessionState)
         {
             if (sessionState == null)
@@ -35,18 +31,11 @@ namespace System.Management.Automation
             }
 
             _sessionState = sessionState;
-
-#if RELATIONSHIP_SUPPORTED
-    // 2004/11/24-JeffJon - Relationships have been removed from the Exchange release
-
-            this.relationship = new RelationshipProviderManagementIntrinsics (sessionState);
-#endif
-        } // SessionState
+        }
 
         /// <summary>
         /// The internal constructor for this object. It should be the only one that gets called.
         /// </summary>
-        ///
         /// <param name="context">
         /// An instance of ExecutionContext whose EngineSessionState represents the parent session state.
         /// </param>
@@ -56,7 +45,6 @@ namespace System.Management.Automation
         /// <param name="linkToGlobal">
         /// True if the session state should be linked to the global scope.
         /// </param>
-        ///
         /// <exception cref="ArgumentNullException">
         /// If <paramref name="context"/> is null.
         /// </exception>
@@ -75,8 +63,7 @@ namespace System.Management.Automation
             }
 
             _sessionState.PublicSessionState = this;
-        } // SessionState
-
+        }
 
         /// <summary>
         /// Construct a new session state object...
@@ -108,7 +95,7 @@ namespace System.Management.Automation
         /// </summary>
         public CmdletProviderManagementIntrinsics Provider
         {
-            get { return _provider ?? (_provider = new CmdletProviderManagementIntrinsics(_sessionState)); } // get
+            get { return _provider ?? (_provider = new CmdletProviderManagementIntrinsics(_sessionState)); }
         }
 
         /// <summary>
@@ -124,7 +111,7 @@ namespace System.Management.Automation
         /// </summary>
         public PSVariableIntrinsics PSVariable
         {
-            get { return _variable ?? (_variable = new PSVariableIntrinsics(_sessionState)); } // get
+            get { return _variable ?? (_variable = new PSVariableIntrinsics(_sessionState)); }
         }
 
         /// <summary>
@@ -214,9 +201,7 @@ namespace System.Management.Automation
                 CommandInfo cinfo = valueToCheck as CommandInfo;
                 if (cinfo != null)
                 {
-                    string commandName = null;
-                    if (cinfo != null)
-                        commandName = cinfo.Name;
+                    string commandName = cinfo.Name;
                     if (commandName != null)
                     {
                         // If we have a name, use it in the error message
@@ -232,7 +217,7 @@ namespace System.Management.Automation
                     {
                         exception =
                             new SessionStateException(
-                                "",
+                                string.Empty,
                                 SessionStateCategory.Command,
                                 "CommandIsPrivate",
                                 SessionStateStrings.CommandIsPrivate,
@@ -305,28 +290,6 @@ namespace System.Management.Automation
             return (commandInfo.Visibility == SessionStateEntryVisibility.Public);
         }
 
-#if RELATIONSHIP_SUPPORTED
-        // 2004/11/24-JeffJon - Relationships have been removed from the Exchange release
-
-        /// <summary>
-        /// The state APIs to access relationship providers in session state.
-        /// </summary>
-        ///
-        public RelationshipProviderManagementIntrinsics Relationship
-        {
-            get
-            {
-                using (tracer.TraceProperty())
-                {
-                    Dbg.Diagnostics.Assert (
-                        relationship != null,
-                        "The only constructor for this class should always set the relationship field");
-
-                    return relationship;
-                } // TraceProperty
-            } // get
-        } // RelationshipProvider
-#endif
         #endregion Public methods
 
         #region Internal methods
@@ -334,11 +297,10 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets a reference to the "real" session state object instead of the facade
         /// </summary>
-        ///
         internal SessionStateInternal Internal
         {
             get { return _sessionState; }
-        } // Internal
+        }
         #endregion Internal methods
 
         #region private data
@@ -349,14 +311,8 @@ namespace System.Management.Automation
         private PathIntrinsics _path;
         private PSVariableIntrinsics _variable;
 
-#if RELATIONSHIP_SUPPORTED
-        // 2004/11/24-JeffJon - Relationships have been removed from the Exchange release
-
-        private RelationshipProviderManagementIntrinsics relationship = null;
-#endif
-
         #endregion private data
-    } // SessionStatePublic
+    }
 
     /// <summary>
     /// This enum defines the visibility of execution environment elements...

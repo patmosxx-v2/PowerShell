@@ -1,7 +1,7 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 #if !UNIX
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+
 using System.Globalization;
 using System.Management.Automation.Runspaces;
 using System.Text;
@@ -670,17 +670,14 @@ namespace System.Management.Automation.Tracing
         ManagedPlugIn = 0x100,
 
         /// <summary>
-        ///
         /// </summary>
         UseAlwaysDebug = 0x2000000000000000,
 
         /// <summary>
-        ///
         /// </summary>
         UseAlwaysOperational = 0x8000000000000000,
 
         /// <summary>
-        ///
         /// </summary>
         UseAlwaysAnalytic = 0x4000000000000000,
     }
@@ -764,7 +761,6 @@ namespace System.Management.Automation.Tracing
         }
 
         /// <summary>
-        ///
         /// </summary>
         public virtual PowerShellTraceKeywords Keywords
         {
@@ -809,13 +805,12 @@ namespace System.Management.Automation.Tracing
         /*
          * Making the provider static to reduce the number of buffers needed to 1.
          * */
-        private static readonly EventProvider _provider = new EventProvider(new Guid("A0C1853B-5C40-4b15-8766-3CF1C58F985A"));
+        private static readonly EventProvider _provider = new EventProvider(PSEtwLogProvider.ProviderGuid);
 
         private bool disposed;
         private PowerShellTraceKeywords _keywords;
 
         /// <summary>
-        ///
         /// </summary>
         public override PowerShellTraceKeywords Keywords
         {
@@ -1085,12 +1080,11 @@ namespace System.Management.Automation.Tracing
             {
                 return DebugChannel.TraceDebug(PowerShellTraceEvent.Job,
                                                PowerShellTraceOperationCode.Method, PowerShellTraceTask.None,
-                                               "", "", "NULL job");
+                                               string.Empty, string.Empty, "NULL job");
             }
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
@@ -1102,7 +1096,6 @@ namespace System.Management.Automation.Tracing
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="message1"></param>
         /// <param name="message2"></param>
@@ -1115,7 +1108,6 @@ namespace System.Management.Automation.Tracing
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="message"></param>
         /// <param name="instanceId"></param>
@@ -1127,9 +1119,7 @@ namespace System.Management.Automation.Tracing
                                             PowerShellTraceTask.None, message, instanceId);
         }
 
-
         /// <summary>
-        ///
         /// </summary>
         /// <param name="className"></param>
         /// <param name="methodName"></param>
@@ -1151,7 +1141,6 @@ namespace System.Management.Automation.Tracing
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="className"></param>
         /// <param name="methodName"></param>
@@ -1450,7 +1439,6 @@ namespace System.Management.Automation.Tracing
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="className"></param>
         /// <param name="methodName"></param>
@@ -1474,7 +1462,6 @@ namespace System.Management.Automation.Tracing
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="connectionInfo"></param>
         /// <returns></returns>

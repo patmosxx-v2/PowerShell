@@ -1,7 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
-
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using Dbg = System.Management.Automation;
@@ -34,7 +32,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         public EnvironmentProvider()
         {
-        } // constructor
+        }
 
         #endregion Constructor
 
@@ -43,11 +41,9 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Initializes the alias drive
         /// </summary>
-        ///
         /// <returns>
         /// An array of a single PSDriveInfo object representing the alias drive.
         /// </returns>
-        ///
         protected override Collection<PSDriveInfo> InitializeDefaultDrives()
         {
             string description = SessionStateStrings.EnvironmentDriveDescription;
@@ -63,25 +59,21 @@ namespace Microsoft.PowerShell.Commands
             Collection<PSDriveInfo> drives = new Collection<PSDriveInfo>();
             drives.Add(envDrive);
             return drives;
-        } // InitializeDefaultDrives
+        }
 
         #endregion DriveCmdletProvider overrides
 
         #region protected members
 
-
         /// <summary>
         /// Gets a environment variable from session state
         /// </summary>
-        ///
         /// <param name="name">
         /// The name of the environment variable to retrieve.
         /// </param>
-        ///
         /// <returns>
         /// A DictionaryEntry that represents the value of the environment variable.
         /// </returns>
-        ///
         internal override object GetSessionStateItem(string name)
         {
             Dbg.Diagnostics.Assert(
@@ -97,24 +89,20 @@ namespace Microsoft.PowerShell.Commands
                 result = new DictionaryEntry(name, value);
             }
             return result;
-        } // GetSessionStateItem
+        }
 
         /// <summary>
         /// Sets the environment variable of the specified name to the specified value
         /// </summary>
-        ///
         /// <param name="name">
         /// The name of the environment variable to set.
         /// </param>
-        ///
         /// <param name="value">
         /// The new value for the environment variable.
         /// </param>
-        ///
         /// <param name="writeItem">
         /// If true, the item that was set should be written to WriteItemObject.
         /// </param>
-        ///
         internal override void SetSessionStateItem(string name, object value, bool writeItem)
         {
             Dbg.Diagnostics.Assert(
@@ -153,16 +141,14 @@ namespace Microsoft.PowerShell.Commands
                     WriteItemObject(item, name, false);
                 }
             }
-        } // SetSessionStateItem
+        }
 
         /// <summary>
         /// Removes the specified environment variable from session state.
         /// </summary>
-        ///
         /// <param name="name">
         /// The name of the environment variable to remove from session state.
         /// </param>
-        ///
         internal override void RemoveSessionStateItem(string name)
         {
             Dbg.Diagnostics.Assert(
@@ -170,17 +156,15 @@ namespace Microsoft.PowerShell.Commands
                 "The caller should verify this parameter");
 
             Environment.SetEnvironmentVariable(name, null);
-        } // RemoveSessionStateItem
+        }
 
         /// <summary>
         /// Gets a flattened view of the environment variables in session state
         /// </summary>
-        ///
         /// <returns>
         /// An IDictionary representing the flattened view of the environment variables in
         /// session state.
         /// </returns>
-        ///
         internal override IDictionary GetSessionStateTable()
         {
             // Environment variables are case-sensitive on Unix and
@@ -201,24 +185,43 @@ namespace Microsoft.PowerShell.Commands
             IDictionary environmentTable = Environment.GetEnvironmentVariables();
             foreach (DictionaryEntry entry in environmentTable)
             {
-                providerTable.Add((string)entry.Key, entry);
+                if (!providerTable.TryAdd((string)entry.Key, entry))
+                {   // Windows only: duplicate key (variable name that differs only in case)
+                    // NOTE: Even though this shouldn't happen, it can, e.g. when npm
+                    //       creates duplicate environment variables that differ only in case -
+                    //       see https://github.com/PowerShell/PowerShell/issues/6305.
+                    //       However, because retrieval *by name* later is invariably
+                    //       case-INsensitive, in effect only a *single* variable exists.
+                    //       We simply ask Environment.GetEnvironmentVariable() for the effective value 
+                    //       and use that as the only entry, because for a given key 'foo' (and all its case variations),
+                    //       that is guaranteed to match what $env:FOO and [environment]::GetEnvironmentVariable('foo') return. 
+                    //       (If, by contrast, we just used `entry` as-is every time a duplicate is encountered,
+                    //        it could - intermittently - represent a value *other* than the effective one.)
+                    string effectiveValue = Environment.GetEnvironmentVariable((string)entry.Key);
+                    if (((string)entry.Value).Equals(effectiveValue, StringComparison.Ordinal)) { // We've found the effective definition.
+                        // Note: We *recreate* the entry so that the specific name casing of the
+                        //       effective definition is also reflected. However, if the case variants
+                        //       define the same value, it is unspecified which name variant is reflected
+                        //       in Get-Item env: output; given the always case-insensitive nature of the retrieval, 
+                        //       that shouldn't matter.
+                        providerTable.Remove((string)entry.Key);
+                        providerTable.Add((string)entry.Key, entry);
+                    }
+                }
             }
 
             return providerTable;
-        } // GetSessionStateTable
+        }
 
         /// <summary>
         /// Gets the Value property of the DictionaryEntry item
         /// </summary>
-        ///
         /// <param name="item">
         /// The item to get the value from.
         /// </param>
-        ///
         /// <returns>
         /// The value of the item.
         /// </returns>
-        ///
         internal override object GetValueOfItem(object item)
         {
             Dbg.Diagnostics.Assert(
@@ -232,9 +235,9 @@ namespace Microsoft.PowerShell.Commands
                 value = ((DictionaryEntry)item).Value;
             }
             return value;
-        } // GetValueOfItem
+        }
 
         #endregion protected members
-    } // EnvironmentProvider
+    }
 }
 

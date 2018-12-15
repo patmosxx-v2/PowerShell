@@ -1,6 +1,5 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -21,7 +20,6 @@ namespace Microsoft.PowerShell.Commands
         private const string ToStringValuePropertyName = "ToStringValue";
         private const string IndexPropertyName = "IndexValue";
         private int _index;
-
 
         /// <summary> Columns definition of the underlying Management List</summary>
         private HeaderInfo _headerInfo;
@@ -58,15 +56,15 @@ namespace Microsoft.PowerShell.Commands
         /// <param name="types">An array of types to add.</param>
         internal void AddColumns(string[] propertyNames, string[] displayNames, Type[] types)
         {
-            if (null == propertyNames)
+            if (propertyNames == null)
             {
                 throw new ArgumentNullException("propertyNames");
             }
-            if (null == displayNames)
+            if (displayNames == null)
             {
                 throw new ArgumentNullException("displayNames");
             }
-            if (null == types)
+            if (types == null)
             {
                 throw new ArgumentNullException("types");
             }
@@ -175,7 +173,7 @@ namespace Microsoft.PowerShell.Commands
         /// </param>
         internal void AddItem(PSObject livePSObject)
         {
-            if (null == livePSObject)
+            if (livePSObject == null)
             {
                 throw new ArgumentNullException("livePSObject");
             }
@@ -201,7 +199,7 @@ namespace Microsoft.PowerShell.Commands
         /// </param>
         internal void AddHeteroViewItem(PSObject livePSObject)
         {
-            if (null == livePSObject)
+            if (livePSObject == null)
             {
                 throw new ArgumentNullException("livePSObject");
             }
@@ -237,7 +235,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Implements IDisposable logic
+        /// Implements IDisposable logic.
         /// </summary>
         /// <param name="isDisposing">true if being called from Dispose</param>
         private void Dispose(bool isDisposing)
@@ -253,15 +251,13 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Dispose method in IDisposable
+        /// Dispose method in IDisposable.
         /// </summary>
         public void Dispose()
         {
             this.Dispose(true);
             GC.SuppressFinalize(this);
         }
-
-
 
         /// <summary>
         /// Close the window if it has already been displayed.
@@ -297,7 +293,7 @@ namespace Microsoft.PowerShell.Commands
         /// Return the selected item of the OutGridView.
         /// </summary>
         /// <returns>
-        /// The selected item
+        /// The selected item.
         /// </returns>
         internal List<PSObject> GetSelectedItems()
         {

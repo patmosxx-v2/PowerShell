@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Globalization;
 using System.Xml;
@@ -9,10 +8,8 @@ using System.Text;
 namespace System.Management.Automation
 {
     /// <summary>
-    ///
     /// Class MamlCommandHelpInfo keeps track of help information to be returned by
     /// command help provider.
-    ///
     /// </summary>
     internal class MamlCommandHelpInfo : BaseCommandHelpInfo
     {
@@ -145,7 +142,6 @@ namespace System.Management.Automation
                 return ExtractTextForHelpProperty(this.FullHelp, "alertset");
             }
         }
-
 
         #endregion
 
@@ -340,7 +336,7 @@ namespace System.Management.Automation
         /// <returns></returns>
         private string ExtractText(PSObject psObject)
         {
-            if (null == psObject)
+            if (psObject == null)
             {
                 return string.Empty;
             }
@@ -398,7 +394,7 @@ namespace System.Management.Automation
         /// <returns></returns>
         internal override bool MatchPatternInContent(WildcardPattern pattern)
         {
-            System.Management.Automation.Diagnostics.Assert(null != pattern, "pattern cannot be null");
+            System.Management.Automation.Diagnostics.Assert(pattern != null, "pattern cannot be null");
 
             string synopsis = Synopsis;
             if ((!string.IsNullOrEmpty(synopsis)) && (pattern.IsMatch(synopsis)))

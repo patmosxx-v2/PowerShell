@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #region Using directives
 
@@ -29,25 +28,30 @@ namespace Microsoft.PowerShell.Commands
 
         /// <summary> the number</summary>
         [Parameter(ParameterSetName = netSetName, Mandatory = true, Position = 0)]
+        [ValidateTrustedData]
         public string TypeName { get; set; } = null;
 
-
+#if !UNIX
         private Guid _comObjectClsId = Guid.Empty;
-        /// <summary> the ProgID of the Com object</summary>
+        /// <summary>
+        /// The ProgID of the Com object.
+        /// </summary>
         [Parameter(ParameterSetName = "Com", Mandatory = true, Position = 0)]
+        [ValidateTrustedData]
         public string ComObject { get; set; } = null;
-
+#endif
 
         /// <summary>
-        /// The parameters for the constructor
+        /// The parameters for the constructor.
         /// </summary>
         /// <value></value>
         [Parameter(ParameterSetName = netSetName, Mandatory = false, Position = 1)]
+        [ValidateTrustedData]
         [Alias("Args")]
         public object[] ArgumentList { get; set; } = null;
 
         /// <summary>
-        /// True if we should have an error when Com objects will use an interop assembly
+        /// True if we should have an error when Com objects will use an interop assembly.
         /// </summary>
         [Parameter(ParameterSetName = "Com")]
         public SwitchParameter Strict { get; set; }
@@ -57,6 +61,7 @@ namespace Microsoft.PowerShell.Commands
         /// gets the properties to be set.
         /// </summary>
         [Parameter]
+        [ValidateTrustedData]
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public IDictionary Property { get; set; }
 
@@ -101,7 +106,6 @@ namespace Microsoft.PowerShell.Commands
                 new ErrorRecord(ex, "SetValueException", ErrorCategory.InvalidData, null));
         }
 
-
         private static string ParameterSet2ResourceString(string parameterSet)
         {
             if (parameterSet.Equals(netSetName, StringComparison.OrdinalIgnoreCase))
@@ -143,26 +147,41 @@ namespace Microsoft.PowerShell.Commands
                         if (e.InnerException != null && e.InnerException is TypeResolver.AmbiguousTypeException)
                         {
                             ThrowTerminatingError(
-                            new ErrorRecord(
-                                e,
-                                "AmbiguousTypeReference",
-                                ErrorCategory.InvalidType, null));
+                                new ErrorRecord(
+                                    e,
+                                    "AmbiguousTypeReference",
+                                    ErrorCategory.InvalidType,
+                                    targetObject: null));
                         }
 
                         mshArgE = PSTraceSource.NewArgumentException(
-                        "TypeName",
-                        NewObjectStrings.TypeNotFound,
-                        TypeName);
+                            "TypeName",
+                            NewObjectStrings.TypeNotFound,
+                            TypeName);
+
                         ThrowTerminatingError(
                             new ErrorRecord(
                                 mshArgE,
                                 "TypeNotFound",
-                                ErrorCategory.InvalidType, null));
+                                ErrorCategory.InvalidType,
+                                targetObject: null));
                     }
                     throw e;
                 }
 
                 Diagnostics.Assert(type != null, "LanguagePrimitives.TryConvertTo failed but returned true");
+
+                if (type.IsByRefLike)
+                {
+                    ThrowTerminatingError(
+                        new ErrorRecord(
+                            PSTraceSource.NewInvalidOperationException(
+                                NewObjectStrings.CannotInstantiateBoxedByRefLikeType,
+                                type),
+                            nameof(NewObjectStrings.CannotInstantiateBoxedByRefLikeType),
+                            ErrorCategory.InvalidOperation,
+                            targetObject: null));
+                }
 
                 if (Context.LanguageMode == PSLanguageMode.ConstrainedLanguage)
                 {
@@ -245,6 +264,7 @@ namespace Microsoft.PowerShell.Commands
                      "CannotFindAppropriateCtor",
                      ErrorCategory.ObjectNotFound, null));
             }
+#if !UNIX
             else // Parameterset -Com
             {
                 int result = NewObjectNativeMethods.CLSIDFromProgID(ComObject, out _comObjectClsId);
@@ -295,10 +315,12 @@ namespace Microsoft.PowerShell.Commands
                 }
                 WriteObject(comObject);
             }
-        }//protected override void BeginProcessing()
+#endif
+        }
 
         #endregion Overrides
 
+#if !UNIX
         #region Com
 
         private object SafeCreateInstance(Type t, object[] args)
@@ -467,14 +489,15 @@ namespace Microsoft.PowerShell.Commands
         }
 
         #endregion Com
+#endif
 
         // HResult code '-2147417850' - Cannot change thread mode after it is set.
         private const int RPC_E_CHANGED_MODE = unchecked((int)0x80010106);
         private const string netSetName = "Net";
-    }//internal class NewObjectCommand: PSCmdlet
+    }
 
     /// <summary>
-    /// Native methods for dealing with COM objects
+    /// Native methods for dealing with COM objects.
     /// </summary>
     internal class NewObjectNativeMethods
     {

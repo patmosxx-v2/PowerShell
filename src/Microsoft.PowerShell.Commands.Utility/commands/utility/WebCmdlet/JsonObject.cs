@@ -1,60 +1,70 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Management.Automation;
 using System.Text.RegularExpressions;
-#if CORECLR
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Management.Automation.Internal;
-using System.Reflection;
-#else
-using System.Web.Script.Serialization;
-using System.Collections.Specialized;
-#endif
 
 namespace Microsoft.PowerShell.Commands
 {
     /// <summary>
-    /// JsonObject class
+    /// JsonObject class.
     /// </summary>
     [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
     public static class JsonObject
     {
-        private const int maxDepthAllowed = 100;
+        private class DuplicateMemberHashSet : HashSet<string>
+        {
+            public DuplicateMemberHashSet(int capacity) : base(capacity, StringComparer.OrdinalIgnoreCase)
+            {
+            }
+        }
 
         /// <summary>
-        /// Convert a Json string back to an object
+        /// Convert a Json string back to an object of type PSObject.
         /// </summary>
-        /// <param name="input"></param>
-        /// <param name="error"></param>
-        /// <returns></returns>
+        /// <param name="input">The json text to convert.</param>
+        /// <param name="error">An error record if the conversion failed.</param>
+        /// <returns>A PSObject.</returns>
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public static object ConvertFromJson(string input, out ErrorRecord error)
         {
+            return ConvertFromJson(input, returnHashtable: false, out error);
+        }
+
+        /// <summary>
+        /// Convert a Json string back to an object of type <see cref="System.Management.Automation.PSObject"/> or
+        /// <see cref="System.Collections.Hashtable"/> depending on parameter <paramref name="returnHashtable"/>.
+        /// </summary>
+        /// <param name="input">The json text to convert.</param>
+        /// <param name="returnHashtable">True if the result should be returned as a <see cref="System.Collections.Hashtable"/>
+        /// instead of a <see cref="System.Management.Automation.PSObject"/>.</param>
+        /// <param name="error">An error record if the conversion failed.</param>
+        /// <returns>A <see cref="System.Management.Automation.PSObject"/> or a <see cref="System.Collections.Hashtable"/>
+        /// if the <paramref name="returnHashtable"/> parameter is true.</returns>
+        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
+        public static object ConvertFromJson(string input, bool returnHashtable, out ErrorRecord error)
+        {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
 
             error = null;
-#if CORECLR
-            object obj = null;
             try
             {
                 // JsonConvert.DeserializeObject does not throw an exception when an invalid Json array is passed.
-                // This issue is being tracked by https://github.com/JamesNK/Newtonsoft.Json/issues/1321.
+                // This issue is being tracked by https://github.com/JamesNK/Newtonsoft.Json/issues/1930.
                 // To work around this, we need to identify when input is a Json array, and then try to parse it via JArray.Parse().
 
                 // If input starts with '[' (ignoring white spaces).
-                if ((Regex.Match(input, @"^\s*\[")).Success)
+                if (Regex.Match(input, @"^\s*\[").Success)
                 {
                     // JArray.Parse() will throw a JsonException if the array is invalid.
                     // This will be caught by the catch block below, and then throw an
@@ -65,64 +75,62 @@ namespace Microsoft.PowerShell.Commands
                     // we just continue the deserialization.
                 }
 
-                obj = JsonConvert.DeserializeObject(input, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.None, MaxDepth = 1024 });
-
-                // JObject is a IDictionary
-                var dictionary = obj as JObject;
-                if (dictionary != null)
-                {
-                    obj = PopulateFromJDictionary(dictionary, out error);
-                }
-                else
-                {
-                    // JArray is a collection
-                    var list = obj as JArray;
-                    if (list != null)
+                var obj = JsonConvert.DeserializeObject(
+                    input,
+                    new JsonSerializerSettings
                     {
-                        obj = PopulateFromJArray(list, out error);
-                    }
+                        TypeNameHandling = TypeNameHandling.None,
+                        MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
+                        MaxDepth = 1024
+                    });
+
+                switch (obj)
+                {
+                    case JObject dictionary:
+                        // JObject is a IDictionary
+                        return returnHashtable
+                                   ? PopulateHashTableFromJDictionary(dictionary, out error)
+                                   : PopulateFromJDictionary(dictionary, new DuplicateMemberHashSet(dictionary.Count), out error);
+                    case JArray list:
+                        return returnHashtable
+                                   ? PopulateHashTableFromJArray(list, out error)
+                                   : PopulateFromJArray(list, out error);
+                    default: return obj;
                 }
             }
             catch (JsonException je)
             {
                 var msg = string.Format(CultureInfo.CurrentCulture, WebCmdletStrings.JsonDeserializationFailed, je.Message);
+
                 // the same as JavaScriptSerializer does
                 throw new ArgumentException(msg, je);
             }
-#else
-            //In ConvertTo-Json, to serialize an object with a given depth, we set the RecursionLimit to depth + 2, see JavaScriptSerializer constructor in ConvertToJsonCommand.cs.
-            // Setting RecursionLimit to depth + 2 in order to support '$object | ConvertTo-Json –depth <value less than or equal to 100> | ConvertFrom-Json'.
-            JavaScriptSerializer serializer = new JavaScriptSerializer(new JsonObjectTypeResolver()) { RecursionLimit = (maxDepthAllowed + 2) };
-            serializer.MaxJsonLength = Int32.MaxValue;
-            object obj = serializer.DeserializeObject(input);
-
-            if (obj is IDictionary<string, object>)
-            {
-                var dictionary = obj as IDictionary<string, object>;
-                obj = PopulateFromDictionary(dictionary, out error);
-            }
-            else if (obj is ICollection<object>)
-            {
-                var list = obj as ICollection<object>;
-                obj = PopulateFromList(list, out error);
-            }
-#endif
-            return obj;
         }
 
-#if CORECLR
         // This function is a clone of PopulateFromDictionary using JObject as an input.
-        private static PSObject PopulateFromJDictionary(JObject entries, out ErrorRecord error)
+        private static PSObject PopulateFromJDictionary(JObject entries, DuplicateMemberHashSet memberHashTracker, out ErrorRecord error)
         {
             error = null;
-            PSObject result = new PSObject();
+            var result = new PSObject(entries.Count);
             foreach (var entry in entries)
             {
-                PSPropertyInfo property = result.Properties[entry.Key];
-                if (property != null)
+                if (string.IsNullOrEmpty(entry.Key))
                 {
-                    string errorMsg = string.Format(CultureInfo.InvariantCulture,
-                                                    WebCmdletStrings.DuplicateKeysInJsonString, property.Name, entry.Key);
+                    var errorMsg = string.Format(CultureInfo.CurrentCulture, WebCmdletStrings.EmptyKeyInJsonString);
+                    error = new ErrorRecord(
+                        new InvalidOperationException(errorMsg),
+                        "EmptyKeyInJsonString",
+                        ErrorCategory.InvalidOperation,
+                        null);
+                    return null;
+                }
+
+                // Case sensitive duplicates should normally not occur since JsonConvert.DeserializeObject
+                // does not throw when encountering duplicates and just uses the last entry.
+                if (memberHashTracker.TryGetValue(entry.Key, out var maybePropertyName)
+                    && string.Compare(entry.Key, maybePropertyName, StringComparison.CurrentCulture) == 0)
+                {
+                    var errorMsg = string.Format(CultureInfo.CurrentCulture, WebCmdletStrings.DuplicateKeysInJsonString, entry.Key);
                     error = new ErrorRecord(
                         new InvalidOperationException(errorMsg),
                         "DuplicateKeysInJsonString",
@@ -131,37 +139,55 @@ namespace Microsoft.PowerShell.Commands
                     return null;
                 }
 
+                // Compare case insensitive to tell the user to use the -AsHashTable option instead.
+                // This is because PSObject cannot have keys with different casing.
+                if (memberHashTracker.TryGetValue(entry.Key, out var propertyName))
+                {
+                    var errorMsg = string.Format(CultureInfo.CurrentCulture, WebCmdletStrings.KeysWithDifferentCasingInJsonString, propertyName, entry.Key);
+                    error = new ErrorRecord(
+                        new InvalidOperationException(errorMsg),
+                        "KeysWithDifferentCasingInJsonString",
+                        ErrorCategory.InvalidOperation,
+                        null);
+                    return null;
+                }
+
                 // Array
-                else if (entry.Value is JArray)
+                switch (entry.Value)
                 {
-                    JArray list = entry.Value as JArray;
-                    ICollection<object> listResult = PopulateFromJArray(list, out error);
-                    if (error != null)
+                    case JArray list:
                     {
-                        return null;
+                        var listResult = PopulateFromJArray(list, out error);
+                        if (error != null)
+                        {
+                            return null;
+                        }
+
+                        result.Properties.Add(new PSNoteProperty(entry.Key, listResult));
+                        break;
                     }
-                    result.Properties.Add(new PSNoteProperty(entry.Key, listResult));
+                    case JObject dic:
+                    {
+                        // Dictionary
+                        var dicResult = PopulateFromJDictionary(dic, new DuplicateMemberHashSet(dic.Count), out error);
+                        if (error != null)
+                        {
+                            return null;
+                        }
+
+                        result.Properties.Add(new PSNoteProperty(entry.Key, dicResult));
+                        break;
+                    }
+                    case JValue value:
+                    {
+                        result.Properties.Add(new PSNoteProperty(entry.Key, value.Value));
+                        break;
+                    }
                 }
 
-                // Dictionary
-                else if (entry.Value is JObject)
-                {
-                    JObject dic = entry.Value as JObject;
-                    PSObject dicResult = PopulateFromJDictionary(dic, out error);
-                    if (error != null)
-                    {
-                        return null;
-                    }
-                    result.Properties.Add(new PSNoteProperty(entry.Key, dicResult));
-                }
-
-                // Value
-                else // (entry.Value is JValue)
-                {
-                    JValue theValue = entry.Value as JValue;
-                    result.Properties.Add(new PSNoteProperty(entry.Key, theValue.Value));
-                }
+                memberHashTracker.Add(entry.Key);
             }
+
             return result;
         }
 
@@ -169,157 +195,60 @@ namespace Microsoft.PowerShell.Commands
         private static ICollection<object> PopulateFromJArray(JArray list, out ErrorRecord error)
         {
             error = null;
-            List<object> result = new List<object>();
+            var result = new object[list.Count];
 
-            foreach (var element in list)
+            for (var index = 0; index < list.Count; index++)
             {
-                // Array
-                if (element is JArray)
+                var element = list[index];
+                switch (element)
                 {
-                    JArray subList = element as JArray;
-                    ICollection<object> listResult = PopulateFromJArray(subList, out error);
-                    if (error != null)
+                    case JArray subList:
                     {
-                        return null;
-                    }
-                    result.Add(listResult);
-                }
+                        // Array
+                        var listResult = PopulateFromJArray(subList, out error);
+                        if (error != null)
+                        {
+                            return null;
+                        }
 
-                // Dictionary
-                else if (element is JObject)
-                {
-                    JObject dic = element as JObject;
-                    PSObject dicResult = PopulateFromJDictionary(dic, out error);
-                    if (error != null)
+                        result[index] = listResult;
+                        break;
+                    }
+                    case JObject dic:
                     {
-                        return null;
-                    }
-                    result.Add(dicResult);
-                }
+                        // Dictionary
+                        var dicResult = PopulateFromJDictionary(dic, new DuplicateMemberHashSet(dic.Count),  out error);
+                        if (error != null)
+                        {
+                            return null;
+                        }
 
-                // Value
-                else // (element is JValue)
-                {
-                    result.Add(((JValue)element).Value);
+                        result[index] = dicResult;
+                        break;
+                    }
+                    case JValue value:
+                    {
+                        result[index] = value.Value;
+                        break;
+                    }
                 }
             }
-            return result.ToArray();
+
+            return result;
         }
 
-        /// <summary>
-        /// Loads the Json.Net module to the given cmdlet execution context.
-        /// </summary>
-        /// <param name="cmdlet"></param>
-        /// <returns></returns>
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        public static void ImportJsonDotNetModule(Cmdlet cmdlet)
-        {
-            const string jsonDotNetAssemblyName = "Newtonsoft.Json, Version=7.0.0.0";
-
-            // Check if the Newtonsoft.Json.dll assembly is loaded.
-            try
-            {
-                System.Reflection.Assembly.Load(new AssemblyName(jsonDotNetAssemblyName));
-            }
-            catch (System.IO.FileNotFoundException)
-            {
-                // It is not, try to load it.
-                // Make sure that PSModuleAutoLoadingPreference is not set to 'None'.
-                PSModuleAutoLoadingPreference moduleAutoLoadingPreference =
-                            CommandDiscovery.GetCommandDiscoveryPreference(cmdlet.Context, SpecialVariables.PSModuleAutoLoadingPreferenceVarPath, "PSModuleAutoLoadingPreference");
-                if (moduleAutoLoadingPreference == PSModuleAutoLoadingPreference.None)
-                {
-                    cmdlet.ThrowTerminatingError(new ErrorRecord(
-                                        new NotSupportedException(WebCmdletStrings.PSModuleAutoloadingPreferenceNotEnable),
-                                        "PSModuleAutoloadingPreferenceNotEnable",
-                                        ErrorCategory.NotEnabled,
-                                        null));
-                }
-
-                // Use module auto-loading to import Json.Net.
-                var jsonNetModulePath = Path.Combine(System.Environment.GetEnvironmentVariable("ProgramFiles"), @"WindowsPowerShell\Modules\Json.Net");
-                CmdletInfo cmdletInfo = cmdlet.Context.SessionState.InvokeCommand.GetCmdlet("Microsoft.PowerShell.Core\\Import-Module");
-                Exception exception;
-                Collection<PSModuleInfo> importedModule = CommandDiscovery.AutoloadSpecifiedModule(jsonNetModulePath, cmdlet.Context, cmdletInfo.Visibility, out exception);
-
-                if ((importedModule == null) || (importedModule.Count == 0))
-                {
-                    string errorMessage = StringUtil.Format(WebCmdletStrings.JsonNetModuleRequired, WebCmdletStrings.CouldNotAutoImportJsonNetModule);
-
-                    cmdlet.ThrowTerminatingError(new ErrorRecord(
-                                        new NotSupportedException(errorMessage, exception),
-                                        "CouldNotAutoImportJsonNetModule",
-                                        ErrorCategory.InvalidOperation,
-                                        null));
-                }
-
-                // Finally, ensure that the Newtonsoft.Json.dll assembly was loaded.
-                try
-                {
-                    System.Reflection.Assembly.Load(new AssemblyName(jsonDotNetAssemblyName));
-                }
-                catch (System.IO.FileNotFoundException)
-                {
-                    string errorMessage = StringUtil.Format(
-                                                WebCmdletStrings.JsonNetModuleRequired,
-                                                StringUtil.Format(WebCmdletStrings.JsonNetModuleFilesRequired, jsonNetModulePath));
-
-                    cmdlet.ThrowTerminatingError(new ErrorRecord(
-                                                    new NotSupportedException(errorMessage),
-                                                    "JsonNetModuleRequired",
-                                                    ErrorCategory.NotInstalled,
-                                                    null));
-                }
-            }
-        }
-#else
-        private static ICollection<object> PopulateFromList(ICollection<object> list, out ErrorRecord error)
+        // This function is a clone of PopulateFromDictionary using JObject as an input.
+        private static Hashtable PopulateHashTableFromJDictionary(JObject entries, out ErrorRecord error)
         {
             error = null;
-            List<object> result = new List<object>();
-
-            foreach (object element in list)
+            Hashtable result = new Hashtable(entries.Count);
+            foreach (var entry in entries)
             {
-                if (element is IDictionary<string, object>)
+                // Case sensitive duplicates should normally not occur since JsonConvert.DeserializeObject
+                // does not throw when encountering duplicates and just uses the last entry.
+                if (result.ContainsKey(entry.Key))
                 {
-                    IDictionary<string, object> dic = element as IDictionary<string, object>;
-                    PSObject dicResult = PopulateFromDictionary(dic, out error);
-                    if (error != null)
-                    {
-                        return null;
-                    }
-                    result.Add(dicResult);
-                }
-                else if (element is ICollection<object>)
-                {
-                    ICollection<object> subList = element as ICollection<object>;
-                    ICollection<object> listResult = PopulateFromList(subList, out error);
-                    if (error != null)
-                    {
-                        return null;
-                    }
-                    result.Add(listResult);
-                }
-                else
-                {
-                    result.Add(element);
-                }
-            }
-
-            return result.ToArray();
-        }
-
-        private static PSObject PopulateFromDictionary(IDictionary<string, object> entries, out ErrorRecord error)
-        {
-            error = null;
-            PSObject result = new PSObject();
-            foreach (KeyValuePair<string, object> entry in entries)
-            {
-                PSPropertyInfo property = result.Properties[entry.Key];
-                if (property != null)
-                {
-                    string errorMsg = string.Format(CultureInfo.InvariantCulture,
-                                                    WebCmdletStrings.DuplicateKeysInJsonString, property.Name, entry.Key);
+                    string errorMsg = string.Format(CultureInfo.CurrentCulture, WebCmdletStrings.DuplicateKeysInJsonString, entry.Key);
                     error = new ErrorRecord(
                         new InvalidOperationException(errorMsg),
                         "DuplicateKeysInJsonString",
@@ -328,34 +257,88 @@ namespace Microsoft.PowerShell.Commands
                     return null;
                 }
 
-                if (entry.Value is IDictionary<string, object>)
+                switch (entry.Value)
                 {
-                    IDictionary<string, object> subEntries = entry.Value as IDictionary<string, object>;
-                    PSObject dicResult = PopulateFromDictionary(subEntries, out error);
-                    if (error != null)
+                    case JArray list:
                     {
-                        return null;
+                        // Array
+                        var listResult = PopulateHashTableFromJArray(list, out error);
+                        if (error != null)
+                        {
+                            return null;
+                        }
+
+                        result.Add(entry.Key, listResult);
+                        break;
                     }
-                    result.Properties.Add(new PSNoteProperty(entry.Key, dicResult));
-                }
-                else if (entry.Value is ICollection<object>)
-                {
-                    ICollection<object> list = entry.Value as ICollection<object>;
-                    ICollection<object> listResult = PopulateFromList(list, out error);
-                    if (error != null)
+                    case JObject dic:
                     {
-                        return null;
+                        // Dictionary
+                        var dicResult = PopulateHashTableFromJDictionary(dic, out error);
+                        if (error != null)
+                        {
+                            return null;
+                        }
+
+                        result.Add(entry.Key, dicResult);
+                        break;
                     }
-                    result.Properties.Add(new PSNoteProperty(entry.Key, listResult));
-                }
-                else
-                {
-                    result.Properties.Add(new PSNoteProperty(entry.Key, entry.Value));
+                    case JValue value:
+                    {
+                        result.Add(entry.Key, value.Value);
+                        break;
+                    }
                 }
             }
 
             return result;
         }
-#endif
+
+        // This function is a clone of PopulateFromList using JArray as input.
+        private static ICollection<object> PopulateHashTableFromJArray(JArray list, out ErrorRecord error)
+        {
+            error = null;
+            var result = new object[list.Count];
+
+            for (var index = 0; index < list.Count; index++)
+            {
+                var element = list[index];
+
+                switch (element)
+                {
+                    case JArray array:
+                    {
+                        // Array
+                        var listResult = PopulateHashTableFromJArray(array, out error);
+                        if (error != null)
+                        {
+                            return null;
+                        }
+
+                        result[index] = listResult;
+                            break;
+                    }
+                    case JObject dic:
+                    {
+                        // Dictionary
+                        var dicResult = PopulateHashTableFromJDictionary(dic, out error);
+                        if (error != null)
+                        {
+                            return null;
+                        }
+
+                        result[index] = dicResult;
+                        break;
+                    }
+                    case JValue value:
+                    {
+                        result[index] = value.Value;
+                        break;
+                    }
+                }
+            }
+
+            return result;
+        }
     }
 }

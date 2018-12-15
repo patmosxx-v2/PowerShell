@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -32,7 +31,6 @@ namespace System.Management.Automation
         /// This is a hashtable to track which help files are loaded already.
         ///
         /// This will avoid one help file getting loaded again and again.
-        ///
         /// </summary>
         private readonly Hashtable _helpFiles = new Hashtable();
 
@@ -174,7 +172,6 @@ namespace System.Management.Automation
         ///     b. If HelpItems node (which should be the top node of any command help file)
         ///        has an attribute "schema" with value "maml", its content is in maml
         ///        schema
-        ///
         /// </summary>
         /// <param name="helpFile">File name.</param>
         /// <param name="helpItemsNode">Nodes to check.</param>
@@ -183,7 +180,7 @@ namespace System.Management.Automation
         {
             Debug.Assert(!String.IsNullOrEmpty(helpFile), "helpFile cannot be null.");
 
-            if (helpFile.EndsWith(".maml", StringComparison.CurrentCultureIgnoreCase))
+            if (helpFile.EndsWith(".maml", StringComparison.OrdinalIgnoreCase))
                 return true;
 
             if (helpItemsNode.Attributes == null)

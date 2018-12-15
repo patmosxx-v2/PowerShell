@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Text;
@@ -204,7 +203,7 @@ namespace Microsoft.PowerShell.Commands
                                     pathNotFound));
                             continue;
                         }
-                    } // for each path
+                    }
                 }
                 else
                 {
@@ -214,10 +213,9 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
             }
-        } // ProcessRecord
+        }
         #endregion Command code
 
-
-    } // JoinPathCommand
-} // namespace Microsoft.PowerShell.Commands
+    }
+}
 

@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Management.Automation;
@@ -29,33 +28,33 @@ namespace Microsoft.PowerShell.Commands
             get
             {
                 return _paths;
-            } // get
+            }
 
             set
             {
                 _paths = value;
-            } // set
-        } // Path
+            }
+        }
 
         /// <summary>
         /// Gets or sets the literal path parameter to the command
         /// </summary>
         [Parameter(ParameterSetName = "LiteralPath",
                    Mandatory = true, ValueFromPipeline = false, ValueFromPipelineByPropertyName = true)]
-        [Alias("PSPath")]
+        [Alias("PSPath", "LP")]
         public string[] LiteralPath
         {
             get
             {
                 return _paths;
-            } // get
+            }
 
             set
             {
                 base.SuppressWildcardExpansion = true;
                 _paths = value;
-            } // set
-        } // LiteralPath
+            }
+        }
 
         /// <summary>
         /// Gets or sets the value that determines if the resolved path should
@@ -67,15 +66,14 @@ namespace Microsoft.PowerShell.Commands
             get
             {
                 return _relative;
-            } // get
+            }
 
             set
             {
                 _relative = value;
-            } // set
-        } // Relative
+            }
+        }
         private SwitchParameter _relative;
-
 
         #endregion Parameters
 
@@ -107,13 +105,26 @@ namespace Microsoft.PowerShell.Commands
                     {
                         foreach (PathInfo currentPath in result)
                         {
+                            // When result path and base path is on different PSDrive
+                            // (../)*path should not go beyond the root of base path
+                            if (currentPath.Drive != SessionState.Path.CurrentLocation.Drive &&
+                                SessionState.Path.CurrentLocation.Drive != null &&
+                                !currentPath.ProviderPath.StartsWith(
+                                    SessionState.Path.CurrentLocation.Drive.Root, StringComparison.OrdinalIgnoreCase))
+                            {
+                                WriteObject(currentPath.Path, enumerateCollection: false);
+                                continue;
+                            }
                             string adjustedPath = SessionState.Path.NormalizeRelativePath(currentPath.Path,
                                 SessionState.Path.CurrentLocation.ProviderPath);
-                            if (!adjustedPath.StartsWith(".", StringComparison.OrdinalIgnoreCase))
+                            // Do not insert './' if result path is not relative
+                            if (!adjustedPath.StartsWith(
+                                    currentPath.Drive?.Root ?? currentPath.Path, StringComparison.OrdinalIgnoreCase) &&
+                                !adjustedPath.StartsWith(".", StringComparison.OrdinalIgnoreCase))
                             {
                                 adjustedPath = SessionState.Path.Combine(".", adjustedPath);
                             }
-                            WriteObject(adjustedPath, false);
+                            WriteObject(adjustedPath, enumerateCollection: false);
                         }
                     }
                 }
@@ -152,13 +163,12 @@ namespace Microsoft.PowerShell.Commands
 
                 if (!_relative)
                 {
-                    WriteObject(result, true);
+                    WriteObject(result, enumerateCollection: true);
                 }
             }
-        } // ProcessRecord
+        }
         #endregion Command code
 
-
-    } // ResolvePathCommand
-} // namespace Microsoft.PowerShell.Commands
+    }
+}
 

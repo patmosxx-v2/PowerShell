@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Linq;
@@ -72,7 +71,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Gets or sets the credential parameter
         /// </summary>
-        ///
         [Parameter()]
         [Credential()]
         public PSCredential Credential
@@ -116,6 +114,16 @@ namespace Microsoft.PowerShell.Commands
         }
         internal bool _force;
 
+        /// <summary>
+        /// Sets the scope to which help is saved.
+        /// </summary>
+        [Parameter(Mandatory = false, ValueFromPipelineByPropertyName = true)]
+        public UpdateHelpScope Scope
+        {
+            get;
+            set;
+        }
+
         #endregion
 
         #region Events
@@ -151,7 +159,6 @@ namespace Microsoft.PowerShell.Commands
         ///
         /// NOTE: FWLinks for core PowerShell modules are needed since they get loaded as snapins in a Remoting Endpoint.
         /// When we moved to modules in V3, we were not able to make this change as it was a risky change to make at that time.
-        ///
         /// </summary>
         static UpdatableHelpCommandBase()
         {
@@ -159,13 +166,13 @@ namespace Microsoft.PowerShell.Commands
 
             // TODO: assign real TechNet addresses
 
-            s_metadataCache.Add("Microsoft.PowerShell.Diagnostics", "https://go.microsoft.com/fwlink/?linkid=390783");
-            s_metadataCache.Add("Microsoft.PowerShell.Core", "https://go.microsoft.com/fwlink/?linkid=390782");
-            s_metadataCache.Add("Microsoft.PowerShell.Utility", "https://go.microsoft.com/fwlink/?linkid=390787");
-            s_metadataCache.Add("Microsoft.PowerShell.Host", "https://go.microsoft.com/fwlink/?linkid=390784");
-            s_metadataCache.Add("Microsoft.PowerShell.Management", " https://go.microsoft.com/fwlink/?linkid=390785");
-            s_metadataCache.Add("Microsoft.PowerShell.Security", " https://go.microsoft.com/fwlink/?linkid=390786");
-            s_metadataCache.Add("Microsoft.WSMan.Management", "https://go.microsoft.com/fwlink/?linkid=390788");
+            s_metadataCache.Add("Microsoft.PowerShell.Diagnostics", "https://go.microsoft.com/fwlink/?linkid=855954");
+            s_metadataCache.Add("Microsoft.PowerShell.Core", "https://go.microsoft.com/fwlink/?linkid=855953");
+            s_metadataCache.Add("Microsoft.PowerShell.Utility", "https://go.microsoft.com/fwlink/?linkid=855960");
+            s_metadataCache.Add("Microsoft.PowerShell.Host", "https://go.microsoft.com/fwlink/?linkid=855956");
+            s_metadataCache.Add("Microsoft.PowerShell.Management", "https://go.microsoft.com/fwlink/?linkid=855958");
+            s_metadataCache.Add("Microsoft.PowerShell.Security", "https://go.microsoft.com/fwlink/?linkid=855959");
+            s_metadataCache.Add("Microsoft.WSMan.Management", "https://go.microsoft.com/fwlink/?linkid=855961");
         }
 
         /// <summary>
@@ -295,7 +302,7 @@ namespace Microsoft.PowerShell.Commands
                         if (!helpModules.ContainsKey(keyTuple))
                         {
                             List<PSModuleInfo> availableModules = Utils.GetModules(name.Key, context);
-                            if (null != availableModules)
+                            if (availableModules != null)
                             {
                                 foreach (PSModuleInfo module in availableModules)
                                 {
@@ -862,5 +869,20 @@ namespace Microsoft.PowerShell.Commands
         }
 
         #endregion
+    }
+
+     /// <summary>
+    /// Scope to which the help should be saved.
+    /// </summary>
+    public enum UpdateHelpScope
+    {
+        /// <summary>
+        /// Save the help content to the user directory.
+        CurrentUser,
+
+        /// <summary>
+        /// Save the help content to the module directory. This is the default behavior.
+        /// </summary>
+        AllUsers
     }
 }

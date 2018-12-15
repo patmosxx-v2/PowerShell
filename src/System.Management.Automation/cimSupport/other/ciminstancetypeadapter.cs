@@ -1,6 +1,5 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
@@ -56,7 +55,6 @@ namespace Microsoft.PowerShell.Cim
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="baseObject"></param>
         /// <returns></returns>
@@ -64,7 +62,7 @@ namespace Microsoft.PowerShell.Cim
         {
             // baseObject should never be null
             CimInstance cimInstance = baseObject as CimInstance;
-            if (null == cimInstance)
+            if (cimInstance == null)
             {
                 string msg = string.Format(CultureInfo.InvariantCulture,
                     CimInstanceTypeAdapterResources.BaseObjectNotCimInstance,
@@ -97,7 +95,6 @@ namespace Microsoft.PowerShell.Cim
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="baseObject"></param>
         /// <param name="propertyName"></param>
@@ -111,7 +108,7 @@ namespace Microsoft.PowerShell.Cim
 
             // baseObject should never be null
             CimInstance cimInstance = baseObject as CimInstance;
-            if (null == cimInstance)
+            if (cimInstance == null)
             {
                 string msg = string.Format(CultureInfo.InvariantCulture,
                     CimInstanceTypeAdapterResources.BaseObjectNotCimInstance,
@@ -155,13 +152,12 @@ namespace Microsoft.PowerShell.Cim
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="adaptedProperty"></param>
         /// <returns></returns>
         public override string GetPropertyTypeName(PSAdaptedProperty adaptedProperty)
         {
-            if (null == adaptedProperty)
+            if (adaptedProperty == null)
             {
                 throw new ArgumentNullException("adaptedProperty");
             }
@@ -181,13 +177,12 @@ namespace Microsoft.PowerShell.Cim
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="adaptedProperty"></param>
         /// <returns></returns>
         public override object GetPropertyValue(PSAdaptedProperty adaptedProperty)
         {
-            if (null == adaptedProperty)
+            if (adaptedProperty == null)
             {
                 throw new ArgumentNullException("adaptedProperty");
             }
@@ -244,14 +239,13 @@ namespace Microsoft.PowerShell.Cim
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="baseObject"></param>
         /// <returns></returns>
         public override Collection<string> GetTypeNameHierarchy(object baseObject)
         {
             var cimInstance = baseObject as CimInstance;
-            if (null == cimInstance)
+            if (cimInstance == null)
             {
                 throw new ArgumentNullException("baseObject");
             }
@@ -287,7 +281,7 @@ namespace Microsoft.PowerShell.Cim
 
             if (baseObject != null)
             {
-                for (Type type = baseObject.GetType(); type != null; type = type.GetTypeInfo().BaseType)
+                for (Type type = baseObject.GetType(); type != null; type = type.BaseType)
                 {
                     result.Add(type.FullName);
                 }
@@ -297,7 +291,6 @@ namespace Microsoft.PowerShell.Cim
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="adaptedProperty"></param>
         /// <returns></returns>
@@ -312,7 +305,6 @@ namespace Microsoft.PowerShell.Cim
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="adaptedProperty"></param>
         /// <returns></returns>
@@ -324,7 +316,7 @@ namespace Microsoft.PowerShell.Cim
             return writeQualifierValue;
             */
 
-            if (null == adaptedProperty)
+            if (adaptedProperty == null)
             {
                 return false;
             }
@@ -341,13 +333,12 @@ namespace Microsoft.PowerShell.Cim
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="adaptedProperty"></param>
         /// <param name="value"></param>
         public override void SetPropertyValue(PSAdaptedProperty adaptedProperty, object value)
         {
-            if (null == adaptedProperty)
+            if (adaptedProperty == null)
             {
                 throw new ArgumentNullException("adaptedProperty");
             }

@@ -1,6 +1,5 @@
-/********************************************************************++
- * Copyright (c) Microsoft Corporation.  All rights reserved.
- * --********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.Generic;
 using System.Threading;
@@ -165,10 +164,9 @@ namespace System.Management.Automation.Remoting
             RunspaceDebugStop.SafeInvoke(this, new StartRunspaceDebugProcessingEventArgs(runspace));
         }
 
-
         #endregion
 
-    } // IThrottleOperation
+    }
 
     #endregion IThrottleOperation
 
@@ -192,7 +190,6 @@ namespace System.Management.Automation.Remoting
     ///
     /// The queue used is a generic queue of type IThrottleOperations, as it will offer better
     /// performance
-    ///
     /// </summary>
     /// <remarks>Throttle limit is currently set to 50. This value may be modified later based
     /// on a figure that we may arrive at out of experience.</remarks>
@@ -254,7 +251,7 @@ namespace System.Management.Automation.Remoting
 
             // schedule operations here if possible
             StartOperationsFromQueue();
-        } // SubmitOperations
+        }
 
         /// <summary>
         /// Add a single operation to the queue
@@ -307,7 +304,7 @@ namespace System.Management.Automation.Remoting
                 {
                     needToReturn = true;
                 }
-            } // lock ...
+            }
 
             if (needToReturn)
             {
@@ -349,8 +346,8 @@ namespace System.Management.Automation.Remoting
                     _stopOperationQueue.Add(operation);
 
                     operation.IgnoreStop = true;
-                } // foreach...
-            } // lock...
+                }
+            }
 
             foreach (IThrottleOperation operation in startOperationsInProcessArray)
             {
@@ -360,7 +357,7 @@ namespace System.Management.Automation.Remoting
             // Raise event as it can be that at this point, all operations are
             // complete
             RaiseThrottleManagerEvents();
-        } // StopAllOperations
+        }
 
         /// <summary>
         /// Stop the specified operation
@@ -418,7 +415,7 @@ namespace System.Management.Automation.Remoting
             }
 
             RaiseThrottleManagerEvents();
-        } // EndSubmitOperations
+        }
 
         #endregion Public (internal) Methods
 
@@ -511,7 +508,7 @@ namespace System.Management.Automation.Remoting
 
             // Do necessary things for starting operation for the next item in the queue
             StartOneOperationFromQueue();
-        } // OperationCompleteHandler
+        }
 
         /// <summary>
         /// Method used to start the operation on one item in the queue
@@ -563,7 +560,7 @@ namespace System.Management.Automation.Remoting
                     StartOneOperationFromQueue();
                 }
             }
-        } // StartOperationsFromQueue
+        }
 
         /// <summary>
         /// Raise the throttle manager events once the conditions are met
@@ -589,7 +586,7 @@ namespace System.Management.Automation.Remoting
             {
                 ThrottleComplete.SafeInvoke(this, EventArgs.Empty);
             }
-        } // RaiseThrottleManagerEvents
+        }
 
         #endregion Private Methods
 
@@ -659,7 +656,7 @@ namespace System.Management.Automation.Remoting
             {
                 StopAllOperations();
             }
-        } // Dispose
+        }
 
         #endregion IDisposable Overrides
     }
@@ -726,7 +723,7 @@ namespace System.Management.Automation.Remoting
         {
             add
             {
-                bool firstEntry = (null == InternalEvent);
+                bool firstEntry = (InternalEvent == null);
 
                 InternalEvent += value;
 

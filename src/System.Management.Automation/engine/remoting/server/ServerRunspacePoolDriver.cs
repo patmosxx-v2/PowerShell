@@ -1,6 +1,5 @@
-/********************************************************************++
- * Copyright (c) Microsoft Corporation.  All rights reserved.
- * --********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -93,7 +92,6 @@ namespace System.Management.Automation
 
         #region Constructors
 
-
 #if CORECLR // No ApartmentState In CoreCLR
         /// <summary>
         /// Creates the runspace pool driver
@@ -176,7 +174,7 @@ namespace System.Management.Automation
             string configurationName)
 #endif
         {
-            Dbg.Assert(null != configData, "ConfigurationData cannot be null");
+            Dbg.Assert(configData != null, "ConfigurationData cannot be null");
 
             _serverCapability = serverCapability;
             _clientPSVersion = psClientVersion;
@@ -548,7 +546,9 @@ namespace System.Management.Automation
         {
             Debug.Assert(cmdToRun != null, "cmdToRun shouldn't be null");
 
-            cmdToRun.CommandOrigin = CommandOrigin.Internal;
+            // Don't invoke initialization script as trusted (CommandOrigin == Internal) if the system is in lock down mode.
+            cmdToRun.CommandOrigin = (SystemPolicy.GetSystemLockdownPolicy() == SystemEnforcementMode.Enforce) ? CommandOrigin.Runspace : CommandOrigin.Internal;
+
             cmdToRun.MergeMyResults(PipelineResultTypes.Error, PipelineResultTypes.Output);
             PowerShell powershell = PowerShell.Create();
             powershell.AddCommand(cmdToRun).AddCommand("out-default");
@@ -634,11 +634,7 @@ namespace System.Management.Automation
 
             // If the system lockdown policy says "Enforce", do so (unless it's in the
             // more restrictive NoLanguage mode)
-            if ((SystemPolicy.GetSystemLockdownPolicy() == SystemEnforcementMode.Enforce) &&
-                (args.Runspace.ExecutionContext.LanguageMode != PSLanguageMode.NoLanguage))
-            {
-                args.Runspace.ExecutionContext.LanguageMode = PSLanguageMode.ConstrainedLanguage;
-            }
+            Utils.EnforceSystemLockDownLanguageMode(args.Runspace.ExecutionContext);
 
             // Set the current location to MyDocuments folder for this runspace.
             // This used to be set to the Personal folder but was changed to MyDocuments folder for
@@ -680,7 +676,7 @@ namespace System.Management.Automation
                 cmdToRun = new Command(_configData.InitializationScriptForOutOfProcessRunspace, true, false);
             }
 
-            if (null != cmdToRun)
+            if (cmdToRun != null)
             {
                 InvokeScript(cmdToRun, args);
 
@@ -2458,7 +2454,7 @@ namespace System.Management.Automation
             }
 
             // Set debug mode to "None" so that current command can stop and not
-            // potentially hang in a debugger stop.  Use RestoreDebugger() to
+            // potentially not respond in a debugger stop.  Use RestoreDebugger() to
             // restore debugger to original mode.
             _wrappedDebugger.Value.SetDebugMode(DebugModes.None);
             if (InBreakpoint)

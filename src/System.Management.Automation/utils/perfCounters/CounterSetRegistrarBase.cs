@@ -1,6 +1,5 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Diagnostics.PerformanceData;
 using System.Diagnostics.CodeAnalysis;
@@ -67,7 +66,6 @@ namespace System.Management.Automation.PerformanceData
     /// derived non-abstract type.
     /// The created instance is then passed to PSPerfCounterMgr's AddCounterSetInstance()
     /// method.
-    ///
     /// </summary>
     public abstract class CounterSetRegistrarBase
     {
@@ -88,7 +86,6 @@ namespace System.Management.Automation.PerformanceData
         /// instance of CounterSet to register with its internal datastructure.
         /// </summary>
         protected abstract CounterSetInstanceBase CreateCounterSetInstance();
-
 
         #endregion
 
@@ -187,7 +184,6 @@ namespace System.Management.Automation.PerformanceData
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public CounterInfo[] CounterInfoArray { get; }
 
-
         /// <summary>
         /// Getter method that returns an instance of the CounterSetInstanceBase's
         /// derived type
@@ -199,9 +195,7 @@ namespace System.Management.Automation.PerformanceData
 
         #endregion
 
-
         #region Public Methods
-
 
         /// <summary>
         /// Method that disposes the referenced instance of the CounterSetInstanceBase's derived type.
@@ -251,7 +245,6 @@ namespace System.Management.Automation.PerformanceData
             }
         }
 
-
         #endregion
 
         #region CounterSetRegistrarBase Overrides
@@ -278,7 +271,6 @@ namespace System.Management.Automation.PerformanceData
         }
 
         #endregion
-
 
         #endregion
     }

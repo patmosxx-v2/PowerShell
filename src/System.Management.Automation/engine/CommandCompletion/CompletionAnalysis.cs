@@ -1,7 +1,5 @@
-
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -96,7 +94,6 @@ namespace System.Management.Automation
             return cursor.Offset < extent.StartOffset || cursor.Offset > extent.EndOffset;
         }
 
-
         internal CompletionContext CreateCompletionContext(PowerShell powerShell)
         {
             var typeInferenceContext = new TypeInferenceContext(powerShell);
@@ -166,7 +163,6 @@ namespace System.Management.Automation
         {
             return tokens.LastOrDefault(token => IsCursorAfterExtent(cursorPosition, token.Extent) && IsInterestingToken(token));
         }
-
 
         private static Ast GetLastAstAtCursor(ScriptBlockAst scriptBlockAst, IScriptPosition cursorPosition)
         {
@@ -312,7 +308,7 @@ namespace System.Management.Automation
             try
             {
                 // Tab expansion is called from a trusted function - we should apply ConstrainedLanguage if necessary.
-                if (ExecutionContext.HasEverUsedConstrainedLanguage)
+                if (completionContext.ExecutionContext.HasRunspaceEverUsedConstrainedLanguageMode)
                 {
                     previousLanguageMode = completionContext.ExecutionContext.LanguageMode;
                     completionContext.ExecutionContext.LanguageMode = PSLanguageMode.ConstrainedLanguage;
@@ -471,11 +467,21 @@ namespace System.Management.Automation
                         }
                         break;
                     case TokenKind.AtCurly:
-                        // Handle scenarios such as 'Sort-Object @{<tab>' and  'gci | Format-Table @{'                    
+                        // Handle scenarios such as 'Sort-Object @{<tab>' and  'gci | Format-Table @{'
                         result = GetResultForHashtable(completionContext);
                         replacementIndex += 2;
                         replacementLength = 0;
-                        break;                    
+                        break;
+
+                    case TokenKind.Semi:
+                        // Handle scenarios such as 'gci | Format-Table @{Label=...;<tab>'
+                        if (lastAst is HashtableAst)
+                        {
+                            result = GetResultForHashtable(completionContext);
+                            replacementIndex += 1;
+                            replacementLength = 0;
+                        }
+                        break;
 
                     case TokenKind.Number:
                         // Handle scenarios such as Get-Process -Id 5<tab> || Get-Process -Id 5210, 3<tab> || Get-Process -Id: 5210, 3<tab>
@@ -507,7 +513,7 @@ namespace System.Management.Automation
                         // Handle operator completion: 55 -<tab> || "string" -<tab> || (Get-Something) -<tab>
                         if (CompleteOperator(tokenAtCursor, lastAst))
                         {
-                            result = CompletionCompleters.CompleteOperator("");
+                            result = CompletionCompleters.CompleteOperator(string.Empty);
                             break;
                         }
 
@@ -541,10 +547,15 @@ namespace System.Management.Automation
                                 completionContext.ReplacementLength = replacementLength = 0;
                                 result = GetResultForAttributeArgument(completionContext, ref replacementIndex, ref replacementLength);
                             }
+                            else if (lastAst is HashtableAst hashTableAst && !(lastAst.Parent is DynamicKeywordStatementAst) && CheckForPendingAssignment(hashTableAst))
+                            {
+                                // Handle scenarios such as 'gci | Format-Table @{Label=<tab>' if incomplete parsing of the assignment.
+                                return null;
+                            }
                             else
                             {
-                                //
-                                // Handle auto completion for enum/dependson property of DSC resource,
+                                // Handle scenarios such as 'configuration foo { File ab { Attributes ='
+                                // (auto completion for enum/dependson property of DSC resource),
                                 // cursor is right after '=', '(' or '@('
                                 //
                                 // Configuration config
@@ -556,8 +567,7 @@ namespace System.Management.Automation
                                 //         DependsOn=(|
                                 //
                                 bool unused;
-                                result = GetResultForEnumPropertyValueOfDSCResource(completionContext, string.Empty,
-                                    ref replacementIndex, ref replacementLength, out unused);
+                                result = GetResultForEnumPropertyValueOfDSCResource(completionContext, string.Empty, ref replacementIndex, ref replacementLength, out unused);
                             }
                             break;
                         }
@@ -1305,7 +1315,6 @@ namespace System.Management.Automation
         ///             Us^
         ///         }
         ///     }
-        ///
         /// </summary>
         /// <param name="completionContext"></param>
         /// <param name="configureAst"></param>
@@ -1321,9 +1330,6 @@ namespace System.Management.Automation
             List<CompletionResult> results = null;
             matched = false;
 
-#if CORECLR // Microsoft.PowerShell.DesiredStateConfiguration is not in CORE CLR
-            results = new List<CompletionResult>();
-#else
             IEnumerable<DynamicKeyword> keywords = configureAst.DefinedKeywords.Where(
                 k => // Node is special case, legal in both Resource and Meta configuration
                     String.Compare(k.Keyword, @"Node", StringComparison.OrdinalIgnoreCase) == 0 ||
@@ -1369,7 +1375,6 @@ namespace System.Management.Automation
                         usageString));
                 }
             }
-#endif
 
             return results;
         }
@@ -1388,7 +1393,7 @@ namespace System.Management.Automation
             {
                 if (strConst.Value.Equals("$", StringComparison.Ordinal))
                 {
-                    completionContext.WordToComplete = "";
+                    completionContext.WordToComplete = string.Empty;
                     return CompletionCompleters.CompleteVariable(completionContext);
                 }
                 else
@@ -1411,9 +1416,8 @@ namespace System.Management.Automation
                                     StringLiterals.PowerShellModuleFileExtension,
                                     StringLiterals.PowerShellDataFileExtension,
                                     StringLiterals.PowerShellNgenAssemblyExtension,
-                                    StringLiterals.DependentWorkflowAssemblyExtension,
-                                    StringLiterals.PowerShellCmdletizationFileExtension,
-                                    StringLiterals.WorkflowFileExtension
+                                    StringLiterals.PowerShellILAssemblyExtension,
+                                    StringLiterals.PowerShellCmdletizationFileExtension
                                 };
                                 result = CompletionCompleters.CompleteFilename(completionContext, false, moduleExtensions).ToList();
                                 if (completionContext.WordToComplete.IndexOfAny(Utils.Separators.DirectoryOrDrive) != -1)
@@ -1751,13 +1755,15 @@ namespace System.Management.Automation
             {
                 PropertyInfo[] propertyInfos = attributeType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
                 List<CompletionResult> result = new List<CompletionResult>();
-                foreach (PropertyInfo pro in propertyInfos)
+                foreach (PropertyInfo property in propertyInfos)
                 {
-                    //Ignore TypeId (all attributes inherit it)
-                    if (pro.Name != "TypeId" && (pro.Name.StartsWith(argName, StringComparison.OrdinalIgnoreCase)))
+                    // Ignore getter-only properties, including 'TypeId' (all attributes inherit it).
+                    if (!property.CanWrite) { continue; }
+
+                    if (property.Name.StartsWith(argName, StringComparison.OrdinalIgnoreCase))
                     {
-                        result.Add(new CompletionResult(pro.Name, pro.Name, CompletionResultType.Property,
-                            pro.PropertyType.ToString() + " " + pro.Name));
+                        result.Add(new CompletionResult(property.Name, property.Name, CompletionResultType.Property,
+                            property.PropertyType.ToString() + " " + property.Name));
                     }
                 }
                 return result;

@@ -1,8 +1,10 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.PowerShell.Commands;
 using System.Management.Automation.Host;
 using System.Management.Automation.Runspaces;
 using System.Management.Automation.Internal;
@@ -12,6 +14,8 @@ using System.Text.RegularExpressions;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Globalization;
+using Microsoft.PowerShell.Commands;
+using Microsoft.PowerShell.Commands.Internal.Format;
 
 namespace System.Management.Automation
 {
@@ -75,7 +79,7 @@ namespace System.Management.Automation
         /// <param name="allUsersAllHosts">The profile file name for all users and all hosts.</param>
         /// <param name="allUsersCurrentHost">The profile file name for all users and current host.</param>
         /// <param name="currentUserAllHosts">The profile file name for current user and all hosts.</param>
-        /// <param name="currentUserCurrentHost">The profile  name for current user and current host.</param>
+        /// <param name="currentUserCurrentHost">The profile name for current user and current host.</param>
         /// <returns>A PSObject whose base object is currentUserCurrentHost and with notes for the other 4 parameters.</returns>
         internal static PSObject GetDollarProfile(string allUsersAllHosts, string allUsersCurrentHost, string currentUserAllHosts, string currentUserCurrentHost)
         {
@@ -86,7 +90,6 @@ namespace System.Management.Automation
             returnValue.Properties.Add(new PSNoteProperty("CurrentUserCurrentHost", currentUserCurrentHost));
             return returnValue;
         }
-
 
         /// <summary>
         /// Gets an array of commands that can be run sequentially to set $profile and run the profile commands.
@@ -184,7 +187,7 @@ namespace System.Management.Automation
                 basePath = GetAllUsersFolderPath(shellId);
                 if (string.IsNullOrEmpty(basePath))
                 {
-                    return "";
+                    return string.Empty;
                 }
             }
 
@@ -248,7 +251,7 @@ namespace System.Management.Automation
 
                 if (lineCount == maxLines)
                 {
-                    returnValue.Append("...");
+                    returnValue.Append(PSObjectHelper.Ellipsis);
                     break;
                 }
             }
@@ -459,7 +462,6 @@ namespace System.Management.Automation
                 }
             }
 
-
             return returnSuggestions;
         }
 
@@ -641,7 +643,6 @@ namespace System.Management.Automation
             credUiInfo.cbSize = Marshal.SizeOf(credUiInfo);
             credUiInfo.hwndParent = parentHWND;
 
-
             CREDUI_FLAGS flags = CREDUI_FLAGS.DO_NOT_PERSIST;
 
             // Set some of the flags if they have not requested a domain credential
@@ -772,10 +773,18 @@ namespace System.Management.Automation
             {
                 return basePrompt;
             }
-            else
+
+            SSHConnectionInfo sshConnectionInfo = runspace.ConnectionInfo as SSHConnectionInfo;
+
+            // Usernames are case-sensitive on Unix systems
+            if (sshConnectionInfo != null &&
+                !string.IsNullOrEmpty(sshConnectionInfo.UserName) &&
+                !System.Environment.UserName.Equals(sshConnectionInfo.UserName, StringComparison.Ordinal))
             {
-                return string.Format(CultureInfo.InvariantCulture, "[{0}]: {1}", runspace.ConnectionInfo.ComputerName, basePrompt);
+                return string.Format(CultureInfo.InvariantCulture, "[{0}@{1}]: {2}", sshConnectionInfo.UserName, sshConnectionInfo.ComputerName, basePrompt);
             }
+
+            return string.Format(CultureInfo.InvariantCulture, "[{0}]: {1}", runspace.ConnectionInfo.ComputerName, basePrompt);
         }
 
         internal static bool IsProcessInteractive(InvocationInfo invocationInfo)
@@ -845,6 +854,7 @@ namespace System.Management.Automation
                     e);
             }
 
+            remoteRunspace.IsConfiguredLoopBack = true;
             return remoteRunspace;
         }
 
@@ -923,7 +933,7 @@ namespace System.Management.Automation
 
             foreach ($file in $FileName)
             {
-                dir $file -File | foreach {
+                Get-ChildItem $file -File | ForEach-Object {
                     $filePathName = $_.FullName
 
                     # Get file contents
@@ -943,12 +953,7 @@ namespace System.Management.Automation
                 [string] $PSEditFunction
             )
 
-            if ($PSVersionTable.PSVersion -lt ([version] '3.0'))
-            {
-                throw (new-object System.NotSupportedException)
-            }
-
-            Register-EngineEvent -SourceIdentifier PSISERemoteSessionOpenFile -Forward
+            Register-EngineEvent -SourceIdentifier PSISERemoteSessionOpenFile -Forward -SupportEvent
 
             if ((Test-Path -Path 'function:\global:PSEdit') -eq $false)
             {
@@ -960,17 +965,12 @@ namespace System.Management.Automation
         /// RemovePSEditFunction script string.
         /// </summary>
         public const string RemovePSEditFunction = @"
-            if ($PSVersionTable.PSVersion -lt ([version] '3.0'))
-            {
-                throw (new-object System.NotSupportedException)
-            }
-
             if ((Test-Path -Path 'function:\global:PSEdit') -eq $true)
             {
                 Remove-Item -Path 'function:\global:PSEdit' -Force
             }
 
-            Get-EventSubscriber -SourceIdentifier PSISERemoteSessionOpenFile -EA Ignore | Remove-Event
+            Unregister-Event -SourceIdentifier PSISERemoteSessionOpenFile -Force -ErrorAction Ignore
         ";
 
         /// <summary>

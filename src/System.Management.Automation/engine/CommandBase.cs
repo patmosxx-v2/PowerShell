@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
 using System.Management.Automation.Language;
@@ -36,7 +35,7 @@ namespace System.Management.Automation.Internal
     /// Ideally this would be an internal class, but C# does not support
     /// public classes deriving from internal classes.
     /// -->
-    [DebuggerDisplay("Command = {commandInfo}")]
+    [DebuggerDisplay("Command = {_commandInfo}")]
     public abstract class InternalCommand
     {
         #region private_members
@@ -108,7 +107,6 @@ namespace System.Management.Automation.Internal
         /// <summary>
         /// Internal helper to get to SessionState
         /// </summary>
-        ///
         internal SessionState InternalState
         {
             get { return _state; }
@@ -222,7 +220,6 @@ namespace System.Management.Automation.Internal
 
         #endregion Override
 
-
         /// <summary>
         /// throws if the pipeline is stopping
         /// </summary>
@@ -258,7 +255,6 @@ namespace System.Management.Automation.Internal
     }
 }
 
-
 namespace System.Management.Automation
 {
     #region ActionPreference
@@ -283,7 +279,7 @@ namespace System.Management.Automation
         Ignore,
         /// <summary>Suspend the command for further diagnosis. Supported only for workflows.</summary>
         Suspend,
-    } // enum ActionPreference
+    }
     #endregion ActionPreference
 
     #region ConfirmImpact
@@ -319,7 +315,7 @@ namespace System.Management.Automation
         /// confirmed by default unless otherwise specified.
         /// </summary>
         High,
-    } // enum ConfirmImpact
+    }
     #endregion ConfirmImpact
 
     /// <summary>
@@ -376,7 +372,7 @@ namespace System.Management.Automation
                     return this.InternalState;
                 }
             }
-        } // SessionState
+        }
 
         /// <summary>
         /// Gets the event manager for the current runspace.
@@ -390,7 +386,7 @@ namespace System.Management.Automation
                     return this.Context.Events;
                 }
             }
-        } // Events
+        }
 
         /// <summary>
         /// Repository for jobs
@@ -443,7 +439,7 @@ namespace System.Management.Automation
                     return _invokeProvider ?? (_invokeProvider = new ProviderIntrinsics(this));
                 }
             }
-        } // InvokeProvider
+        }
 
         #region Provider wrappers
 
@@ -470,7 +466,7 @@ namespace System.Management.Automation
             {
                 return SessionState.Path.GetUnresolvedProviderPathFromPSPath(path);
             }
-        } // GetUnresolvedProviderPathFromPSPath
+        }
 
         /// <Content contentref="System.Management.Automation.PathIntrinsics.GetResolvedProviderPathFromPSPath" />
         public Collection<string> GetResolvedProviderPathFromPSPath(string path, out ProviderInfo provider)
@@ -479,7 +475,7 @@ namespace System.Management.Automation
             {
                 return SessionState.Path.GetResolvedProviderPathFromPSPath(path, out provider);
             }
-        } // GetResolvedProviderPathFromPSPath
+        }
         #endregion Provider wrappers
 
         #endregion internal_members
@@ -510,7 +506,7 @@ namespace System.Management.Automation
             {
                 return this.SessionState.PSVariable.GetValue(name);
             }
-        } // GetVariableValue
+        }
 
         /// <Content contentref="System.Management.Automation.VariableIntrinsics.GetValue" />
 
@@ -520,7 +516,7 @@ namespace System.Management.Automation
             {
                 return this.SessionState.PSVariable.GetValue(name, defaultValue);
             }
-        } // GetVariableValue
+        }
 
         #endregion PSVariable APIs
 
@@ -529,6 +525,6 @@ namespace System.Management.Automation
         #endregion Parameter methods
 
         #endregion public_methods
-    } // PSCmdlet
+    }
 }
 

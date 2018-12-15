@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections;
@@ -23,11 +22,8 @@ using System.Management.Automation.Language;
 using Parser = System.Management.Automation.Language.Parser;
 using ScriptBlock = System.Management.Automation.ScriptBlock;
 using Token = System.Management.Automation.Language.Token;
+#if LEGACYTELEMETRY
 using Microsoft.PowerShell.Telemetry.Internal;
-
-#if CORECLR
-// Use stub for SecurityZone.
-using Microsoft.PowerShell.CoreClr.Stubs;
 #endif
 
 //
@@ -81,6 +77,7 @@ namespace Microsoft.PowerShell.Commands
         [Parameter(ParameterSetName = ParameterSet_Name, Mandatory = true, ValueFromPipeline = true, Position = 0)]
         [Parameter(ParameterSetName = ParameterSet_ViaPsrpSession, Mandatory = true, ValueFromPipeline = true, Position = 0)]
         [Parameter(ParameterSetName = ParameterSet_ViaCimSession, Mandatory = true, ValueFromPipeline = true, Position = 0)]
+        [ValidateTrustedData]
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Cmdlets use arrays for parameters.")]
         public string[] Name { set; get; } = Utils.EmptyArray<string>();
 
@@ -89,6 +86,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(ParameterSetName = ParameterSet_FQName, Mandatory = true, ValueFromPipeline = true, Position = 0)]
         [Parameter(ParameterSetName = ParameterSet_FQName_ViaPsrpSession, Mandatory = true, ValueFromPipeline = true, Position = 0)]
+        [ValidateTrustedData]
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Cmdlets use arrays for parameters.")]
         public ModuleSpecification[] FullyQualifiedName { get; set; }
 
@@ -97,6 +95,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Cmdlets use arrays for parameters.")]
         [Parameter(ParameterSetName = ParameterSet_Assembly, Mandatory = true, ValueFromPipeline = true, Position = 0)]
+        [ValidateTrustedData]
         public Assembly[] Assembly { get; set; }
 
         /// <summary>
@@ -212,6 +211,16 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
+        /// Skips the check on CompatiblePSEditions for modules loaded from the System32 module path.
+        /// </summary>
+        [Parameter]
+        public SwitchParameter SkipEditionCheck
+        {
+            get { return (SwitchParameter)BaseSkipEditionCheck; }
+            set { BaseSkipEditionCheck = value; }
+        }
+
+        /// <summary>
         /// This parameter causes the session state instance to be written...
         /// </summary>
         [Parameter]
@@ -288,6 +297,7 @@ namespace Microsoft.PowerShell.Commands
         /// This parameter specifies the current pipeline object
         /// </summary>
         [Parameter(ParameterSetName = ParameterSet_ModuleInfo, Mandatory = true, ValueFromPipeline = true, Position = 0)]
+        [ValidateTrustedData]
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", Justification = "Cmdlets use arrays for parameters.")]
         public PSModuleInfo[] ModuleInfo { set; get; } = Utils.EmptyArray<PSModuleInfo>();
 
@@ -381,8 +391,8 @@ namespace Microsoft.PowerShell.Commands
             try
             {
                 PSModuleInfo alreadyLoadedModule = null;
-                Context.Modules.ModuleTable.TryGetValue(module.Path, out alreadyLoadedModule);
-                if (!BaseForce && IsModuleAlreadyLoaded(alreadyLoadedModule))
+                TryGetFromModuleTable(module.Path, out alreadyLoadedModule);
+                if (!BaseForce && DoesAlreadyLoadedModuleSatisfyConstraints(alreadyLoadedModule))
                 {
                     AddModuleToModuleTables(this.Context, this.TargetSessionState.Internal, alreadyLoadedModule);
 
@@ -412,7 +422,7 @@ namespace Microsoft.PowerShell.Commands
                 else
                 {
                     PSModuleInfo moduleToRemove;
-                    if (Context.Modules.ModuleTable.TryGetValue(module.Path, out moduleToRemove))
+                    if (TryGetFromModuleTable(module.Path, out moduleToRemove, toRemove: true))
                     {
                         Dbg.Assert(BaseForce, "We should only remove and reload if -Force was specified");
                         RemoveModule(moduleToRemove);
@@ -482,7 +492,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     // if the module in the moduleTable is an assembly module without path, the moduleName is the key.
                     string moduleName = "dynamic_code_module_" + suppliedAssembly;
-                    if (pair.Value.Path == "")
+                    if (pair.Value.Path == string.Empty)
                     {
                         if (pair.Key.Equals(moduleName, StringComparison.OrdinalIgnoreCase))
                         {
@@ -535,11 +545,6 @@ namespace Microsoft.PowerShell.Commands
         {
             try
             {
-                if (name.Equals("PSWorkflow", StringComparison.OrdinalIgnoreCase) && Utils.IsRunningFromSysWOW64())
-                {
-                    throw new NotSupportedException(AutomationExceptions.WorkflowDoesNotSupportWOW64);
-                }
-
                 bool found = false;
                 PSModuleInfo foundModule = null;
 
@@ -578,20 +583,14 @@ namespace Microsoft.PowerShell.Commands
                     // TODO/FIXME: use IsModuleAlreadyLoaded to get consistent behavior
                     // TODO/FIXME: (for example checking ModuleType != Manifest below seems incorrect - cdxml modules also declare their own version)
                     // PSModuleInfo alreadyLoadedModule = null;
-                    // Context.Modules.ModuleTable.TryGetValue(rootedPath, out alreadyLoadedModule);
+                    // TryGetFromModuleTable(rootedPath, out alreadyLoadedModule);
                     // if (!BaseForce && IsModuleAlreadyLoaded(alreadyLoadedModule))
 
                     // If the module has already been loaded, just emit it and continue...
-                    PSModuleInfo module;
-                    if (!BaseForce && Context.Modules.ModuleTable.TryGetValue(rootedPath, out module))
+                    if (!BaseForce && TryGetFromModuleTable(rootedPath, out PSModuleInfo module))
                     {
-                        if (RequiredVersion == null
-                            || module.Version.Equals(RequiredVersion)
-                            || (BaseMinimumVersion == null && BaseMaximumVersion == null)
-                            || module.ModuleType != ModuleType.Manifest
-                            || (BaseMinimumVersion == null && BaseMaximumVersion != null && module.Version <= BaseMaximumVersion)
-                            || (BaseMinimumVersion != null && BaseMaximumVersion == null && module.Version >= BaseMinimumVersion)
-                            || (BaseMinimumVersion != null && BaseMaximumVersion != null && module.Version >= BaseMinimumVersion && module.Version <= BaseMaximumVersion))
+                        if (module.ModuleType != ModuleType.Manifest
+                            || ModuleIntrinsics.IsVersionMatchingConstraints(module.Version, RequiredVersion, BaseMinimumVersion, BaseMaximumVersion))
                         {
                             alreadyLoaded = true;
                             AddModuleToModuleTables(this.Context, this.TargetSessionState.Internal, module);
@@ -627,7 +626,7 @@ namespace Microsoft.PowerShell.Commands
                         if (File.Exists(rootedPath))
                         {
                             PSModuleInfo moduleToRemove;
-                            if (Context.Modules.ModuleTable.TryGetValue(rootedPath, out moduleToRemove))
+                            if (TryGetFromModuleTable(rootedPath, out moduleToRemove, toRemove: true))
                             {
                                 RemoveModule(moduleToRemove);
                             }
@@ -638,6 +637,12 @@ namespace Microsoft.PowerShell.Commands
                         }
                         else if (Directory.Exists(rootedPath))
                         {
+                            // If the path ends with a directory separator, remove it
+                            if (rootedPath.EndsWith(Path.DirectorySeparatorChar))
+                            {
+                                rootedPath = Path.GetDirectoryName(rootedPath);
+                            }
+
                             // Load the latest valid version if it is a multi-version module directory
                             foundModule = LoadUsingMultiVersionModuleBase(rootedPath,
                                                                             ManifestProcessingFlags.LoadElements |
@@ -989,22 +994,35 @@ namespace Microsoft.PowerShell.Commands
                 // import the proxy module just as any other local module
                 //
                 object[] oldArgumentList = this.ArgumentList;
+                Version originalBaseMinimumVersion = BaseMinimumVersion;
+                Version originalBaseMaximumVersion = BaseMaximumVersion;
+                Version originalBaseRequiredVersion = BaseRequiredVersion;
                 try
                 {
                     this.ArgumentList = new object[] { psSession };
+
+                    // The correct module version has already been imported from the remote session and created locally.
+                    // The locally created module always has a version of 1.0 regardless of the actual module version
+                    // imported from the remote session, and version checking is no longer needed and will not work while
+                    // importing this created local module.
+                    BaseMinimumVersion = null;
+                    BaseMaximumVersion = null;
+                    BaseRequiredVersion = null;
                     ImportModule_LocallyViaName(importModuleOptions, wildcardEscapedPsd1Path);
                 }
                 finally
                 {
                     this.ArgumentList = oldArgumentList;
+                    BaseMinimumVersion = originalBaseMinimumVersion;
+                    BaseMaximumVersion = originalBaseMaximumVersion;
+                    BaseRequiredVersion = originalBaseRequiredVersion;
                 }
 
                 //
                 // make sure the temporary folder gets removed when the module is removed
                 //
-                PSModuleInfo moduleInfo;
                 string psm1Path = Path.Combine(temporaryModulePath, Path.GetFileName(temporaryModulePath) + ".psm1");
-                if (!this.Context.Modules.ModuleTable.TryGetValue(psm1Path, out moduleInfo))
+                if (!TryGetFromModuleTable(psm1Path, out PSModuleInfo moduleInfo, toRemove: true))
                 {
                     if (Directory.Exists(temporaryModulePath))
                     {
@@ -1020,7 +1038,7 @@ namespace Microsoft.PowerShell.Commands
                         -Recurse `
                         -ErrorAction SilentlyContinue
 
-                    if ($previousOnRemoveScript -ne $null)
+                    if ($null -ne $previousOnRemoveScript)
                     {
                         & $previousOnRemoveScript $args
                     }
@@ -1208,7 +1226,7 @@ namespace Microsoft.PowerShell.Commands
                 return true;
             }
 
-            if (manifestEntries.Any(s => FixupFileName("", s, ".ps1xml").EndsWith(cimModuleFile.FileName, StringComparison.OrdinalIgnoreCase)))
+            if (manifestEntries.Any(s => FixupFileName(string.Empty, s, ".ps1xml").EndsWith(cimModuleFile.FileName, StringComparison.OrdinalIgnoreCase)))
             {
                 return true;
             }
@@ -1307,7 +1325,9 @@ namespace Microsoft.PowerShell.Commands
                     fullPath,
                     file.RawFileData);
 
+#if !UNIX
                 AlternateDataStreamUtilities.SetZoneOfOrigin(fullPath, SecurityZone.Intranet);
+#endif
             }
 
             return relativePathsToCreatedFiles;
@@ -1510,7 +1530,7 @@ namespace Microsoft.PowerShell.Commands
                             -Recurse `
                             -ErrorAction SilentlyContinue
 
-                        if ($previousOnRemoveScript -ne $null)
+                        if ($null -ne $previousOnRemoveScript)
                         {
                             & $previousOnRemoveScript $args
                         }
@@ -1716,11 +1736,13 @@ namespace Microsoft.PowerShell.Commands
                 foreach (string name in Name)
                 {
                     PSModuleInfo foundModule = ImportModule_LocallyViaName(importModuleOptions, name);
-                    if (null != foundModule)
+                    if (foundModule != null)
                     {
                         SetModuleBaseForEngineModules(foundModule.Name, this.Context);
 
+#if LEGACYTELEMETRY
                         TelemetryAPI.ReportModuleLoad(foundModule);
+#endif
                     }
                 }
             }
@@ -1742,7 +1764,7 @@ namespace Microsoft.PowerShell.Commands
                     BaseGuid = modulespec.Guid;
 
                     PSModuleInfo foundModule = ImportModule_LocallyViaName(importModuleOptions, modulespec.Name);
-                    if (null != foundModule)
+                    if (foundModule != null)
                     {
                         SetModuleBaseForEngineModules(foundModule.Name, this.Context);
                     }
@@ -1768,11 +1790,11 @@ namespace Microsoft.PowerShell.Commands
                 {
                     if (m.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase))
                     {
-                        m.SetModuleBase(Utils.GetApplicationBase(Utils.DefaultPowerShellShellID));
+                        m.SetModuleBase(Utils.DefaultPowerShellAppBase);
                         // Also set  ModuleBase for nested modules of Engine modules
                         foreach (var nestedModule in m.NestedModules)
                         {
-                            nestedModule.SetModuleBase(Utils.GetApplicationBase(Utils.DefaultPowerShellShellID));
+                            nestedModule.SetModuleBase(Utils.DefaultPowerShellAppBase);
                         }
                     }
                 }
@@ -1781,15 +1803,15 @@ namespace Microsoft.PowerShell.Commands
                 {
                     if (m.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase))
                     {
-                        m.SetModuleBase(Utils.GetApplicationBase(Utils.DefaultPowerShellShellID));
+                        m.SetModuleBase(Utils.DefaultPowerShellAppBase);
                         // Also set  ModuleBase for nested modules of Engine modules
                         foreach (var nestedModule in m.NestedModules)
                         {
-                            nestedModule.SetModuleBase(Utils.GetApplicationBase(Utils.DefaultPowerShellShellID));
+                            nestedModule.SetModuleBase(Utils.DefaultPowerShellAppBase);
                         }
                     }
                 }
             }
         }
     }
-} // Microsoft.PowerShell.Commands
+}

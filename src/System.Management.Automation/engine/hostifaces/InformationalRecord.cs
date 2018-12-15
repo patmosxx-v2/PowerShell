@@ -1,6 +1,5 @@
-/********************************************************************++
- * Copyright (c) Microsoft Corporation.  All rights reserved.
- * --********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Collections.ObjectModel;
@@ -169,7 +168,6 @@ namespace System.Management.Automation
     public class WarningRecord : InformationalRecord
     {
         /// <summary>
-        ///
         /// </summary>
         /// <param name="message"></param>
         public WarningRecord(string message)
@@ -177,7 +175,6 @@ namespace System.Management.Automation
         { }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="record"></param>
         public WarningRecord(PSObject record)
@@ -226,7 +223,6 @@ namespace System.Management.Automation
     public class DebugRecord : InformationalRecord
     {
         /// <summary>
-        ///
         /// </summary>
         /// <param name="message"></param>
         public DebugRecord(string message)
@@ -234,7 +230,6 @@ namespace System.Management.Automation
         { }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="record"></param>
         public DebugRecord(PSObject record)
@@ -249,7 +244,6 @@ namespace System.Management.Automation
     public class VerboseRecord : InformationalRecord
     {
         /// <summary>
-        ///
         /// </summary>
         /// <param name="message"></param>
         public VerboseRecord(string message)
@@ -257,7 +251,6 @@ namespace System.Management.Automation
         { }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="record"></param>
         public VerboseRecord(PSObject record)

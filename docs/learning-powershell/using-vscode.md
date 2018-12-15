@@ -5,7 +5,7 @@ If you are working on Linux and macOS, you cannot use the PowerShell ISE because
 In this case, you can choose your favorite editor to write PowerShell scripts.
 Here we choose Visual Studio Code as a PowerShell editor.
 
-You can use Visual Studio Code on Windows with PowerShell version 5 by using Windows 10 or by installing [Windows Management Framework 5.0 RTM](https://www.microsoft.com/en-us/download/details.aspx?id=50395) for down-level Windows OSs (e.g. Windows 8.1, etc.).
+You can use Visual Studio Code on Windows with PowerShell version 5 by using Windows 10 or by installing [Windows Management Framework 5.1 RTM](https://www.microsoft.com/download/details.aspx?id=54616) for down-level Windows OSs (e.g. Windows 8.1, etc.).
 
 Before starting it, please make sure PowerShell exists on your system.
 By following the [Installing PowerShell](./README.md#installing-powershell) instructions you can install PowerShell and launch a PowerShell session.
@@ -53,23 +53,39 @@ To exit Visual Studio Code, **File->Exit**.
 
 If you wish to use a specific installation of PowerShell with Visual Studio Code, you will need to add a new variable to your user settings file.
 
-1. Click **File -> Preferences -> User Settings**
+1. Click **File -> Preferences -> Settings**
 2. Two editor panes will appear.
    In the right-most pane (`settings.json`), insert the setting below appropriate for your OS somewhere between the two curly brackets (`{` and `}`) and replace *<version>* with the installed PowerShell version:
 
   ```json
     // On Windows:
-    "powershell.developer.powerShellExePath": "c:/Program Files/PowerShell/<version>/powershell.exe"
+    "powershell.powerShellExePath": "c:/Program Files/PowerShell/<version>/pwsh.exe"
 
     // On Linux:
-    "powershell.developer.powerShellExePath": "/opt/microsoft/powershell/<version>/powershell"
+    "powershell.powerShellExePath": "/opt/microsoft/powershell/<version>/pwsh"
 
     // On macOS:
-    "powershell.developer.powerShellExePath": "/usr/local/microsoft/powershell/<version>/powershell"
+    "powershell.powerShellExePath": "/usr/local/microsoft/powershell/<version>/pwsh"
   ```
 
 3. Replace the setting with the path to the desired PowerShell executable
 4. Save the settings file and restart Visual Studio Code
+
+#### Configuration settings for Visual Studio Code
+
+By using the steps in the previous paragraph you can add configuration settings in `settings.json`.
+
+We recommend the following configuration settings for Visual Studio Code:
+
+```json
+{
+    "csharp.suppressDotnetRestoreNotification": true,
+    "editor.renderWhitespace": "all",
+    "editor.renderControlCharacters": true,
+    "omnisharp.projectLoadTimeout": 120,
+    "files.trimTrailingWhitespace": true
+}
+```
 
 Debugging with Visual Studio Code
 ----

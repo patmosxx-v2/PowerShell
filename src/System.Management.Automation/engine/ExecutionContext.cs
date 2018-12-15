@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -9,6 +8,7 @@ using System.IO;
 using System.Management.Automation.Host;
 using System.Management.Automation.Internal;
 using System.Management.Automation.Internal.Host;
+using System.Management.Automation.Language;
 using System.Management.Automation.Runspaces;
 using System.Runtime.CompilerServices;
 using Microsoft.PowerShell;
@@ -169,25 +169,7 @@ namespace System.Management.Automation
         /// </summary>
         internal AutomationEngine Engine { get; private set; }
 
-        /// <summary>
-        /// Get the RunspaceConfiguration instance
-        /// </summary>
-        internal RunspaceConfiguration RunspaceConfiguration { get; }
-
         internal InitialSessionState InitialSessionState { get; }
-
-        /// <summary>
-        /// True if the RunspaceConfiguration/InitialSessionState is for a single shell or false otherwise.
-        /// </summary>
-        ///
-        internal bool IsSingleShell
-        {
-            get
-            {
-                RunspaceConfigForSingleShell runSpace = RunspaceConfiguration as RunspaceConfigForSingleShell;
-                return runSpace != null || InitialSessionState != null;
-            }
-        }
 
         /// <summary>
         /// Added for Win8: 336382
@@ -252,21 +234,13 @@ namespace System.Management.Automation
         /// providers based on the type of the shell
         /// (single shell or custom shell).
         /// </summary>
-        ///
         internal ProviderNames ProviderNames
         {
             get
             {
                 if (_providerNames == null)
                 {
-                    if (IsSingleShell)
-                    {
-                        _providerNames = new SingleShellProviderNames();
-                    }
-                    else
-                    {
-                        _providerNames = new CustomShellProviderNames();
-                    }
+                    _providerNames = new SingleShellProviderNames();
                 }
                 return _providerNames;
             }
@@ -293,11 +267,6 @@ namespace System.Management.Automation
                     {
                         _shellId = AuthorizationManager.ShellId;
                     }
-                    else if (RunspaceConfiguration != null && !String.IsNullOrEmpty(RunspaceConfiguration.ShellId))
-                    {
-                        // Otherwise fall back to the runspace shell id if it's there...
-                        _shellId = RunspaceConfiguration.ShellId;
-                    }
                     else
                     {
                         // Finally fall back to the default shell id...
@@ -312,7 +281,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Session State with which this instance of engine works
         /// </summary>
-        ///
         internal SessionStateInternal EngineSessionState { get; set; }
 
         /// <summary>
@@ -324,7 +292,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Get the SessionState facade for the internal session state APIs
         /// </summary>
-        ///
         internal SessionState SessionState
         {
             get
@@ -348,16 +315,38 @@ namespace System.Management.Automation
                 // caches. After that, the binding rules encode the language mode.
                 if (value == PSLanguageMode.ConstrainedLanguage)
                 {
-                    ExecutionContext.HasEverUsedConstrainedLanguage = true;
                     HasRunspaceEverUsedConstrainedLanguageMode = true;
 
-                    System.Management.Automation.Language.PSSetMemberBinder.InvalidateCache();
-                    System.Management.Automation.Language.PSInvokeMemberBinder.InvalidateCache();
-                    System.Management.Automation.Language.PSConvertBinder.InvalidateCache();
-                    System.Management.Automation.Language.PSBinaryOperationBinder.InvalidateCache();
-                    System.Management.Automation.Language.PSGetIndexBinder.InvalidateCache();
-                    System.Management.Automation.Language.PSSetIndexBinder.InvalidateCache();
-                    System.Management.Automation.Language.PSCreateInstanceBinder.InvalidateCache();
+                    // If 'ExecutionContext.HasEverUsedConstrainedLanguage' is already set to True, then we have
+                    // already invalidated all cached binders, and binders already started to generate code with
+                    // consideration of 'LanguageMode'. In such case, we don't need to invalidate cached binders
+                    // again.
+                    // Note that when executing script blocks marked as 'FullLanguage' in a 'ConstrainedLanguage'
+                    // environment, we will set and Restore 'context.LanguageMode' very often. But we should not
+                    // invalidate the cached binders every time we restore to 'ConstrainedLanguage'.
+                    if (!ExecutionContext.HasEverUsedConstrainedLanguage)
+                    {
+                        lock (lockObject)
+                        {
+                            // If another thread has already set 'ExecutionContext.HasEverUsedConstrainedLanguage'
+                            // while we are waiting on the lock, then nothing needs to be done.
+                            if (!ExecutionContext.HasEverUsedConstrainedLanguage)
+                            {
+                                PSSetMemberBinder.InvalidateCache();
+                                PSInvokeMemberBinder.InvalidateCache();
+                                PSConvertBinder.InvalidateCache();
+                                PSBinaryOperationBinder.InvalidateCache();
+                                PSGetIndexBinder.InvalidateCache();
+                                PSSetIndexBinder.InvalidateCache();
+                                PSCreateInstanceBinder.InvalidateCache();
+
+                                // Set 'HasEverUsedConstrainedLanguage' at the very end to guarantee other threads to wait until
+                                // all invalidation operations are done.
+                                UntrustedObjects = new ConditionalWeakTable<object, object>();
+                                ExecutionContext.HasEverUsedConstrainedLanguage = true;
+                            }
+                        }
+                    }
                 }
 
                 // Conversion caches don't have version info / binding rules, so must be
@@ -375,10 +364,104 @@ namespace System.Management.Automation
         internal bool HasRunspaceEverUsedConstrainedLanguageMode { get; private set; }
 
         /// <summary>
+        /// Indicate if a parameter binding is happening that transitions the execution from ConstrainedLanguage 
+        /// mode to a trusted FullLanguage command.
+        /// </summary>
+        internal bool LanguageModeTransitionInParameterBinding { get; set; }
+
+        /// <summary>
         /// True if we've ever used ConstrainedLanguage. If this is the case, then the binding restrictions
         /// need to also validate against the language mode.
         /// </summary>
         internal static bool HasEverUsedConstrainedLanguage { get; private set; }
+
+        #region Variable Tracking
+
+        /// <summary>
+        /// Initialized when 'ConstrainedLanguage' is applied.
+        /// The objects contained in this table are considered to be untrusted.
+        /// </summary>
+        private static ConditionalWeakTable<object, object> UntrustedObjects { get; set; }
+
+        /// <summary>
+        /// Helper for checking if the given value is marked as untrusted.
+        /// </summary>
+        internal static bool IsMarkedAsUntrusted(object value)
+        {
+            bool result = false;
+            var baseValue = PSObject.Base(value);
+            if (baseValue != null && baseValue != NullString.Value)
+            {
+                object unused;
+                result = UntrustedObjects.TryGetValue(baseValue, out unused);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Helper for marking a value as untrusted.
+        /// </summary>
+        internal static void MarkObjectAsUntrusted(object value)
+        {
+            // If the value is a PSObject, then we mark its base object untrusted
+            var baseValue = PSObject.Base(value);
+            if (baseValue != null && baseValue != NullString.Value)
+            {
+                // It's actually setting a key value pair when the key doesn't exist
+                UntrustedObjects.GetValue(baseValue, key => null);
+
+                try
+                {
+                    // If it's a PSReference object, we need to also mark the value it's holding on.
+                    // This could result in a recursion if psRef.Value points to itself directly or indirectly, so we check if psRef.Value is already
+                    // marked before making a recursive call. The additional check adds extra overhead for handling PSReference object, but it should
+                    // be rare in practice.
+                    var psRef = baseValue as PSReference;
+                    if (psRef != null && !IsMarkedAsUntrusted(psRef.Value))
+                    {
+                        MarkObjectAsUntrusted(psRef.Value);
+                    }
+                }
+                catch { /* psRef.Value may call PSVariable.Value under the hood, which may throw arbitrary exception */ }
+            }
+        }
+
+        /// <summary>
+        /// Helper for setting the untrusted value of an assignment to either a 'Global:' variable, or a 'Script:' variable in a module scope.
+        /// </summary>
+        /// <remarks>
+        /// This method is for tracking assignment to global variables and module script scope varaibles in ConstrainedLanguage mode. Those variables
+        /// can go across boundaries between ConstrainedLanguage and FullLanguage, and make it easy for a trusted script to use data from an untrusted
+        /// environment. Therefore, in ConstrainedLanguage mode, we need to mark the value objects assigned to those variables as untrusted.
+        /// </remarks>
+        internal static void MarkObjectAsUntrustedForVariableAssignment(PSVariable variable, SessionStateScope scope, SessionStateInternal sessionState)
+        {
+            if (scope.Parent == null ||  // If it's the global scope, OR
+                (sessionState.Module != null &&  // it's running in a module AND
+                 scope.ScriptScope == scope && scope.Parent.Parent == null)) // it's the module's script scope (scope.Parent is global scope and scope.ScriptScope points to itself)
+            {
+                // We are setting value for either a 'Global:' variable, or a 'Script:' variable within a module in 'ConstrainedLanguage' mode.
+                // Global variable may be referenced within trusted script block (scriptBlock.LanguageMode == 'FullLanguage'), and users could
+                // also set a 'Script:' variable in a trusted module scope from 'ConstrainedLanguage' environment via '& $mo { $script:<var> }'.
+                // So we need to mark the value as untrusted.
+                MarkObjectAsUntrusted(variable.Value);
+            }
+        }
+
+        /// <summary>
+        /// The result object is assumed generated by operating on the original object.
+        /// So if the original object is from an untrusted input source, we mark the result object as untrusted.
+        /// </summary>
+        internal static void PropagateInputSource(object originalObject, object resultObject, PSLanguageMode currentLanguageMode)
+        {
+            // The untrusted flag is populated only in FullLanguage mode and ConstrainedLanguage has been used in the process before.
+            if (ExecutionContext.HasEverUsedConstrainedLanguage && currentLanguageMode == PSLanguageMode.FullLanguage && IsMarkedAsUntrusted(originalObject))
+            {
+                MarkObjectAsUntrusted(resultObject);
+            }
+        }
+
+        #endregion
 
         /// <summary>
         /// If true the PowerShell debugger will use FullLanguage mode, otherwise it will use the current language mode
@@ -393,12 +476,11 @@ namespace System.Management.Automation
 
         internal static List<string> ModulesWithJobSourceAdapters = new List<string>
             {
-                Utils.WorkflowModule,
                 Utils.ScheduledJobModuleName,
             };
 
         /// <summary>
-        /// Is true the PSScheduledJob and PSWorkflow modules are loaded for this runspace
+        /// Is true if the PSScheduledJob module is loaded for this runspace
         /// </summary>
         internal bool IsModuleWithJobSourceAdapterLoaded
         {
@@ -409,7 +491,6 @@ namespace System.Management.Automation
         /// Gets the location globber for the session state for
         /// this instance of the runspace.
         /// </summary>
-        ///
         internal LocationGlobber LocationGlobber
         {
             get
@@ -423,20 +504,16 @@ namespace System.Management.Automation
         /// <summary>
         /// The assemblies that have been loaded for this runspace
         /// </summary>
-        ///
         internal Dictionary<string, Assembly> AssemblyCache { get; private set; }
 
         #endregion Properties
 
         #region Engine State
 
-
-
         /// <summary>
         /// The state for current engine that is running.
         /// </summary>
         /// <value></value>
-        ///
         internal EngineState EngineState { get; set; } = EngineState.None;
 
         #endregion
@@ -470,7 +547,7 @@ namespace System.Management.Automation
         internal void SetVariable(VariablePath path, object newValue)
         {
             EngineSessionState.SetVariable(path, newValue, true, CommandOrigin.Internal);
-        } // SetVariable
+        }
 
         internal T GetEnumPreference<T>(VariablePath preferenceVariablePath, T defaultPref, out bool defaultUsed)
         {
@@ -577,8 +654,6 @@ namespace System.Management.Automation
         internal Dictionary<string, ScriptBlock> CustomArgumentCompleters { get; set; }
         internal Dictionary<string, ScriptBlock> NativeArgumentCompleters { get; set; }
 
-        private CommandFactory _commandFactory;
-
         /// <summary>
         /// Routine to create a command(processor) instance using the factory.
         /// </summary>
@@ -587,15 +662,14 @@ namespace System.Management.Automation
         /// <returns>The command processor object</returns>
         internal CommandProcessorBase CreateCommand(string command, bool dotSource)
         {
-            if (_commandFactory == null)
-            {
-                _commandFactory = new CommandFactory(this);
-            }
-            CommandProcessorBase commandProcessor = _commandFactory.CreateCommand(command,
-                this.EngineSessionState.CurrentScope.ScopeOrigin, !dotSource);
+            CommandOrigin commandOrigin = this.EngineSessionState.CurrentScope.ScopeOrigin;
+            CommandProcessorBase commandProcessor =
+                CommandDiscovery.LookupCommandProcessor(command, commandOrigin, !dotSource);
             // Reset the command origin for script commands... //BUGBUG - dotting can get around command origin checks???
             if (commandProcessor != null && commandProcessor is ScriptCommandProcessorBase)
+            {
                 commandProcessor.Command.CommandOriginInternal = CommandOrigin.Internal;
+            }
 
             return commandProcessor;
         }
@@ -605,7 +679,6 @@ namespace System.Management.Automation
         /// </summary>
         /// <value>Reference to command discovery</value>
         internal CommandProcessorBase CurrentCommandProcessor { get; set; }
-
 
         /// <summary>
         /// Redirect to the CommandDiscovery in the engine.
@@ -618,7 +691,6 @@ namespace System.Management.Automation
                 return Engine.CommandDiscovery;
             }
         }
-
 
         /// <summary>
         /// Interface that should be used for interaction with host
@@ -638,7 +710,6 @@ namespace System.Management.Automation
         {
             get { return EngineHostInterface; }
         }
-
 
         /// <summary>
         /// Interface to the public API for the engine
@@ -782,7 +853,7 @@ namespace System.Management.Automation
 
             object old = this.DollarErrorVariable;
             ArrayList arraylist = old as ArrayList;
-            if (null == arraylist)
+            if (arraylist == null)
             {
                 Diagnostics.Assert(false, "$error should be a global constant ArrayList");
                 return;
@@ -812,7 +883,7 @@ namespace System.Management.Automation
                     numToErase);
             }
             arraylist.Insert(0, obj);
-        } // AppendDollarError
+        }
         #endregion
 
         #region Scope or Commands (in pipeline) Depth Count
@@ -1091,11 +1162,6 @@ namespace System.Management.Automation
 
         internal void RunspaceClosingNotification()
         {
-            if (this.RunspaceConfiguration != null)
-            {
-                this.RunspaceConfiguration.Unbind(this);
-            }
-
             EngineSessionState.RunspaceClosingNotification();
 
             if (_debugger != null)
@@ -1115,10 +1181,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Gets the type table instance for this engine. This is somewhat
-        /// complicated by the need to have a single type table in RunspaceConfig
-        /// shared across all bound runspaces, as well as individual tables for
-        /// instances created from InitialSessionState.
+        /// Gets the type table instance for this engine.
         /// </summary>
         internal TypeTable TypeTable
         {
@@ -1126,22 +1189,15 @@ namespace System.Management.Automation
             {
                 if (_typeTable == null)
                 {
-                    // Always use the type table from the RunspaceConfig if there is one, otherwise create a default one
-                    _typeTable = (this.RunspaceConfiguration != null && RunspaceConfiguration.TypeTable != null)
-                        ? RunspaceConfiguration.TypeTable
-                        : new TypeTable();
+                    _typeTable = new TypeTable();
                     _typeTableWeakReference = new WeakReference<TypeTable>(_typeTable);
                 }
                 return _typeTable;
             }
-            // This needs to exist so that RunspaceConfiguration can
-            // push it's shared type table into ExecutionContext
             set
             {
-                if (this.RunspaceConfiguration != null)
-                    throw new NotImplementedException("set_TypeTable()");
                 _typeTable = value;
-                _typeTableWeakReference = value != null ? new WeakReference<TypeTable>(value) : null;
+                _typeTableWeakReference = (value != null) ? new WeakReference<TypeTable>(value) : null;
             }
         }
 
@@ -1164,21 +1220,12 @@ namespace System.Management.Automation
         private WeakReference<TypeTable> _typeTableWeakReference;
 
         /// <summary>
-        /// Gets the format info database for this engine. This is significantly
-        /// complicated by the need to have a single type table in RunspaceConfig
-        /// shared across all bound runspaces, as well as individual tables for
-        /// instances created from InitialSessionState.
+        /// Gets the format info database for this engine.
         /// </summary>
         internal TypeInfoDataBaseManager FormatDBManager
         {
             get
             {
-                // Use the format DB from the RunspaceConfig if there is one.
-                if (this.RunspaceConfiguration != null && RunspaceConfiguration.FormatDBManager != null)
-                {
-                    return RunspaceConfiguration.FormatDBManager;
-                }
-
                 if (_formatDBManager == null)
                 {
                     // If no Formatter database has been created, then
@@ -1195,12 +1242,8 @@ namespace System.Management.Automation
                 return _formatDBManager;
             }
 
-            // This needs to exist so that RunspaceConfiguration can
-            // push it's shared format database table into ExecutionContext
             set
             {
-                if (this.RunspaceConfiguration != null)
-                    throw new NotImplementedException("set_FormatDBManager()");
                 _formatDBManager = value;
             }
         }
@@ -1218,69 +1261,6 @@ namespace System.Management.Automation
             }
         }
         internal PSTransactionManager transactionManager;
-
-
-        private bool _assemblyCacheInitialized = false;
-
-        /// <summary>
-        /// This function is called by RunspaceConfiguration.Assemblies.Update call back.
-        /// It's not used when constructing a runspace from an InitialSessionState object.
-        /// </summary>
-        internal void UpdateAssemblyCache()
-        {
-            string errors = "";
-
-            if (this.RunspaceConfiguration != null)
-            {
-                if (!_assemblyCacheInitialized)
-                {
-                    foreach (AssemblyConfigurationEntry entry in this.RunspaceConfiguration.Assemblies)
-                    {
-                        Exception error = null;
-                        AddAssembly(entry.Name, entry.FileName, out error);
-
-                        if (error != null)
-                        {
-                            errors += "\n" + error.Message;
-                        }
-                    }
-
-                    _assemblyCacheInitialized = true;
-                }
-                else
-                {
-                    foreach (AssemblyConfigurationEntry entry in this.RunspaceConfiguration.Assemblies.UpdateList)
-                    {
-                        switch (entry.Action)
-                        {
-                            case UpdateAction.Add:
-                                Exception error = null;
-                                AddAssembly(entry.Name, entry.FileName, out error);
-
-                                if (error != null)
-                                {
-                                    errors += "\n" + error.Message;
-                                }
-
-                                break;
-
-                            case UpdateAction.Remove:
-                                RemoveAssembly(entry.Name);
-                                break;
-
-                            default:
-                                break;
-                        }
-                    }
-                }
-
-                if (!String.IsNullOrEmpty(errors))
-                {
-                    string message = StringUtil.Format(MiniShellErrors.UpdateAssemblyErrors, errors);
-                    throw new RuntimeException(message);
-                }
-            }
-        }
 
         internal Assembly AddAssembly(string name, string filename, out Exception error)
         {
@@ -1318,61 +1298,15 @@ namespace System.Management.Automation
             }
         }
 
-
         [SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadWithPartialName")]
         [SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Reflection.Assembly.LoadFrom")]
         internal static Assembly LoadAssembly(string name, string filename, out Exception error)
         {
-            // First we try to load the assembly based on the given name
-
+            // First we try to load the assembly based on the filename
             Assembly loadedAssembly = null;
             error = null;
-
-            string fixedName = null;
-            if (!String.IsNullOrEmpty(name))
-            {
-                // Remove the '.dll' if it's there...
-                fixedName = name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
-                                ? Path.GetFileNameWithoutExtension(name)
-                                : name;
-
-                var assemblyString = Utils.IsPowerShellAssembly(fixedName)
-                                         ? Utils.GetPowerShellAssemblyStrongName(fixedName)
-                                         : fixedName;
-
-                try
-                {
-                    loadedAssembly = Assembly.Load(new AssemblyName(assemblyString));
-                }
-                catch (FileNotFoundException fileNotFound)
-                {
-                    error = fileNotFound;
-                }
-                catch (FileLoadException fileLoadException)
-                {
-                    error = fileLoadException;
-                    // this is a legitimate error on CoreCLR for a newly emited with Add-Type assemblies
-                    // they cannot be loaded by name, but we are only interested in importing them by path
-                }
-                catch (BadImageFormatException badImage)
-                {
-                    error = badImage;
-                    return null;
-                }
-                catch (SecurityException securityException)
-                {
-                    error = securityException;
-                    return null;
-                }
-            }
-
-            if (loadedAssembly != null)
-                return loadedAssembly;
-
             if (!String.IsNullOrEmpty(filename))
             {
-                error = null;
-
                 try
                 {
                     loadedAssembly = Assembly.LoadFrom(filename);
@@ -1399,34 +1333,47 @@ namespace System.Management.Automation
                 }
             }
 
-#if !CORECLR// Assembly.LoadWithPartialName is not in CoreCLR. In CoreCLR, 'LoadWithPartialName' can be replaced by Assembly.Load with the help of AssemblyLoadContext.
-            // Finally try with partial name...
-            if (!String.IsNullOrEmpty(fixedName))
+            // Then we try to load the assembly based on the given name
+            if (!String.IsNullOrEmpty(name))
             {
+                string fixedName = null;
+                // Remove the '.dll' if it's there...
+                fixedName = name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
+                                ? Path.GetFileNameWithoutExtension(name)
+                                : name;
+
+                var assemblyString = Utils.IsPowerShellAssembly(fixedName)
+                                         ? Utils.GetPowerShellAssemblyStrongName(fixedName)
+                                         : fixedName;
+
                 try
                 {
-                    // This is a deprecated API, use of this API needs to be
-                    // reviewed periodically.
-#pragma warning disable 0618
-                    loadedAssembly = Assembly.LoadWithPartialName(fixedName);
-
-                    if (loadedAssembly != null)
-                    {
-                        // In the past, LoadWithPartialName would just return null in most cases when the assembly could not be found or loaded.
-                        // In addition to this, the error was always cleared. So now, clear the error variable only if the assembly was loaded.
-                        error = null;
-                    }
-                    return loadedAssembly;
+                    loadedAssembly = Assembly.Load(new AssemblyName(assemblyString));
                 }
-
-                // Expected exceptions are ArgumentNullException and BadImageFormatException. See https://msdn.microsoft.com/en-us/library/12xc5368(v=vs.110).aspx
+                catch (FileNotFoundException fileNotFound)
+                {
+                    error = fileNotFound;
+                }
+                catch (FileLoadException fileLoadException)
+                {
+                    error = fileLoadException;
+                }
                 catch (BadImageFormatException badImage)
                 {
                     error = badImage;
                 }
+                catch (SecurityException securityException)
+                {
+                    error = securityException;
+                }
             }
-#endif
-            return null;
+
+            // If the assembly is loaded, we ignore error as it may come from the filepath loading.
+            if (loadedAssembly != null)
+            {
+                error = null;
+            }
+            return loadedAssembly;
         }
 
         /// <summary>
@@ -1448,9 +1395,9 @@ namespace System.Management.Automation
                 else
                 {
                     PSHost host = EngineHostInterface;
-                    if (null == host) return;
+                    if (host == null) return;
                     PSHostUserInterface ui = host.UI;
-                    if (null == ui) return;
+                    if (ui == null) return;
                     ui.WriteErrorLine(
                         StringUtil.Format(resourceString, arguments));
                 }
@@ -1478,9 +1425,9 @@ namespace System.Management.Automation
                 else
                 {
                     PSHost host = EngineHostInterface;
-                    if (null == host) return;
+                    if (host == null) return;
                     PSHostUserInterface ui = host.UI;
-                    if (null == ui) return;
+                    if (ui == null) return;
                     ui.WriteErrorLine(error);
                 }
             }
@@ -1513,9 +1460,9 @@ namespace System.Management.Automation
                 else
                 {
                     PSHost host = EngineHostInterface;
-                    if (null == host) return;
+                    if (host == null) return;
                     PSHostUserInterface ui = host.UI;
-                    if (null == ui) return;
+                    if (ui == null) return;
                     ui.WriteErrorLine(e.Message);
                 }
             }
@@ -1541,9 +1488,9 @@ namespace System.Management.Automation
                 else
                 {
                     PSHost host = EngineHostInterface;
-                    if (null == host) return;
+                    if (host == null) return;
                     PSHostUserInterface ui = host.UI;
-                    if (null == ui) return;
+                    if (ui == null) return;
                     ui.WriteErrorLine(errorRecord.ToString());
                 }
             }
@@ -1579,28 +1526,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Constructs an Execution context object for Automation Engine
         /// </summary>
-        ///
-        /// <param name="engine">
-        /// Engine that hosts this execution context
-        /// </param>
-        /// <param name="hostInterface">
-        /// Interface that should be used for interaction with host
-        /// </param>
-        /// <param name="runspaceConfiguration">
-        /// RunspaceConfiguration information
-        /// </param>
-        internal ExecutionContext(AutomationEngine engine, PSHost hostInterface, RunspaceConfiguration runspaceConfiguration)
-        {
-            RunspaceConfiguration = runspaceConfiguration;
-            AuthorizationManager = runspaceConfiguration.AuthorizationManager;
-
-            InitializeCommon(engine, hostInterface);
-        }
-
-        /// <summary>
-        /// Constructs an Execution context object for Automation Engine
-        /// </summary>
-        ///
         /// <param name="engine">
         /// Engine that hosts this execution context
         /// </param>
@@ -1661,9 +1586,10 @@ namespace System.Management.Automation
             Modules = new ModuleIntrinsics(this);
         }
 
+        private static object lockObject = new Object();
+
 #if !CORECLR // System.AppDomain is not in CoreCLR
         private static bool _assemblyEventHandlerSet = false;
-        private static object lockObject = new Object();
 
         /// <summary>
         /// AssemblyResolve event handler that will look in the assembly cache to see
@@ -1694,7 +1620,6 @@ namespace System.Management.Automation
     /// <summary>
     /// Enum that defines state of monad engine.
     /// </summary>
-    ///
     internal enum EngineState
     {
         /// <summary>

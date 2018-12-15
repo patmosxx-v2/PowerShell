@@ -1,6 +1,6 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 using System;
 using System.IO;
 using System.Reflection;
@@ -15,7 +15,6 @@ using System.Collections.Generic;
 using System.Management.Automation.Runspaces;
 using System.Diagnostics.CodeAnalysis;
 using Dbg = System.Management.Automation;
-
 
 namespace Microsoft.WSMan.Management
 {
@@ -51,7 +50,7 @@ namespace Microsoft.WSMan.Management
         /// The following is the definition of the input parameter "Authentication".
         /// This parameter takes a set of authentication methods the user can select
         /// from. The available method are an enum called Authentication in the
-        /// System.Management.Automation.Runspaces  namespace. The available options
+        /// System.Management.Automation.Runspaces namespace. The available options
         /// should be as follows:
         /// - Default : Use the default authentication (ad defined by the underlying
         /// protocol) for establishing a remote connection.
@@ -141,7 +140,7 @@ namespace Microsoft.WSMan.Management
             set
             {
                 computername = value;
-                if ((string.IsNullOrEmpty(computername)) || (computername.Equals(".", StringComparison.CurrentCultureIgnoreCase)))
+                if ((string.IsNullOrEmpty(computername)) || (computername.Equals(".", StringComparison.OrdinalIgnoreCase)))
                 {
                     computername = "localhost";
                 }
@@ -227,8 +226,6 @@ namespace Microsoft.WSMan.Management
         }
         private SwitchParameter usessl;
 
-
-
         #endregion
 
         /// <summary>
@@ -257,7 +254,7 @@ namespace Microsoft.WSMan.Management
             {
                 crtComputerName = "localhost";
             }
-            if (this.SessionState.Path.CurrentProviderLocation(WSManStringLiterals.rootpath).Path.StartsWith(this.SessionState.Drive.Current.Name + ":" + WSManStringLiterals.DefaultPathSeparator + crtComputerName, StringComparison.CurrentCultureIgnoreCase))
+            if (this.SessionState.Path.CurrentProviderLocation(WSManStringLiterals.rootpath).Path.StartsWith(this.SessionState.Drive.Current.Name + ":" + WSManStringLiterals.DefaultPathSeparator + crtComputerName, StringComparison.OrdinalIgnoreCase))
             {
                 helper.AssertError(helper.GetResourceMsgFromResourcetext("ConnectFailure"), false, computername);
             }
@@ -292,7 +289,7 @@ namespace Microsoft.WSMan.Management
             {
 
                 computername = value;
-                if ((string.IsNullOrEmpty(computername)) || (computername.Equals(".", StringComparison.CurrentCultureIgnoreCase)))
+                if ((string.IsNullOrEmpty(computername)) || (computername.Equals(".", StringComparison.OrdinalIgnoreCase)))
                 {
                     computername = "localhost";
                 }
@@ -336,11 +333,11 @@ namespace Microsoft.WSMan.Management
             {
                 computername = "localhost";
             }
-            if (this.SessionState.Path.CurrentProviderLocation(WSManStringLiterals.rootpath).Path.StartsWith(WSManStringLiterals.rootpath + ":" + WSManStringLiterals.DefaultPathSeparator + computername, StringComparison.CurrentCultureIgnoreCase))
+            if (this.SessionState.Path.CurrentProviderLocation(WSManStringLiterals.rootpath).Path.StartsWith(WSManStringLiterals.rootpath + ":" + WSManStringLiterals.DefaultPathSeparator + computername, StringComparison.OrdinalIgnoreCase))
             {
                 helper.AssertError(helper.GetResourceMsgFromResourcetext("DisconnectFailure"), false, computername);
             }
-            if (computername.Equals("localhost", StringComparison.CurrentCultureIgnoreCase))
+            if (computername.Equals("localhost", StringComparison.OrdinalIgnoreCase))
             {
                 helper.AssertError(helper.GetResourceMsgFromResourcetext("LocalHost"), false, computername);
             }
@@ -355,8 +352,6 @@ namespace Microsoft.WSMan.Management
                 helper.AssertError(helper.GetResourceMsgFromResourcetext("InvalidComputerName"), false, computername);
             }
         }//End BeginProcessing()
-
-
 
     }//End Class
     #endregion Disconnect-WSMAN

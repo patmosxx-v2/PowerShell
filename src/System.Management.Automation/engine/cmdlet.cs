@@ -1,8 +1,7 @@
-#pragma warning disable 1634, 1691
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+#pragma warning disable 1634, 1691
 
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
@@ -12,8 +11,6 @@ using System.Reflection;
 using System.Resources;
 using System.Management.Automation.Internal;
 using Dbg = System.Management.Automation.Diagnostics;
-
-
 
 namespace System.Management.Automation
 {
@@ -58,7 +55,6 @@ namespace System.Management.Automation
             }
         );
 
-
         /// <summary>
         /// Lists the common parameters that are added by the PowerShell engine when a cmdlet defines
         /// additional capabilities (SupportsShouldProcess, SupportsTransactions)
@@ -77,7 +73,6 @@ namespace System.Management.Automation
                     "WhatIf", "Confirm", "UseTransaction" };
             }
         );
-
 
         /// <summary>
         /// Is this command stopping?
@@ -115,16 +110,14 @@ namespace System.Management.Automation
         /// <summary>
         /// Sets the parameter set
         /// </summary>
-        ///
         /// <param name="parameterSetName">
         /// The name of the valid parameter set.
         /// </param>
-        ///
         internal void SetParameterSetName(string parameterSetName)
         {
             _parameterSetName = parameterSetName;
         }
-        private string _parameterSetName = "";
+        private string _parameterSetName = string.Empty;
 
         #region Override Internal
 
@@ -261,7 +254,7 @@ namespace System.Management.Automation
                 if (String.IsNullOrEmpty(resourceId))
                     throw PSTraceSource.NewArgumentNullException("resourceId");
 
-                ResourceManager manager = ResourceManagerCache.GetResourceManager(this.GetType().GetTypeInfo().Assembly, baseName);
+                ResourceManager manager = ResourceManagerCache.GetResourceManager(this.GetType().Assembly, baseName);
                 string retValue = null;
 
                 try
@@ -1172,7 +1165,6 @@ namespace System.Management.Automation
             }
         }
 
-
         #endregion ShouldProcess
 
         #region ShouldContinue
@@ -1707,7 +1699,6 @@ namespace System.Management.Automation
         /// so that the additional information in
         /// <see cref="System.Management.Automation.ErrorRecord"/>
         /// is available.
-        ///
         /// <see cref="System.Management.Automation.Cmdlet.ThrowTerminatingError"/>
         /// always throws
         /// <see cref="System.Management.Automation.PipelineStoppedException"/>,
@@ -1810,7 +1801,7 @@ namespace System.Management.Automation
         #endregion Exposed API Override
 
         #endregion public_methods
-    } // Cmdlet
+    }
 
     /// <summary>
     /// This describes the reason why ShouldProcess returned what it returned.

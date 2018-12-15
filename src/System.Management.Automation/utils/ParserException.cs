@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -40,7 +39,6 @@ namespace System.Management.Automation
         {
             _errors = (ParseError[])info.GetValue("Errors", typeof(ParseError[]));
         }
-
 
         /// <summary>
         /// Add private data for serialization.
@@ -168,8 +166,7 @@ namespace System.Management.Automation
                 return string.Join(Environment.NewLine + Environment.NewLine, errorsToReport);
             }
         }
-    } // ParseException
-
+    }
 
     /// <summary>
     /// Defines the exception thrown when a incomplete parse error occurs while parsing msh script text.
@@ -267,4 +264,4 @@ namespace System.Management.Automation
         }
         #endregion ctor
     }
-} // System.Management.Automation
+}

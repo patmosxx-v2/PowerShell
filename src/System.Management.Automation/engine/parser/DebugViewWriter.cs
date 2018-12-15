@@ -4,7 +4,7 @@
  *
  * This source code is subject to terms and conditions of the Microsoft Public License. A
  * copy of the license can be found in the License.html file at the root of this distribution. If
- * you cannot locate the  Microsoft Public License, please send an email to
+ * you cannot locate the Microsoft Public License, please send an email to
  * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
  * by the terms of the Microsoft Public License.
  *
@@ -12,7 +12,6 @@
  *
  *
  * ***************************************************************************/
-
 
 #if ENABLE_BINDER_DEBUG_LOGGING
 
@@ -1002,7 +1001,7 @@ namespace System.Management.Automation.Language {
             Dedent();
             Out(Flow.NewLine, "}");
             if (node.BreakLabel != null) {
-                Out("", Flow.NewLine);
+                Out(string.Empty, Flow.NewLine);
                 DumpLabel(node.BreakLabel);
             }
             return node;
@@ -1041,7 +1040,7 @@ namespace System.Management.Automation.Language {
         protected override CatchBlock VisitCatchBlock(CatchBlock node) {
             Out(Flow.NewLine, "} .Catch (" + node.Test.ToString());
             if (node.Variable != null) {
-                Out(Flow.Space, "");
+                Out(Flow.Space, string.Empty);
                 VisitParameter(node.Variable);
             }
             if (node.Filter != null) {
@@ -1114,7 +1113,6 @@ namespace System.Management.Automation.Language {
             );
             return node;
         }
-
 
         private void DumpLabel(LabelTarget target) {
             Out(String.Format(CultureInfo.CurrentCulture, ".LabelTarget {0}:", GetLabelTargetName(target)));

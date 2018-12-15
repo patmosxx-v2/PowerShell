@@ -1,7 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
-
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Management.Automation.Runspaces;
 using System.Management.Automation.Internal;
@@ -172,7 +170,7 @@ namespace System.Management.Automation
             // NTRAID#Windows Out Of Band Releases-915851-2005/09/13
             // the above comment copied from RemotePipelineBase which
             // originally copied it from PipelineBase
-            if (null == pipeline)
+            if (pipeline == null)
             {
                 throw PSTraceSource.NewArgumentNullException("pipeline");
             }
@@ -781,7 +779,7 @@ namespace System.Management.Automation
                         _pipelineStateInfo.Clone(),
                         previousAvailability,
                         _runspace.RunspaceAvailability));
-            } // lock...
+            }
 
             // using the copyStateInfo here as this piece of code is
             // outside of lock and _pipelineStateInfo might get changed
@@ -912,8 +910,7 @@ namespace System.Management.Automation
 
             // Check to see if this pipeline already exists in the runspace.
             RemotePipeline currentPipeline = (RemotePipeline)((RemoteRunspace)_runspace).GetCurrentlyRunningPipeline();
-            if (currentPipeline == null ||
-                currentPipeline != null && !ReferenceEquals(currentPipeline, this))
+            if (!ReferenceEquals(currentPipeline, this))
             {
                 ((RemoteRunspace)_runspace).DoConcurrentCheckAndAddToRunningPipelines(this, syncCall);
             }
@@ -948,7 +945,6 @@ namespace System.Management.Automation
                 _powershell.InstanceId,
                 eventArgs.Data);
         }
-
 
         /// <summary>
         /// Does the cleanup necessary on pipeline completion

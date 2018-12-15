@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,7 +13,6 @@ using System.Globalization;
 namespace System.Management.Automation
 {
     /// <summary>
-    ///
     /// Monad Logging in general is a two layer architecture. At the upper layer are the
     /// Msh Log Engine and Logging Api. At the lower layer is the Provider Interface
     /// and Log Providers. This architecture is adopted to achieve independency between
@@ -87,7 +85,6 @@ namespace System.Management.Automation
         /// In the longer turn, we may need to use a "Provider Catalog" for
         /// log provider loading.
         /// </summary>
-        ///
         /// <param name="shellId"></param>
         /// <returns></returns>
         private static IEnumerable<LogProvider> GetLogProvider(string shellId)
@@ -98,7 +95,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Get Log Provider based on Execution Context
         /// </summary>
-        ///
         /// <param name="executionContext"></param>
         /// <returns></returns>
         private static IEnumerable<LogProvider> GetLogProvider(ExecutionContext executionContext)
@@ -116,7 +112,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Get Log Provider based on Log Context
         /// </summary>
-        ///
         /// <param name="logContext"></param>
         /// <returns></returns>
         private static IEnumerable<LogProvider> GetLogProvider(LogContext logContext)
@@ -134,54 +129,23 @@ namespace System.Management.Automation
         /// <returns></returns>
         private static Collection<LogProvider> CreateLogProvider(string shellId)
         {
-#if V2
-            try
-            {
-                Assembly crimsonAssembly = Assembly.Load(_crimsonLogProviderAssemblyName);
-
-                if (crimsonAssembly != null)
-                {
-                    LogProvider logProvider = (LogProvider)crimsonAssembly.CreateInstance(_crimsonLogProviderTypeName,
-                                                                            false, // don't ignore case
-                        BindingFlags.CreateInstance,
-                                                                            null, // use default binder
-                        null,
-                                                                            null, // use current culture
-                        null // no special activation attributes
-                        );
-
-                    System.Diagnostics.Debug.Assert(logProvider != null);
-                    return logProvider;
-                }
-            }
-            catch (FileNotFoundException e)
-            {
-                _trace.TraceException(e);
-            }
-            catch (BadImageFormatException e)
-            {
-                _trace.TraceException(e);
-            }
-            catch (SecurityException e)
-            {
-                _trace.TraceException(e);
-            }
-            catch (TargetInvocationException e)
-            {
-                _trace.TraceException(e);
-            }
-#endif
             Collection<LogProvider> providers = new Collection<LogProvider>();
             // Porting note: Linux does not support ETW
-#if !UNIX
+
             try
             {
 #if !CORECLR    //TODO:CORECLR EventLogLogProvider not handled yet
                 LogProvider eventLogLogProvider = new EventLogLogProvider(shellId);
                 providers.Add(eventLogLogProvider);
 #endif
+
+#if UNIX
+                LogProvider sysLogProvider = new PSSysLogProvider();
+                providers.Add(sysLogProvider);
+#else
                 LogProvider etwLogProvider = new PSEtwLogProvider();
                 providers.Add(etwLogProvider);
+#endif
 
                 return providers;
             }
@@ -198,7 +162,7 @@ namespace System.Management.Automation
                 // when running as non-admin user. In that case, we will default
                 // to dummy log.
             }
-#endif
+
             providers.Add(new DummyLogProvider());
             return providers;
         }
@@ -206,7 +170,6 @@ namespace System.Management.Automation
         /// <summary>
         /// This will set the current log provider to be dummy log.
         /// </summary>
-        ///
         /// <param name="shellId"></param>
         internal static void SetDummyLog(string shellId)
         {
@@ -254,7 +217,7 @@ namespace System.Management.Automation
 
             InvocationInfo invocationInfo = null;
             IContainsErrorRecord icer = exception as IContainsErrorRecord;
-            if (null != icer && null != icer.ErrorRecord)
+            if (icer != null && icer.ErrorRecord != null)
                 invocationInfo = icer.ErrorRecord.InvocationInfo;
             foreach (LogProvider provider in GetLogProvider(executionContext))
             {
@@ -433,7 +396,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// LogProviderHealthEvent: Log a command health event.
-        ///
         /// </summary>
         /// <param name="executionContext">Execution context for the engine that is running</param>
         /// <param name="exception">Exception associated with this event</param>
@@ -457,7 +419,7 @@ namespace System.Management.Automation
 
             InvocationInfo invocationInfo = null;
             IContainsErrorRecord icer = exception as IContainsErrorRecord;
-            if (null != icer && null != icer.ErrorRecord)
+            if (icer != null && icer.ErrorRecord != null)
                 invocationInfo = icer.ErrorRecord.InvocationInfo;
             foreach (LogProvider provider in GetLogProvider(executionContext))
             {
@@ -557,7 +519,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// LogPipelineExecutionDetailEvent: Log a pipeline execution detail event.
-        ///
         /// </summary>
         /// <param name="executionContext">Execution Context for the current running engine</param>
         /// <param name="detail">detail to be logged for this pipeline execution detail</param>
@@ -623,7 +584,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// LogProviderHealthEvent: Log a Provider health event.
-        ///
         /// </summary>
         /// <param name="executionContext">Execution context for the engine that is running</param>
         /// <param name="providerName">Name of the provider</param>
@@ -649,7 +609,7 @@ namespace System.Management.Automation
 
             InvocationInfo invocationInfo = null;
             IContainsErrorRecord icer = exception as IContainsErrorRecord;
-            if (null != icer && null != icer.ErrorRecord)
+            if (icer != null && icer.ErrorRecord != null)
                 invocationInfo = icer.ErrorRecord.InvocationInfo;
             foreach (LogProvider provider in GetLogProvider(executionContext))
             {
@@ -1132,17 +1092,14 @@ namespace System.Management.Automation
     internal enum CommandState
     {
         /// <summary>
-        ///
         /// </summary>
         Started = 0,
 
         /// <summary>
-        ///
         /// </summary>
         Stopped = 1,
 
         /// <summary>
-        ///
         /// </summary>
         Terminated = 2
     };
@@ -1153,12 +1110,10 @@ namespace System.Management.Automation
     internal enum ProviderState
     {
         /// <summary>
-        ///
         /// </summary>
         Started = 0,
 
         /// <summary>
-        ///
         /// </summary>
         Stopped = 1,
     };

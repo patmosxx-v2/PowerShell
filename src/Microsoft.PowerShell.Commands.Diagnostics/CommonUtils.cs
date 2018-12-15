@@ -1,17 +1,14 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
+using System.Resources;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Resources;
-using System.Reflection;
-
-#if CORECLR
-using System.ComponentModel;
-#else
-using System.Threading;
-#endif
 
 namespace Microsoft.PowerShell.Commands.Diagnostics.Common
 {
@@ -23,7 +20,7 @@ namespace Microsoft.PowerShell.Commands.Diagnostics.Common
         //
         public static string StringArrayToString(IEnumerable input)
         {
-            string ret = "";
+            string ret = string.Empty;
             foreach (string element in input)
             {
                 ret += element + ", ";
@@ -35,7 +32,6 @@ namespace Microsoft.PowerShell.Commands.Diagnostics.Common
             return ret;
         }
 
-#if CORECLR
         private const string LibraryLoadDllName = "api-ms-win-core-libraryloader-l1-2-0.dll";
         private const string LocalizationDllName = "api-ms-win-core-localization-l1-2-1.dll";
         private const string SysInfoDllName = "api-ms-win-core-sysinfo-l1-2-1.dll";
@@ -59,10 +55,6 @@ namespace Microsoft.PowerShell.Commands.Diagnostics.Common
 
         [DllImport(SysInfoDllName, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool GetVersionEx(ref OSVERSIONINFOEX osVerEx);
-#else
-        private const string LibraryLoadDllName = "kernel32.dll";
-        private const string LocalizationDllName = "kernel32.dll";
-#endif
 
         private const uint FORMAT_MESSAGE_ALLOCATE_BUFFER = 0x00000100;
         private const uint FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
@@ -87,10 +79,8 @@ namespace Microsoft.PowerShell.Commands.Diagnostics.Common
         [DllImport(LibraryLoadDllName)]
         private static extern bool FreeLibrary(IntPtr hModule);
 
-
         [DllImport(LocalizationDllName, EntryPoint = "GetUserDefaultLangID", CallingConvention = CallingConvention.Winapi, SetLastError = true)]
         private static extern ushort GetUserDefaultLangID();
-
 
         public static uint FormatMessageFromModule(uint lastError, string moduleName, out String msg)
         {
@@ -128,7 +118,6 @@ namespace Microsoft.PowerShell.Commands.Diagnostics.Common
                 if (nChars == 0)
                 {
                     formatError = (uint)Marshal.GetLastWin32Error();
-                    //Console.WriteLine("Win32FormatMessage", String.Format(null, "Error formatting message: {0}", formatError));
                 }
                 else
                 {

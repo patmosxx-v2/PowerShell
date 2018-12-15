@@ -1,4 +1,6 @@
-﻿##
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+##
 ## PowerShell Invoke-Command -RemoteDebug Tests
 ##
 
@@ -114,39 +116,36 @@ if ($IsWindows)
 '@
 }
 
-Describe "Invoke-Command remote debugging tests" -Tags 'Feature' {
+Describe "Invoke-Command remote debugging tests" -Tags 'Feature','RequireAdminOnWindows' {
 
     BeforeAll {
 
         if (!$IsWindows)
         {
             $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
-            $PSDefaultParameterValues["it:Pending"] = $true
+            $PSDefaultParameterValues["it:skip"] = $true
+            return
         }
-        else
-        {
-            $sb = [scriptblock]::Create(@'
-            "Hello!"
-'@)
 
-            Add-Type -TypeDefinition $typeDef
+        $sb = [scriptblock]::Create('"Hello!"')
 
-            $dummyHost = [TestRunner.DummyHost]::new()
-            [runspace] $rs = [runspacefactory]::CreateRunspace($dummyHost)
-            $rs.Open()
-            $dummyHost._runspace = $rs
+        Add-Type -TypeDefinition $typeDef
 
-            $testDebugger = [TestRunner.TestDebugger]::new($rs)
+        $dummyHost = [TestRunner.DummyHost]::new()
+        [runspace] $rs = [runspacefactory]::CreateRunspace($dummyHost)
+        $rs.Open()
+        $dummyHost._runspace = $rs
 
-            [runspace] $rs2 = [runspacefactory]::CreateRunspace()
-            $rs2.Open()
+        $testDebugger = [TestRunner.TestDebugger]::new($rs)
 
-            [powershell] $ps = [powershell]::Create()
-            $ps.Runspace = $rs
+        [runspace] $rs2 = [runspacefactory]::CreateRunspace()
+        $rs2.Open()
 
-            [powershell] $ps2 = [powershell]::Create()
-            $ps2.Runspace = $rs2
-        }
+        [powershell] $ps = [powershell]::Create()
+        $ps.Runspace = $rs
+
+        [powershell] $ps2 = [powershell]::Create()
+        $ps2.Runspace = $rs2
     }
 
     AfterAll {
@@ -154,16 +153,15 @@ Describe "Invoke-Command remote debugging tests" -Tags 'Feature' {
         if (!$IsWindows)
         {
             $global:PSDefaultParameterValues = $originalDefaultParameterValues
+            return
         }
-        else
-        {
-            if ($testDebugger -ne $null) { $testDebugger.Release() }
-            if ($ps -ne $null) { $ps.Dispose() }
-            if ($ps2 -ne $null) { $ps2.Dispose() }
-            if ($rs -ne $null) { $rs.Dispose() }
-            if ($rs2 -ne $null) { $rs2.Dispose() }
-            if ($remoteSession -ne $null) { Remove-PSSession $remoteSession -ErrorAction SilentlyContinue }
-        }
+
+        if ($null -ne $testDebugger) { $testDebugger.Release() }
+        if ($null -ne $ps) { $ps.Dispose() }
+        if ($null -ne $ps2) { $ps2.Dispose() }
+        if ($null -ne $rs) { $rs.Dispose() }
+        if ($null -ne $rs2) { $rs2.Dispose() }
+        if ($null -ne $remoteSession) { Remove-PSSession $remoteSession -ErrorAction SilentlyContinue }
     }
 
     BeforeEach {
@@ -188,7 +186,7 @@ Describe "Invoke-Command remote debugging tests" -Tags 'Feature' {
             AddParameter("RemoteDebug", $true).
             AddParameter("AsJob", $true)
         $result = $ps.Invoke()
-        $testDebugger.DebugStopCount | Should Be 0
+        $testDebugger.DebugStopCount | Should -Be 0
     }
 
     It "Verifies that synchronous 'Invoke-Command -RemoteDebug' invokes debugger" {
@@ -198,14 +196,14 @@ Describe "Invoke-Command remote debugging tests" -Tags 'Feature' {
             AddParameter("ScriptBlock", $sb).
             AddParameter("RemoteDebug", $true)
         $result = $ps.Invoke()
-        $testDebugger.RunspaceDebugProcessingCount | Should Be 1
-        $testDebugger.DebugStopCount | Should Be 1
+        $testDebugger.RunspaceDebugProcessingCount | Should -Be 1
+        $testDebugger.DebugStopCount | Should -Be 1
     }
 
     It "Verifies the debugger 'CancelDebuggerProcessing' API method" {
 
         $rs.Debugger.CancelDebuggerProcessing()
-        $testDebugger.RunspaceDebugProcessCancelled | Should Be $true
+        $testDebugger.RunspaceDebugProcessCancelled | Should -BeTrue
     }
 
     It "Verifies that 'Invoke-Command -RemoteDebug' running in a runspace without PSHost is ignored" {
@@ -215,6 +213,6 @@ Describe "Invoke-Command remote debugging tests" -Tags 'Feature' {
             AddParameter("ScriptBlock", $sb).
             AddParameter("RemoteDebug", $true)
         $result = $ps2.Invoke()
-        $result | Should Be "Hello!"
+        $result | Should -Be "Hello!"
     }
 }

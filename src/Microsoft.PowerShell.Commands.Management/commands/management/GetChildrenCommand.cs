@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Management.Automation;
@@ -12,10 +11,8 @@ namespace Microsoft.PowerShell.Commands
     /// The get-childitem command class.
     /// This command lists the contents of a container
     /// </summary>
-    ///
     /// <remarks>
     /// </remarks>
-    ///
     [Cmdlet(VerbsCommon.Get, "ChildItem", DefaultParameterSetName = "Items", SupportsTransactions = true, HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113308")]
     public class GetChildItemCommand : CoreCommandBase
     {
@@ -30,21 +27,6 @@ namespace Microsoft.PowerShell.Commands
         private const string childrenSet = "Items";
         private const string literalChildrenSet = "LiteralItems";
 
-#if RELATIONSHIP_SUPPORTED
-        // 2004/11/24-JeffJon - Relationships have been removed from the Exchange release
-
-        /// <summary>
-        /// The string declaration for the -relationship parameter set.
-        /// </summary>
-        ///
-        /// <remarks>
-        /// The "relationship" parameter set includes the following parameters:
-        ///     -relationship
-        ///     -property
-        /// </remarks>
-        ///
-        private const string relationshipSet = "Relationship";
-#endif
         #region Command parameters
 
         /// <summary>
@@ -69,20 +51,20 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(ParameterSetName = literalChildrenSet,
                    Mandatory = true, ValueFromPipeline = false, ValueFromPipelineByPropertyName = true)]
-        [Alias("PSPath")]
+        [Alias("PSPath", "LP")]
         public string[] LiteralPath
         {
             get
             {
                 return _paths;
-            } // get
+            }
 
             set
             {
                 base.SuppressWildcardExpansion = true;
                 _paths = value;
-            } // set
-        } // LiteralPath
+            }
+        }
 
         /// <summary>
         /// Gets or sets the filter property
@@ -109,13 +91,13 @@ namespace Microsoft.PowerShell.Commands
             get
             {
                 return base.Include;
-            } // get
+            }
 
             set
             {
                 base.Include = value;
-            } // set
-        } // Include
+            }
+        }
 
         /// <summary>
         /// Gets or sets the exclude property
@@ -126,13 +108,13 @@ namespace Microsoft.PowerShell.Commands
             get
             {
                 return base.Exclude;
-            } // get
+            }
 
             set
             {
                 base.Exclude = value;
-            } // set
-        } // Exclude
+            }
+        }
 
         /// <summary>
         /// Gets or sets the recurse switch
@@ -174,7 +156,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Gets or sets the force property
         /// </summary>
-        ///
         /// <remarks>
         /// Gives the provider guidance on how vigorous it should be about performing
         /// the operation. If true, the provider should do everything possible to perform
@@ -184,7 +165,6 @@ namespace Microsoft.PowerShell.Commands
         /// the destination is read-only, if force is true, the provider should copy over
         /// the existing read-only file. If force is false, the provider should write an error.
         /// </remarks>
-        ///
         [Parameter]
         public override SwitchParameter Force
         {
@@ -196,7 +176,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 base.Force = value;
             }
-        } // Force
+        }
 
         /// <summary>
         /// Gets or sets the names switch
@@ -214,66 +194,18 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-#if RELATIONSHIP_SUPPORTED
-        // 2004/11/24-JeffJon - Relationships have been removed from the Exchange release
-
-        /// <summary>
-        /// Gets and sets the value of the Relationship parameter which determines
-        /// which relationship the targets should be retrieved for.
-        /// </summary>
-        ///
-        [Parameter(
-            Mandatory = true,
-            ParameterSetName = relationshipSet,
-            ValueFromPipelineByPropertyName = true)]
-        public string[] Relationship
-        {
-            get
-            {
-                return relationships;
-            }
-            set
-            {
-                relationships = value;
-            }
-        }
-        private string[] relationships = new string[0];
-
-        /// <summary>
-        /// Gets or sets the property parameter which may provide guidance to the relationship
-        /// provider on which targets to return.
-        /// </summary>
-        ///
-        [Parameter(ParameterSetName = relationshipSet, ValueFromPipelineByPropertyName = true)]
-        public string Property
-        {
-            get
-            {
-                return property;
-            }
-
-            set
-            {
-                property = value;
-            }
-        }
-        private string property = String.Empty;
-#endif
         /// <summary>
         /// A virtual method for retrieving the dynamic parameters for a cmdlet. Derived cmdlets
         /// that require dynamic parameters should override this method and return the
         /// dynamic parameter object.
         /// </summary>
-        ///
         /// <param name="context">
         /// The context under which the command is running.
         /// </param>
-        ///
         /// <returns>
         /// An object representing the dynamic parameters for the cmdlet or null if there
         /// are none.
         /// </returns>
-        ///
         internal override object GetDynamicParameters(CmdletProviderContext context)
         {
             object result = null;
@@ -302,19 +234,12 @@ namespace Microsoft.PowerShell.Commands
                     }
                     break;
 
-#if RELATIONSHIP_SUPPORTED
-    // 2004/11/24-JeffJon - Relationships have been removed from the Exchange release
-
-               case relationshipSet:
-                    // No possible dynamic parameters for the relationship set.
-                    break;
-#endif
                 default:
                     result = InvokeProvider.ChildItem.GetChildItemsDynamicParameters(path, Recurse, context);
                     break;
             }
             return result;
-        } // GetDynamicParameters
+        }
 
         #endregion Command parameters
 
@@ -345,7 +270,6 @@ namespace Microsoft.PowerShell.Commands
 
         #endregion command data
 
-
         #region command code
 
         /// <summary>
@@ -355,8 +279,7 @@ namespace Microsoft.PowerShell.Commands
         {
             CmdletProviderContext currentContext = CmdletProviderContext;
 
-            if (_paths == null ||
-                (_paths != null && _paths.Length == 0))
+            if (_paths == null || _paths.Length == 0)
             {
                 _paths = new string[] { String.Empty };
             }
@@ -421,63 +344,6 @@ namespace Microsoft.PowerShell.Commands
 
                         break;
 
-#if RELATIONSHIP_SUPPORTED
-    // 2004/11/24-JeffJon - Relationships have been removed from the Exchange release
-
-                    case relationshipSet:
-                        foreach (string relationship in relationships)
-                        {
-                            Collection<string> results = null;
-
-                            try
-                            {
-                                results =
-                                    InvokeProvider.Relationship.GetTargets(
-                                        relationship,
-                                        path,
-                                        property);
-                            }
-                            catch (PSArgumentException argException)
-                            {
-                                WriteError(
-                                    new ErrorRecord(
-                                        argException.ErrorRecord,
-                                        argException));
-                                continue;
-                            }
-                            catch (ProviderNotFoundException providerNotFound)
-                            {
-                                WriteError(
-                                    new ErrorRecord(
-                                        providerNotFound.ErrorRecord,
-                                        providerNotFound));
-                                continue;
-                            }
-
-                            foreach (string target in results)
-                            {
-                                // Create an PSObject with the result.
-                                // Attach the relationship name as a note,
-                                // and set "System.Management.Automation.RelationshipTarget"
-                                // as the TreatAs.
-
-                                PSObject result = PSObject.AsPSObject (target);
-                                result.Properties.Add (
-                                    new PSNoteProperty (
-                                        "Relationship",
-                                        relationship));
-
-                                Collection<string> treatAs = new Collection<string> ();
-                                treatAs.Add (targetTreatAsType);
-
-                                result.TypeNames = treatAs;
-
-                                // Now write out the result
-                                WriteObject (result);
-                            }
-                        }
-                        break;
-#endif
                     default:
                         Dbg.Diagnostics.Assert(
                             false,
@@ -485,14 +351,9 @@ namespace Microsoft.PowerShell.Commands
                         break;
                 }
             }
-        } // ProcessRecord
+        }
 
-#if RELATIONSHIP_SUPPORTED
-        // 2004/11/24-JeffJon - Relationships have been removed from the Exchange release
-
-        private const string targetTreatAsType = "System.Management.Automation.RelationshipTarget";
-#endif
         #endregion command code
-    } // class GetChildrenCommand
-} // namespace Microsoft.PowerShell.Commands
+    }
+}
 

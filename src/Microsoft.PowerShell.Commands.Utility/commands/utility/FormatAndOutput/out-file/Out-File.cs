@@ -1,8 +1,8 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
+using System.Text;
 using System.Management.Automation;
 using System.Management.Automation.Internal;
 using System.Management.Automation.Host;
@@ -20,13 +20,13 @@ namespace Microsoft.PowerShell.Commands
     }
 
     /// <summary>
-    /// implementation for the out-file command
+    /// Implementation for the out-file command.
     /// </summary>
     [Cmdlet(VerbsData.Out, "File", SupportsShouldProcess = true, DefaultParameterSetName = "ByPath", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113363")]
     public class OutFileCommand : FrontEndCommandBase
     {
         /// <summary>
-        /// set inner command
+        /// Set inner command.
         /// </summary>
         public OutFileCommand()
         {
@@ -36,7 +36,7 @@ namespace Microsoft.PowerShell.Commands
         #region Command Line Parameters
 
         /// <summary>
-        /// mandatory file name to write to
+        /// Mandatory file name to write to.
         /// </summary>
         [Alias("Path")]
         [Parameter(Mandatory = true, Position = 0, ParameterSetName = "ByPath")]
@@ -49,10 +49,10 @@ namespace Microsoft.PowerShell.Commands
         private string _fileName;
 
         /// <summary>
-        /// mandatory file name to write to
+        /// Mandatory file name to write to.
         /// </summary>
         [Parameter(Mandatory = true, ValueFromPipelineByPropertyName = true, ParameterSetName = "ByLiteralPath")]
-        [Alias("PSPath")]
+        [Alias("PSPath", "LP")]
         public string LiteralPath
         {
             get
@@ -68,29 +68,13 @@ namespace Microsoft.PowerShell.Commands
         private bool _isLiteralPath = false;
 
         /// <summary>
-        /// Encoding optional flag
+        /// Encoding optional flag.
         /// </summary>
-        ///
         [Parameter(Position = 1)]
+        [ArgumentToEncodingTransformationAttribute()]
+        [ArgumentEncodingCompletionsAttribute]
         [ValidateNotNullOrEmpty]
-        [ValidateSetAttribute(new string[] {
-            EncodingConversion.Unknown,
-            EncodingConversion.String,
-            EncodingConversion.Unicode,
-            EncodingConversion.BigEndianUnicode,
-            EncodingConversion.Utf8,
-            EncodingConversion.Utf7,
-            EncodingConversion.Utf32,
-            EncodingConversion.Ascii,
-            EncodingConversion.Default,
-            EncodingConversion.OEM })]
-        public string Encoding
-        {
-            get { return _encoding; }
-            set { _encoding = value; }
-        }
-
-        private string _encoding;
+        public Encoding Encoding { get; set; } = ClrFacade.GetDefaultEncoding();
 
         /// <summary>
         /// Property that sets append parameter.
@@ -127,7 +111,7 @@ namespace Microsoft.PowerShell.Commands
         private bool _noclobber;
 
         /// <summary>
-        /// optional, number of columns to use when writing to device
+        /// Optional, number of columns to use when writing to device.
         /// </summary>
         [ValidateRangeAttribute(2, int.MaxValue)]
         [Parameter]
@@ -160,7 +144,7 @@ namespace Microsoft.PowerShell.Commands
         #endregion
 
         /// <summary>
-        /// read command line parameters
+        /// Read command line parameters.
         /// </summary>
         protected override void BeginProcessing()
         {
@@ -171,7 +155,7 @@ namespace Microsoft.PowerShell.Commands
             // cleanup code will be called in IDisposable.Dispose()
             outInner.LineOutput = InstantiateLineOutputInterface();
 
-            if (null == _sw)
+            if (_sw == null)
             {
                 return;
             }
@@ -180,13 +164,12 @@ namespace Microsoft.PowerShell.Commands
             base.BeginProcessing();
         }
 
-
         /// <summary>
-        /// one time initialization: acquire a screen host interface
-        /// by creating one on top of a file
+        /// One-time initialization: acquire a screen host interface
+        /// by creating one on top of a file.
         /// NOTICE: we assume that at this time the file name is
         /// available in the CRO. JonN recommends: file name has to be
-        /// a MANDATORY parameter on the command line
+        /// a MANDATORY parameter on the command line.
         /// </summary>
         private LineOutput InstantiateLineOutputInterface()
         {
@@ -196,7 +179,7 @@ namespace Microsoft.PowerShell.Commands
                 PathUtils.MasterStreamOpen(
                     this,
                     FilePath,
-                    _encoding,
+                    Encoding,
                     false, // defaultEncoding
                     Append,
                     Force,
@@ -211,31 +194,12 @@ namespace Microsoft.PowerShell.Commands
                 return null;
 
             // compute the # of columns available
-            int computedWidth = 120;
+            int computedWidth = int.MaxValue;
 
             if (_width != null)
             {
                 // use the value from the command line
                 computedWidth = _width.Value;
-            }
-            else
-            {
-                // use the value we get from the console
-                try
-                {
-                    // NOTE: we subtract 1 because we want to properly handle
-                    // the following scenario:
-                    // MSH>get-foo|out-file foo.txt
-                    // MSH>get-content foo.txt
-                    // in this case, if the computed width is (say) 80, get-content
-                    // would cause a wrapping of the 80 column long raw strings.
-                    // Hence we set the width to 79.
-                    computedWidth = this.Host.UI.RawUI.BufferSize.Width - 1;
-                }
-                catch (HostException)
-                {
-                    // non interactive host
-                }
             }
 
             // use the stream writer to create and initialize the Line Output writer
@@ -246,12 +210,12 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// execution entry point
+        /// Execution entry point.
         /// </summary>
         protected override void ProcessRecord()
         {
             _processRecordExecuted = true;
-            if (null == _sw)
+            if (_sw == null)
             {
                 return;
             }
@@ -263,7 +227,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// execution entry point
+        /// Execution entry point.
         /// </summary>
         protected override void EndProcessing()
         {
@@ -278,7 +242,7 @@ namespace Microsoft.PowerShell.Commands
                 return;
             }
 
-            if (null == _sw)
+            if (_sw == null)
             {
                 return;
             }
@@ -293,7 +257,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        ///
+        /// InternalDispose.
         /// </summary>
         protected override void InternalDispose()
         {
@@ -310,7 +274,7 @@ namespace Microsoft.PowerShell.Commands
             }
 
             // reset the read-only attribute
-            if (null != _readOnlyFileInfo)
+            if (_readOnlyFileInfo != null)
             {
                 _readOnlyFileInfo.Attributes |= FileAttributes.ReadOnly;
                 _readOnlyFileInfo = null;
@@ -318,12 +282,12 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// handle to file stream
+        /// Handle to file stream.
         /// </summary>
         private FileStream _fs;
 
         /// <summary>
-        /// stream writer used to write to file
+        /// Stream writer used to write to file.
         /// </summary>
         private StreamWriter _sw = null;
 
@@ -339,9 +303,8 @@ namespace Microsoft.PowerShell.Commands
         private bool _processRecordExecuted = false;
 
         /// <summary>
-        /// FileInfo of file to clear read-only flag when operation is complete
+        /// FileInfo of file to clear read-only flag when operation is complete.
         /// </summary>
         private FileInfo _readOnlyFileInfo = null;
     }
 }
-

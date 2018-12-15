@@ -1,8 +1,7 @@
-#if !UNIX
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
+#if !UNIX
 
 // Implementation notes: In the functions that take ConsoleHandle parameters, we only assert that the handle is valid and not
 // closed, as opposed to doing a check and throwing an exception.  This is because the win32 APIs that those functions wrap will
@@ -12,7 +11,6 @@ Copyright (c) Microsoft Corporation.  All rights reserved.
 // handles should not be exposed to recycling attacks (because they are not exposed at all), but if they were, the worse they
 // could do is diddle with the console buffer.
 #pragma warning disable 1634, 1691
-
 
 using System;
 using System.Text;
@@ -43,10 +41,8 @@ using Dbg = System.Management.Automation.Diagnostics;
 namespace Microsoft.PowerShell
 {
     /// <summary>
-    ///
     /// Class ConsoleControl is used to wrap the various win32 console APIs 1:1 (i.e. at a low level, without attempting to be a
     /// "true" object-oriented library.
-    ///
     /// </summary>
 
     internal static class ConsoleControl
@@ -295,7 +291,7 @@ namespace Microsoft.PowerShell
 
             /// <summary>
             /// A set of bit flags that specify various aspects of mouse motion and button clicks.
-            /// See (http://msdn.microsoft.com/en-us/library/ms646273(VS.85).aspx)
+            /// See (http://msdn.microsoft.com/library/ms646273(VS.85).aspx)
             /// </summary>
             internal DWORD Flags;
 
@@ -445,8 +441,7 @@ namespace Microsoft.PowerShell
         internal const int SW_FORCEMINIMIZE = 11;
         internal const int SW_MAX = 11;
 
-
-#if !CORECLR  // ProcessWindowStyle does Not exist on CoreCLR
+#if !UNIX
         /// <summary>
         /// Code to control the display properties of the a window...
         /// </summary>
@@ -482,9 +477,7 @@ namespace Microsoft.PowerShell
 #region Input break handler (Ctrl-C, Ctrl-Break)
 
         /// <summary>
-        ///
         /// Types of control ConsoleBreakSignals received by break Win32Handler delegates
-        ///
         /// </summary>
 
         internal enum ConsoleBreakSignal : uint
@@ -632,9 +625,7 @@ namespace Microsoft.PowerShell
 #region Mode
 
         /// <summary>
-        ///
         /// flags used by ConsoleControl.GetMode and ConsoleControl.SetMode
-        ///
         /// </summary>
         [Flags]
         internal enum ConsoleModes : uint
@@ -659,9 +650,7 @@ namespace Microsoft.PowerShell
         }
 
         /// <summary>
-        ///
         /// Returns a mask of ConsoleModes flags describing the current modality of the console
-        ///
         /// </summary>
         /// <exception cref="HostException">
         /// If Win32's GetConsoleMode fails
@@ -688,24 +677,16 @@ namespace Microsoft.PowerShell
         }
 
         /// <summary>
-        ///
         /// Sets the current mode of the console device
-        ///
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// Handle to the console device returned by GetInputHandle
-        ///
         /// </param>
         /// <param name="mode">
-        ///
         /// Mask of mode flags
-        ///
         /// </param>
         /// <exception cref="HostException">
-        ///
         /// If Win32's SetConsoleMode fails
-        ///
         /// </exception>
 
         internal static void SetMode(ConsoleHandle consoleHandle, ConsoleModes mode)
@@ -725,47 +706,30 @@ namespace Microsoft.PowerShell
             }
         }
 
-
 #endregion
 
 #region Input
 
-
-
         /// <summary>
-        ///
         /// Reads input from the console device according to the mode in effect (see GetMode, SetMode)
-        ///
         /// </summary>
         /// <param name="consoleHandle"></param>
-        ///
         /// Handle to the console device returned by GetInputHandle
-        ///
         /// <param name="initialContent">
-        ///
         /// Initial contents of the edit buffer, if any. charactersToRead should be at least as large as the length of this string.
-        ///
         /// </param>
         /// <param name="charactersToRead">
-        ///
         /// Number of characters to read from the device.
-        ///
         /// </param>
         /// <param name="endOnTab">
-        ///
         /// true to allow the user to terminate input by hitting the tab or shift-tab key, in addition to the enter key
-        ///
         /// </param>
         /// <param name="keyState">
-        ///
         /// bit mask indicating the state of the control/shift keys at the point input was terminated.
-        ///
         /// </param>
         /// <returns></returns>
         /// <exception cref="HostException">
-        ///
         /// If Win32's ReadConsole fails
-        ///
         /// </exception>
 
         internal static string ReadConsole(ConsoleHandle consoleHandle, string initialContent,
@@ -816,19 +780,13 @@ namespace Microsoft.PowerShell
         /// Returns the number of records read in buffer.
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where input is read
-        ///
         /// </param>
         /// <param name="buffer">
-        ///
         /// array where data read are stored
-        ///
         /// </param>
         /// <returns>
-        ///
         /// actual number of input records read
-        ///
         /// </returns>
         /// <exception cref="HostException">
         /// If Win32's ReadConsoleInput fails
@@ -861,19 +819,13 @@ namespace Microsoft.PowerShell
         /// Wraps Win32 PeekConsoleInput
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where input is peeked
-        ///
         /// </param>
         /// <param name="buffer">
-        ///
         /// array where data read are stored
-        ///
         /// </param>
         /// <returns>
-        ///
         /// actual number of input records peeked
-        ///
         /// </returns>
         /// <exception cref="HostException">
         /// If Win32's PeekConsoleInput fails
@@ -912,14 +864,10 @@ namespace Microsoft.PowerShell
         /// Wraps Win32 GetNumberOfConsoleInputEvents
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where the number of console input events is obtained
-        ///
         /// </param>
         /// <returns>
-        ///
         /// number of console input events
-        ///
         /// </returns>
         /// <exception cref="HostException">
         /// If Win32's GetNumberOfConsoleInputEvents fails
@@ -949,9 +897,7 @@ namespace Microsoft.PowerShell
         /// Wraps Win32 FlushConsoleInputBuffer
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where the input buffer is flushed
-        ///
         /// </param>
         /// <exception cref="HostException">
         /// If Win32's FlushConsoleInputBuffer fails
@@ -984,14 +930,10 @@ namespace Microsoft.PowerShell
         /// Returns Console Screen Buffer Info
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// Handle for the console where the screen buffer info is obtained
-        ///
         /// </param>
         /// <returns>
-        ///
         /// info about the screen buffer. See the definition of CONSOLE_SCREEN_BUFFER_INFO
-        ///
         /// </returns>
         /// <exception cref="HostException">
         /// If Win32's GetConsoleScreenBufferInfo fails
@@ -1094,19 +1036,13 @@ namespace Microsoft.PowerShell
         /// is constrained.
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where output is written
-        ///
         /// </param>
         /// <param name="origin">
-        ///
         /// location on screen buffer where writing starts
-        ///
         /// </param>
         /// <param name="contents">
-        ///
         /// 2D array of cells. Caller needs to ensure that the array is 2D.
-        ///
         /// </param>
         /// <exception cref="HostException">
         /// If Win32's GetConsoleScreenBufferInfo fails
@@ -1344,7 +1280,6 @@ namespace Microsoft.PowerShell
                 }
             }
         }
-
 
         [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Called in CHK builds")]
         private static void CheckWriteConsoleOutputContents(BufferCell[,] contents, Rectangle contentsRegion)
@@ -1718,25 +1653,17 @@ namespace Microsoft.PowerShell
         /// is constrained.
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where output is read
-        ///
         /// </param>
         /// <param name="origin">
-        ///
         /// location on screen buffer where reading begins
-        ///
         /// </param>
         /// <param name="contentsRegion">
-        ///
         /// indicates the area in <paramref name="contents"/> where the data read
         /// is stored.
-        ///
         /// </param>
         /// <param name="contents">
-        ///
         /// this is ref because the bounds and size of the array are needed.
-        ///
         /// </param>
         /// <exception cref="HostException">
         /// If there is not enough memory to complete calls to Win32's ReadConsoleOutput
@@ -2052,7 +1979,6 @@ namespace Microsoft.PowerShell
                 readRegion.Top += bufferSize.Y;
             }  // row iteration
 
-
             // The following nested loop set the value of the empty cells in contents:
             // character to ' '
             // foreground color to console's foreground color
@@ -2097,7 +2023,6 @@ namespace Microsoft.PowerShell
             }
         }
 #endregion ReadConsoleOutput CJK
-
 
         private static void ReadConsoleOutputPlain
         (
@@ -2278,29 +2203,20 @@ namespace Microsoft.PowerShell
             }
         }
 
-
         /// <summary>
         /// Wraps Win32 FillConsoleOutputCharacter
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where output is filled
-        ///
         /// </param>
         /// <param name="character">
-        ///
         /// character to fill the console output
-        ///
         /// </param>
         /// <param name="numberToWrite">
-        ///
         /// number of times to write character
-        ///
         /// </param>
         /// <param name="origin">
-        ///
         /// location on screen buffer where writing starts
-        ///
         /// </param>
         /// <exception cref="HostException">
         /// If Win32's FillConsoleOutputCharacter fails
@@ -2345,24 +2261,16 @@ namespace Microsoft.PowerShell
         /// Wraps Win32 FillConsoleOutputAttribute
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where output is filled
-        ///
         /// </param>
         /// <param name="attribute">
-        ///
         /// attribute to fill the console output
-        ///
         /// </param>
         /// <param name="numberToWrite">
-        ///
         /// number of times to write attribute
-        ///
         /// </param>
         /// <param name="origin">
-        ///
         /// location on screen buffer where writing starts
-        ///
         /// </param>
         /// <exception cref="HostException">
         /// If Win32's FillConsoleOutputAttribute fails
@@ -2406,29 +2314,19 @@ namespace Microsoft.PowerShell
         /// Wrap Win32 ScrollConsoleScreenBuffer
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where screen buffer is scrolled
-        ///
         /// </param>
         /// <param name="scrollRectangle">
-        ///
         /// area to be scrolled
-        ///
         /// </param>
         /// <param name="clipRectangle">
-        ///
         /// area to be updated after scrolling
-        ///
         /// </param>
         /// <param name="destOrigin">
-        ///
         /// location to which the top left corner of scrollRectangle move
-        ///
         /// </param>
         /// <param name="fill">
-        ///
         /// character and attribute to fill the area vacated by the scroll
-        ///
         /// </param>
         /// <exception cref="HostException">
         /// If Win32's ScrollConsoleScreenBuffer fails
@@ -2471,21 +2369,15 @@ namespace Microsoft.PowerShell
         /// Wraps Win32 SetConsoleWindowInfo
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where window info is set
-        ///
         /// </param>
         /// <param name="absolute">
-        ///
         /// If this parameter is TRUE, the coordinates specify the new upper-left and
         /// lower-right corners of the window. If it is false, the coordinates are offsets
         /// to the current window-corner coordinates
-        ///
         /// </param>
         /// <param name="windowInfo">
-        ///
         /// specify the size and position of the console screen buffer's window
-        ///
         /// </param>
         /// <exception cref="HostException">
         /// If Win32's SetConsoleWindowInfo fails
@@ -2512,14 +2404,10 @@ namespace Microsoft.PowerShell
         /// Wraps Win32 GetLargestConsoleWindowSize
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console for which the largest window size is obtained
-        ///
         /// </param>
         /// <returns>
-        ///
         /// the largest window size
-        ///
         /// </returns>
         /// <exception cref="HostException">
         /// If Win32's GetLargestConsoleWindowSize fails
@@ -2544,16 +2432,12 @@ namespace Microsoft.PowerShell
             return new Size(result.X, result.Y);
         }
 
-
-
         /// <summary>
         /// Wraps Win32 GetConsoleTitle. 1K is the safe limit experimentally. The 64K limit
         /// found in the docs is disregarded because it is essentially meaningless.
         /// </summary>
         /// <returns>
-        ///
         /// a string for the title of the window
-        ///
         /// </returns>
         /// <exception cref="HostException">
         /// If Win32's GetConsoleTitle fails
@@ -2585,9 +2469,7 @@ namespace Microsoft.PowerShell
         /// Wraps Win32 SetConsoleTitle
         /// </summary>
         /// <param name="consoleTitle">
-        ///
         /// a string for the title of the window
-        ///
         /// </param>
         /// <exception cref="HostException">
         /// If Win32's SetConsoleTitle fails
@@ -2609,128 +2491,17 @@ namespace Microsoft.PowerShell
 
 #endregion Window
 
-#if !CORECLR
-#region Font Selection
-
         /// <summary>
-        /// UpdateLocaleSpecificFont is a helper method used to update
-        /// the console font based on the locale.
-        /// The default font face used for Powershell Console is Lucida Console.
-        /// However certain locales dont support Lucida Console font. Hence for such
-        /// locales the console font is updated to Raster dynamically.
-        /// </summary>
-        internal static void UpdateLocaleSpecificFont()
-        {
-            // Default Powershell shortcut.lnk settings.
-            const string defaultFontFace = "Lucida Console";
-
-            // Default CJK locale shortcut.lnk settings.
-            // Font size is hard coded here to ensure we select a supported size.
-            // GDI does a poor job of selecting raster font size if the requested
-            // size is not supported.
-            const string CJKFontFace = "Terminal";
-            const int CJKFontFamily = 48;
-            const int CJKnFont = 6;
-            const int CJKFontWidth = 8;
-            const int CJKFontHeight = 12;
-            const int CKJFontWeight = 400;
-
-            uint currentLocaleCodePage = (uint)ConsoleControl.NativeMethods.GetConsoleCP();
-
-            ConsoleHandle handle = ConsoleControl.GetActiveScreenBufferHandle();
-            CONSOLE_FONT_INFO_EX fontInfo;
-            try
-            {
-                fontInfo = ConsoleControl.GetConsoleFontInfo(handle);
-            }
-            catch (Exception)
-            {
-                return;
-            }
-
-            bool isLucidaConsoleSupportedLocale = CodePageSupportsLucida(currentLocaleCodePage);
-
-            // The Raster font is updated for Japanese and Korean locales if the user has not manually
-            // altered the default settings. If the default settings are altered then the
-            // setting chosen by the user would be used.
-            if (!isLucidaConsoleSupportedLocale &&
-                fontInfo.FontFace.Equals(defaultFontFace, StringComparison.OrdinalIgnoreCase))
-            {
-                fontInfo.FontFace = CJKFontFace;
-                fontInfo.FontFamily = CJKFontFamily;
-                fontInfo.nFont = CJKnFont;
-                fontInfo.FontWidth = CJKFontWidth;
-                fontInfo.FontHeight = CJKFontHeight;
-                fontInfo.FontWeight = CKJFontWeight;
-
-                bool result = NativeMethods.SetCurrentConsoleFontEx(handle.DangerousGetHandle(), false, ref fontInfo);
-
-                if (result == false)
-                {
-                    int err = Marshal.GetLastWin32Error();
-
-                    HostException e = CreateHostException(err,
-                        "SetConsoleFontInfo",
-                        ErrorCategory.ResourceUnavailable,
-                        ConsoleControlStrings.SetConsoleFontInfoExceptionTemplate);
-
-                    throw e;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Supported Lucida code pages obtained from Font group.
-        /// Contacts: alib, judysa, simonda
-        /// </summary>
-        private static HashSet<uint> LucidaSupportedCodePages = new HashSet<uint>()
-        {
-            1251,               // Latin 1
-            1250,               // Latin 2
-            1251,               // Cyrillic
-            1253,               // Greek
-            1254,               // Turkish
-            869,                // IBM Greek
-            866,                // MS-DOS Russian
-            865,                // MS-DOS Nordic
-            863,                // MS-DOS Canadian French
-            861,                // MS-DOS Icelandic
-            860,                // MS-DOS Portuguese
-            857,                // IBM Turkish
-            855,                // IBM Cyrillic
-            852,                // Latin 2
-            737,                // Greek
-            850,                // WE/Latin 1
-            437                 // US
-            //936,                // SimplifiedChinese -  According to font team this is *not* supported.
-            //950                 // TraditionalChinese - According to font team this is *not* supported.
-        };
-        private static bool CodePageSupportsLucida(uint currentLocaleCodePage)
-        {
-            return LucidaSupportedCodePages.Contains(currentLocaleCodePage);
-        }
-
-#endregion
-#endif
-        /// <summary>
-        ///
         /// Wrap Win32 WriteConsole
-        ///
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where the string is written
-        ///
         /// </param>
         /// <param name="output">
-        ///
         /// string that is written
-        ///
         /// </param>
         /// <exception cref="HostException">
-        ///
         /// if the Win32's WriteConsole fails
-        ///
         /// </exception>
 
         internal static void WriteConsole(ConsoleHandle consoleHandle, string output)
@@ -2786,19 +2557,13 @@ namespace Microsoft.PowerShell
         /// Wraps Win32 SetConsoleTextAttribute
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where text attribute is set
-        ///
         /// </param>
         /// <param name="attribute">
-        ///
         /// text attribute to set the console
-        ///
         /// </param>
         /// <exception cref="HostException">
-        ///
         /// if the Win32's SetConsoleTextAttribute fails
-        ///
         /// </exception>
 
         internal static void SetConsoleTextAttribute(ConsoleHandle consoleHandle, WORD attribute)
@@ -2820,229 +2585,6 @@ namespace Microsoft.PowerShell
 
 #endif
 #region Dealing with CJK
-#if !UNIX
-
-        /// <summary>
-        /// From IsConsoleFullWidth in \windows\core\ntcon\server\dbcs.c
-        /// Gets the CharSet for a code page
-        /// </summary>
-        /// <param name="codePage"></param>
-        /// <returns>The CharSet corresponding to the codePage; defaults to OEM_CHARSET (255)</returns>
-        private static uint CodePageToCharSet(uint codePage)
-        {
-            const uint OEM_CHARSET = 255;
-            // Suppress the PreFAST warning about not using Marshal.GetLastWin32Error() to
-            // get the error code.
-#pragma warning disable 56523
-#if CORECLR // TranslateCharsetInfo exists in an extension API set 'ext-ms-win-gdi-font-l1-1-1.dll', which is not available in NanoServer.
-            return OEM_CHARSET;
-#else
-            CHARSETINFO csi;
-            const DWORD TCI_SRCCODEPAGE = 2;
-            if (!NativeMethods.TranslateCharsetInfo((IntPtr)codePage, out csi, TCI_SRCCODEPAGE))
-            {
-                csi.ciCharset = OEM_CHARSET;
-            }
-            return csi.ciCharset;
-#endif
-        }
-
-        // From \windows\core\ntcon\server\dbcs.c
-        private static bool IsAvailableFarEastCodePage(uint codePage)
-        {
-            uint charSet = CodePageToCharSet(codePage);
-            return IsAnyDBCSCharSet(charSet);
-        }
-
-        // From \windows\core\ntcon\server\dbcs.c
-        private static bool IsAnyDBCSCharSet(uint charSet)
-        {
-            const uint SHIFTJIS_CHARSET = 128;
-            const uint HANGUL_CHARSET = 129;
-            const uint CHINESEBIG5_CHARSET = 136;
-            const uint GB2312_CHARSET = 134;
-            return charSet == SHIFTJIS_CHARSET || charSet == HANGUL_CHARSET ||
-                charSet == CHINESEBIG5_CHARSET || charSet == GB2312_CHARSET;
-        }
-
-        /// <summary>
-        /// From IsConsoleFullWidth in \windows\core\ntcon\server\dbcs.c
-        /// Precondition: the current code page needs to be a Far East code page.
-        ///
-        /// char F8F8 makes this function return 1 while in CHT, CHS, and KOR it takes 2 cells.
-        /// I don't think we should special-case this because that ought to be a bug outside of
-        /// this code.
-        /// </summary>
-        /// <param name="c"></param>
-        /// <param name="hwnd">window handle</param>
-        /// <param name="hDC">handle to DC; it is not released by this method</param>
-        /// <param name="istmInitialized"></param>
-        /// <param name="tm"></param>
-        /// <returns></returns>
-        private static int LengthInBufferCellsFE(char c, ref HWND hwnd, ref HDC hDC, ref bool istmInitialized, ref TEXTMETRIC tm)
-        {
-            if (0x20 <= c && c <= 0x7e)
-            {
-                /* ASCII */
-                return 1;
-            }
-            else if (0x3041 <= c && c <= 0x3094)
-            {
-                /* Hiragana */
-                return 2;
-            }
-            else if (0x30a1 <= c && c <= 0x30f6)
-            {
-                /* Katakana */
-                return 2;
-            }
-            else if (0x3105 <= c && c <= 0x312c)
-            {
-                /* Bopomofo */
-                return 2;
-            }
-            else if (0x3131 <= c && c <= 0x318e)
-            {
-                /* Hangul Elements */
-                return 2;
-            }
-            else if (0xac00 <= c && c <= 0xd7a3)
-            {
-                /* Korean Hangul Syllables */
-                return 2;
-            }
-            else if (0xff01 <= c && c <= 0xff5e)
-            {
-                /* Fullwidth ASCII variants */
-                return 2;
-            }
-            else if (0xff61 <= c && c <= 0xff9f)
-            {
-                /* Halfwidth Katakana variants */
-                return 1;
-            }
-            else if ((0xffa0 <= c && c <= 0xffbe) ||
-                     (0xffc2 <= c && c <= 0xffc7) ||
-                     (0xffca <= c && c <= 0xffcf) ||
-                     (0xffd2 <= c && c <= 0xffd7) ||
-                     (0xffda <= c && c <= 0xffdc))
-            {
-                /* Halfwidth Hangul variants */
-                return 1;
-            }
-            else if (0xffe0 <= c && c <= 0xffe6)
-            {
-                /* Fullwidth symbol variants */
-                return 2;
-            }
-            else if (0x4e00 <= c && c <= 0x9fa5)
-            {
-                /* Han Ideographic */
-                return 2;
-            }
-            else if (0xf900 <= c && c <= 0xfa2d)
-            {
-                /* Han Compatibility Ideographs */
-                return 2;
-            }
-            else
-            {
-                // GetTextMetrics / GetCharWidth32 exist in an extension API set 'ext-ms-win-gdi-font-l1-1-1.dll', which is not available in NanoServer.
-#if !CORECLR
-                /* Unknown character: need to use GDI*/
-                if (hDC == (IntPtr)0)
-                {
-                    hwnd = NativeMethods.GetConsoleWindow();
-                    if ((IntPtr)0 == hwnd)
-                    {
-                        int err = Marshal.GetLastWin32Error();
-                        //Don't throw exception so that output can continue
-                        tracer.TraceError("Win32 Error 0x{0:X} occurred when getting the window handle to the console.",
-                            err);
-                        return 1;
-                    }
-                    hDC = NativeMethods.GetDC(hwnd);
-                    if ((IntPtr)0 == hDC)
-                    {
-                        int err = Marshal.GetLastWin32Error();
-                        //Don't throw exception so that output can continue
-                        tracer.TraceError("Win32 Error 0x{0:X} occurred when getting the Device Context of the console window.",
-                            err);
-                        return 1;
-                    }
-                }
-                bool result = true;
-                if (!istmInitialized)
-                {
-                    result = NativeMethods.GetTextMetrics(hDC, out tm);
-                    if (!result)
-                    {
-                        int err = Marshal.GetLastWin32Error();
-                        //Don't throw exception so that output can continue
-                        tracer.TraceError("Win32 Error 0x{0:X} occurred when getting the Text Metric of the console window's Device Context.",
-                            err);
-                        return 1;
-                    }
-                    istmInitialized = true;
-                }
-                int width;
-                result = NativeMethods.GetCharWidth32(hDC, (uint)c, (uint)c, out width);
-                if (!result)
-                {
-                    int err = Marshal.GetLastWin32Error();
-                    //Don't throw exception so that output can continue
-                    tracer.TraceError("Win32 Error 0x{0:X} occurred when getting the width of a char.",
-                        err);
-                    return 1;
-                }
-                if (width >= tm.tmMaxCharWidth)
-                {
-                    return 2;
-                }
-#endif
-            }
-            tracer.WriteLine("failed to locate char {0}, return 1", (int)c);
-            return 1;
-        }
-
-        internal static int LengthInBufferCells(char c)
-        {
-            uint codePage = NativeMethods.GetConsoleOutputCP();
-            return LengthInBufferCells(c, codePage);
-        }
-
-        /// <summary>
-        /// From IsConsoleFullWidth in \windows\core\ntcon\server\dbcs.c
-        /// </summary>
-        /// <param name="c"></param>
-        /// <param name="codePage"></param>
-        /// <returns></returns>
-        [SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults",
-            MessageId = "Microsoft.PowerShell.ConsoleControl+NativeMethods.ReleaseDC(System.IntPtr,System.IntPtr)")]
-        private static int LengthInBufferCells(char c, uint codePage)
-        {
-            if (!IsAvailableFarEastCodePage(codePage))
-            {
-                return 1;
-            }
-            HWND hwnd = (HWND)0;
-            HDC hDC = (HDC)0;
-            bool istmInitialized = false;
-            TEXTMETRIC tm = new TEXTMETRIC(); ;
-            try
-            {
-                return LengthInBufferCellsFE(c, ref hwnd, ref hDC, ref istmInitialized, ref tm);
-            }
-            finally
-            {
-                if (hwnd != (IntPtr)0 && hDC != (IntPtr)0)
-                {
-                    NativeMethods.ReleaseDC(hwnd, hDC);
-                }
-            }
-        }
-
-#endif
 
         // Return the length of a VT100 control sequence character in str starting
         // at the given offset.
@@ -3109,38 +2651,7 @@ namespace Microsoft.PowerShell
                 }
             }
 
-#if UNIX
             return str.Length - offset - escapeSequenceAdjustment;
-#else
-            uint codePage = NativeMethods.GetConsoleOutputCP();
-            if (!IsAvailableFarEastCodePage(codePage))
-            {
-                return str.Length - offset - escapeSequenceAdjustment;
-            }
-
-            HWND hwnd = (HWND)0;
-            HDC hDC = (HDC)0;
-            bool istmInitialized = false;
-            TEXTMETRIC tm = new TEXTMETRIC(); ;
-            int length = 0;
-            try
-            {
-                int n = str.Length;
-                for (int i = offset; i < n; i++)
-                {
-                    char c = str[i];
-                    length += LengthInBufferCellsFE(c, ref hwnd, ref hDC, ref istmInitialized, ref tm);
-                }
-                return length - escapeSequenceAdjustment;
-            }
-            finally
-            {
-                if (hwnd != (IntPtr)0 && hDC != (IntPtr)0)
-                {
-                    NativeMethods.ReleaseDC(hwnd, hDC);
-                }
-            }
-#endif
         }
 
 #if !UNIX
@@ -3166,19 +2677,14 @@ namespace Microsoft.PowerShell
 
 #region Cursor
 
-
         /// <summary>
         /// Wraps Win32 SetConsoleCursorPosition
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where cursor position is set
-        ///
         /// </param>
         /// <param name="cursorPosition">
-        ///
         /// location to which the cursor will be set
-        ///
         /// </param>
         /// <exception cref="HostException">
         /// If Win32's SetConsoleCursorPosition fails
@@ -3206,20 +2712,14 @@ namespace Microsoft.PowerShell
             }
         }
 
-
-
         /// <summary>
         /// Wraps Win32 GetConsoleCursorInfo
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where cursor info is obtained
-        ///
         /// </param>
         /// <returns>
-        ///
         /// cursor info
-        ///
         /// </returns>
         /// <exception cref="HostException">
         /// If Win32's GetConsoleCursorInfo fails
@@ -3269,14 +2769,10 @@ namespace Microsoft.PowerShell
         /// Wraps Win32 SetConsoleCursorInfo
         /// </summary>
         /// <param name="consoleHandle">
-        ///
         /// handle for the console where cursor info is set
-        ///
         /// </param>
         /// <param name="cursorInfo">
-        ///
         /// cursor info to set the cursor
-        ///
         /// </param>
         /// <exception cref="HostException">
         /// If Win32's SetConsoleCursorInfo fails
@@ -3322,12 +2818,39 @@ namespace Microsoft.PowerShell
 
 #endregion helper
 
+#region
+
+        internal static int LengthInBufferCells(char c)
+        {
+            // The following is based on http://www.cl.cam.ac.uk/~mgk25/c/wcwidth.c
+            // which is derived from http://www.unicode.org/Public/UCD/latest/ucd/EastAsianWidth.txt
+
+            bool isWide = c >= 0x1100 &&
+                (c <= 0x115f || /* Hangul Jamo init. consonants */
+                 c == 0x2329 || c == 0x232a ||
+                 (c >= 0x2e80 && c <= 0xa4cf &&
+                  c != 0x303f) || /* CJK ... Yi */
+                 (c >= 0xac00 && c <= 0xd7a3) || /* Hangul Syllables */
+                 (c >= 0xf900 && c <= 0xfaff) || /* CJK Compatibility Ideographs */
+                 (c >= 0xfe10 && c <= 0xfe19) || /* Vertical forms */
+                 (c >= 0xfe30 && c <= 0xfe6f) || /* CJK Compatibility Forms */
+                 (c >= 0xff00 && c <= 0xff60) || /* Fullwidth Forms */
+                 (c >= 0xffe0 && c <= 0xffe6));
+                  // We can ignore these ranges because .Net strings use surrogate pairs
+                  // for this range and we do not handle surrogage pairs.
+                  // (c >= 0x20000 && c <= 0x2fffd) ||
+                  // (c >= 0x30000 && c <= 0x3fffd)
+            return 1 + (isWide ? 1 : 0);
+        }
+
+#endregion
+
 #region SendInput
 
         internal static void MimicKeyPress(INPUT[] inputs)
         {
             Dbg.Assert(inputs != null && inputs.Length > 0, "inputs should not be null or empty");
-            var numberOfSuccessfulEvents = NativeMethods.SendInput((uint)inputs.Length, inputs, ClrFacade.SizeOf<INPUT>());
+            var numberOfSuccessfulEvents = NativeMethods.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
 
             if (numberOfSuccessfulEvents == 0)
             {
@@ -3342,9 +2865,7 @@ namespace Microsoft.PowerShell
 #endregion SendInput
 
         /// <summary>
-        ///
         /// Class to hold the Native Methods used in this file enclosing class.
-        ///
         /// </summary>
 
         internal static class NativeMethods
@@ -3397,9 +2918,6 @@ namespace Microsoft.PowerShell
 
 #region Code Page
 
-            [DllImport(PinvokeDllNames.GetConsoleCPDllName, SetLastError = false, CharSet = CharSet.Unicode)]
-            internal static extern uint GetConsoleCP();
-
             [DllImport(PinvokeDllNames.GetConsoleOutputCPDllName, SetLastError = false, CharSet = CharSet.Unicode)]
             internal static extern uint GetConsoleOutputCP();
 
@@ -3413,15 +2931,6 @@ namespace Microsoft.PowerShell
 
             [DllImport(PinvokeDllNames.ReleaseDCDllName, SetLastError = false, CharSet = CharSet.Unicode)]
             internal static extern int ReleaseDC(HWND hwnd, HDC hdc);
-
-            [DllImport(PinvokeDllNames.TranslateCharsetInfoDllName, SetLastError = true, CharSet = CharSet.Unicode)]
-            internal static extern bool TranslateCharsetInfo(IntPtr src, out CHARSETINFO Cs, DWORD options);
-
-            [DllImport(PinvokeDllNames.GetTextMetricsDllName, SetLastError = true, CharSet = CharSet.Unicode)]
-            internal static extern bool GetTextMetrics(HDC hdc, out TEXTMETRIC tm);
-
-            [DllImport(PinvokeDllNames.GetCharWidth32DllName, SetLastError = true, CharSet = CharSet.Unicode)]
-            internal static extern bool GetCharWidth32(HDC hdc, uint first, uint last, out int width);
 
             [DllImport(PinvokeDllNames.FlushConsoleInputBufferDllName, SetLastError = true, CharSet = CharSet.Unicode)]
             internal static extern bool FlushConsoleInputBuffer(NakedWin32Handle consoleInput);
@@ -3468,7 +2977,6 @@ namespace Microsoft.PowerShell
             [DllImport(PinvokeDllNames.GetConsoleScreenBufferInfoDllName, SetLastError = true, CharSet = CharSet.Unicode)]
             internal static extern bool GetConsoleScreenBufferInfo(NakedWin32Handle consoleHandle, out CONSOLE_SCREEN_BUFFER_INFO consoleScreenBufferInfo);
 
-
             internal enum FileType
             {
                 Unknown,
@@ -3477,14 +2985,8 @@ namespace Microsoft.PowerShell
                 Pipe
             };
 
-            [DllImport(PinvokeDllNames.GetFileTypeDllName, SetLastError = true, CharSet = CharSet.Unicode)]
-            internal static extern FileType GetFileType(NakedWin32Handle fileHandle);
-
             [DllImport(PinvokeDllNames.GetLargestConsoleWindowSizeDllName, SetLastError = true, CharSet = CharSet.Unicode)]
             internal static extern COORD GetLargestConsoleWindowSize(NakedWin32Handle consoleOutput);
-
-            [DllImport(PinvokeDllNames.GetStdHandleDllName, SetLastError = true, CharSet = CharSet.Unicode)]
-            internal static extern IntPtr GetStdHandle(int handleId);
 
             [DllImport(PinvokeDllNames.ReadConsoleDllName, SetLastError = true, CharSet = CharSet.Unicode)]
             internal static extern bool ReadConsole
@@ -3563,10 +3065,6 @@ namespace Microsoft.PowerShell
             // There is no GetCurrentConsoleFontEx on Core
             [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
             internal static extern bool GetCurrentConsoleFontEx(NakedWin32Handle consoleOutput, bool bMaximumWindow, ref CONSOLE_FONT_INFO_EX consoleFontInfo);
-
-            // There is no SetCurrentConsoleFontEx on Core
-            [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-            internal static extern bool SetCurrentConsoleFontEx(NakedWin32Handle consoleOutput, bool bMaximumWindow, ref CONSOLE_FONT_INFO_EX consoleFontInfo);
 
             [DllImport(PinvokeDllNames.GetConsoleCursorInfoDllName, SetLastError = true, CharSet = CharSet.Unicode)]
             internal static extern bool GetConsoleCursorInfo(NakedWin32Handle consoleOutput, out CONSOLE_CURSOR_INFO consoleCursorInfo);

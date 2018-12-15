@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections;
@@ -22,11 +21,9 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// The value of the content to set.
         /// </summary>
-        ///
         /// <value>
         /// This value type is determined by the InvokeProvider.
         /// </value>
-        ///
         [Parameter(Mandatory = true, Position = 1, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
         [AllowNull]
         [AllowEmptyCollection]
@@ -35,13 +32,13 @@ namespace Microsoft.PowerShell.Commands
             get
             {
                 return _content;
-            } // get
+            }
 
             set
             {
                 _content = value;
             }
-        } // Value
+        }
 
         #endregion Parameters
 
@@ -60,7 +57,6 @@ namespace Microsoft.PowerShell.Commands
         /// This bool is used to determine if the path
         /// parameter was specified on the command line or via the pipeline.
         /// </summary>
-        ///
         private bool _pipingPaths;
 
         /// <summary>
@@ -188,16 +184,15 @@ namespace Microsoft.PowerShell.Commands
                     contentStreams = new List<ContentHolder>();
                 }
             }
-        } // ProcessRecord
+        }
 
         /// <summary>
         /// Closes all the content writers
         /// </summary>
-        ///
         protected override void EndProcessing()
         {
             Dispose(true);
-        } // EndProcessing
+        }
 
         #endregion Command code
 
@@ -208,24 +203,20 @@ namespace Microsoft.PowerShell.Commands
         /// from the provider. If the current position needs to be changed before writing
         /// the content, this method should be overridden to do that.
         /// </summary>
-        ///
         /// <param name="contentHolders">
         /// The content holders that contain the writers to be moved.
         /// </param>
-        ///
         internal virtual void SeekContentPosition(List<ContentHolder> contentHolders)
         {
             // default does nothing.
-        } // SeekContentPosition
+        }
 
         /// <summary>
         /// Called by the base class before the streams are open for the path.
         /// </summary>
-        ///
         /// <param name="paths">
         /// The path to the items that will be opened for writing content.
         /// </param>
-        ///
         internal virtual void BeforeOpenStreams(string[] paths)
         {
         }
@@ -235,16 +226,13 @@ namespace Microsoft.PowerShell.Commands
         /// that require dynamic parameters should override this method and return the
         /// dynamic parameter object.
         /// </summary>
-        ///
         /// <param name="context">
         /// The context under which the command is running.
         /// </param>
-        ///
         /// <returns>
         /// An object representing the dynamic parameters for the cmdlet or null if there
         /// are none.
         /// </returns>
-        ///
         internal override object GetDynamicParameters(CmdletProviderContext context)
         {
             if (Path != null && Path.Length > 0)
@@ -257,11 +245,9 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Gets the IContentWriters for the current path(s)
         /// </summary>
-        ///
         /// <returns>
         /// An array of IContentWriters for the current path(s)
         /// </returns>
-        ///
         internal List<ContentHolder> GetContentWriters(
             string[] writerPaths,
             CmdletProviderContext currentCommandContext)
@@ -330,10 +316,10 @@ namespace Microsoft.PowerShell.Commands
                         results.Add(holder);
                     }
                 }
-            } // foreach pathInfo in pathInfos
+            }
 
             return results;
-        } // GetContentWriters
+        }
 
         /// <summary>
         /// Gets the list of paths accepted by the user
@@ -359,5 +345,5 @@ namespace Microsoft.PowerShell.Commands
         }
 
         #endregion protected members
-    } // WriteContentCommandBase
-} // namespace Microsoft.PowerShell.Commands
+    }
+}

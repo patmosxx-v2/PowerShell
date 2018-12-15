@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections;
@@ -369,7 +368,7 @@ namespace System.Management.Automation
             _cimClassIdToClass.Add(key, cimClass);
 
             /* PRINTF DEBUG
-            Console.WriteLine("Contents of deserialization cache (after  a call to AddCimClassToCache ({0})):", key);
+            Console.WriteLine("Contents of deserialization cache (after a call to AddCimClassToCache ({0})):", key);
             Console.WriteLine("  Count = {0}", this._cimClassIdToClass.Count);
             foreach (var t in this._cimClassIdToClass.Keys)
             {
@@ -730,7 +729,7 @@ namespace System.Management.Automation
         /// </returns>
         internal static Collection<string> MaskDeserializationPrefix(Collection<string> typeNames)
         {
-            Dbg.Assert(null != typeNames, "typeNames cannot be null");
+            Dbg.Assert(typeNames != null, "typeNames cannot be null");
 
             bool atleastOneDeserializedTypeFound = false;
 
@@ -1060,9 +1059,7 @@ namespace System.Management.Automation
             return false;
         }
 
-
         /// <summary>
-        ///
         /// </summary>
         /// <param name="source"></param>
         /// <param name="streamName"></param>
@@ -1134,7 +1131,7 @@ namespace System.Management.Automation
                     {
                         // do nothing
                     }
-                } // if (source ...
+                }
             }
 
             return false;
@@ -2020,7 +2017,7 @@ namespace System.Management.Automation
                 }
                 catch (System.NotSupportedException)
                 {
-                    //ignore exceptions thrown when the enumerator doesn't support Reset() method as in  win8:948569
+                    //ignore exceptions thrown when the enumerator doesn't support Reset() method as in win8:948569
                 }
             }
             catch (Exception exception)
@@ -2178,11 +2175,9 @@ namespace System.Management.Automation
         /// This string is used for serializing the PSObject at depth 0
         /// or when pso.SerializationMethod == SerializationMethod.String.
         /// </summary>
-        ///
         /// <param name="source">
         /// PSObject to be converted to string
         /// </param>
-        ///
         /// <returns>
         /// string value to use for serializing this PSObject.
         /// </returns>
@@ -2503,7 +2498,6 @@ namespace System.Management.Automation
 
             WriteEncodedString(serializer, streamName, property, Convert.ToString(source, CultureInfo.InvariantCulture), entry);
         }
-
 
         /// <summary>
         /// Serialize string as item or property
@@ -2869,7 +2863,6 @@ namespace System.Management.Automation
             return new String(result, 0, rlen);
         }
 
-
         /// <summary>
         /// Writes element string in monad namespace
         /// </summary>
@@ -2962,7 +2955,6 @@ namespace System.Management.Automation
         private readonly ReferenceIdHandlerForDeserializer<ConsolidatedString> _typeRefIdHandler;
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="reader"></param>
         /// <param name="context"></param>
@@ -2978,6 +2970,35 @@ namespace System.Management.Automation
         }
 
         #endregion constructor
+
+        #region Known CIMTypes
+
+        private static Lazy<HashSet<Type>> s_knownCimArrayTypes = new Lazy<HashSet<Type>>(
+            () =>
+                new HashSet<Type>
+                {
+                    typeof(Boolean),
+                    typeof(byte),
+                    typeof(char),
+                    typeof(DateTime),
+                    typeof(Decimal),
+                    typeof(Double),
+                    typeof(Int16),
+                    typeof(Int32),
+                    typeof(Int64),
+                    typeof(SByte),
+                    typeof(Single),
+                    typeof(String),
+                    typeof(TimeSpan),
+                    typeof(UInt16),
+                    typeof(UInt32),
+                    typeof(UInt64),
+                    typeof(object),
+                    typeof(CimInstance)
+                }
+            );
+
+        #endregion
 
         #region deserialization
         /// <summary>
@@ -3186,7 +3207,7 @@ namespace System.Management.Automation
                     {
                         return false;
                     }
-                    if (!originalArrayType.IsArray)
+                    if (!originalArrayType.IsArray || !s_knownCimArrayTypes.Value.Contains(originalArrayType.GetElementType()))
                     {
                         return false;
                     }
@@ -3474,7 +3495,7 @@ namespace System.Management.Automation
 
                 bool isKnownPrimitiveType;
                 object result = ReadOneDeserializedObject(out streamName, out isKnownPrimitiveType);
-                if (null == result)
+                if (result == null)
                 {
                     return null;
                 }
@@ -3489,7 +3510,7 @@ namespace System.Management.Automation
 
                     // Convert deserialized object to a user-defined type (specified in a types.ps1xml file)
                     Type targetType = mshSource.GetTargetTypeForDeserialization(_typeTable);
-                    if (null != targetType)
+                    if (targetType != null)
                     {
                         Exception rehydrationException = null;
                         try
@@ -3730,7 +3751,6 @@ namespace System.Management.Automation
                     - 29 // size of <Obj><TNRef RefId="0"/></Obj> in UTF8 encoding
                     );
                 dso.InternalTypeNames = new ConsolidatedString(typeNames);
-
 
                 //Skip the node
                 Skip();
@@ -4026,15 +4046,11 @@ namespace System.Management.Automation
             xrs.IgnoreProcessingInstructions = true;
             xrs.IgnoreWhitespace = false;
             xrs.MaxCharactersFromEntities = 1024;
-            //xrs.DtdProcessing = DtdProcessing.Prohibit; //because system.management.automation needs to build as 2.0
-            //xrs.ProhibitDtd = true;
-#if !CORECLR
-            // XmlReaderSettings.Schemas/ValidationFlags/ValidationType/XmlResolver Not In CoreCLR
+            xrs.XmlResolver = null;
+            xrs.DtdProcessing = DtdProcessing.Prohibit;
             xrs.Schemas = null;
             xrs.ValidationFlags = System.Xml.Schema.XmlSchemaValidationFlags.None;
             xrs.ValidationType = ValidationType.None;
-            xrs.XmlResolver = null;
-#endif
             return xrs;
         }
 
@@ -4051,15 +4067,10 @@ namespace System.Management.Automation
             settings.IgnoreWhitespace = true;
             settings.MaxCharactersFromEntities = 1024;
             settings.MaxCharactersInDocument = 512 * 1024 * 1024; // 512M characters = 1GB
-
-#if CORECLR // DtdProcessing.Parse Not In CoreCLR
-            settings.DtdProcessing = DtdProcessing.Ignore;
-#else       // XmlReaderSettings.ValidationFlags/ValidationType/XmlResolver Not In CoreCLR
+            settings.XmlResolver = null;
             settings.DtdProcessing = DtdProcessing.Parse;   // Allowing DTD parsing with limits of MaxCharactersFromEntities/MaxCharactersInDocument
             settings.ValidationFlags = System.Xml.Schema.XmlSchemaValidationFlags.None;
             settings.ValidationType = ValidationType.None;
-            settings.XmlResolver = null;
-#endif
             return settings;
         }
 
@@ -4717,7 +4728,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Skips an element and all its  child elements.
+        /// Skips an element and all its child elements.
         /// Moves cursor to next content Node.
         /// </summary>
         private void Skip()
@@ -5177,12 +5188,6 @@ namespace System.Management.Automation
                                       InternalSerializer.WriteVersion,
                                       InternalDeserializer.DeserializeVersion),
 
-            new TypeSerializationInfo(typeof(SemanticVersion),
-                                      SerializationStrings.SemanticVersionTag,
-                                      SerializationStrings.SemanticVersionTag,
-                                      InternalSerializer.WriteSemanticVersion,
-                                      InternalDeserializer.DeserializeSemanticVersion),
-
             s_xdInfo,
 
             new TypeSerializationInfo(typeof(ProgressRecord),
@@ -5293,7 +5298,7 @@ namespace System.Management.Automation
             else
             {
                 Type gt = source.GetType();
-                if (gt.GetTypeInfo().IsGenericType)
+                if (gt.IsGenericType)
                 {
                     if (DerivesFromGenericType(gt, typeof(Stack<>)))
                     {
@@ -5367,14 +5372,14 @@ namespace System.Management.Automation
             Dbg.Assert(baseType != null, "caller should validate the parameter");
             while (derived != null)
             {
-                if (derived.GetTypeInfo().IsGenericType)
+                if (derived.IsGenericType)
                     derived = derived.GetGenericTypeDefinition();
 
                 if (derived == baseType)
                 {
                     return true;
                 }
-                derived = derived.GetTypeInfo().BaseType;
+                derived = derived.BaseType;
             }
             return false;
         }
@@ -5382,11 +5387,9 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets the "ToString" from PSObject.
         /// </summary>
-        ///
         /// <param name="source">
         /// PSObject to be converted to string
         /// </param>
-        ///
         /// <returns>
         /// "ToString" value
         /// </returns>
@@ -6405,14 +6408,14 @@ namespace System.Management.Automation
         /// <returns></returns>
         internal static PSPrimitiveDictionary CloneAndAddPSVersionTable(PSPrimitiveDictionary originalHash)
         {
-            if ((null != originalHash) &&
+            if ((originalHash != null) &&
                 (originalHash.ContainsKey(PSVersionInfo.PSVersionTableName)))
             {
                 return (PSPrimitiveDictionary)originalHash.Clone();
             }
 
             PSPrimitiveDictionary result = originalHash;
-            if (null != originalHash)
+            if (originalHash != null)
             {
                 result = (PSPrimitiveDictionary)originalHash.Clone();
             }
@@ -7115,9 +7118,7 @@ namespace Microsoft.PowerShell
 
             PSSenderInfo senderInfo = new PSSenderInfo(psPrincipal, GetPropertyValue<string>(pso, "ConnectionString"));
 
-#if !CORECLR // TimeZone Not In CoreCLR
-            senderInfo.ClientTimeZone = TimeZone.CurrentTimeZone;
-#endif
+            senderInfo.ClientTimeZone = TimeZoneInfo.Local;
             senderInfo.ApplicationArguments = GetPropertyValue<PSPrimitiveDictionary>(pso, "ApplicationArguments");
 
             return senderInfo;

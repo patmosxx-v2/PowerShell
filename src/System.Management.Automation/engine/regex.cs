@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
 
@@ -142,11 +141,8 @@ namespace System.Management.Automation
         /// <summary>
         /// Instantiate internal regex member if not already done.
         /// </summary>
-        ///
         /// <returns> true on success, false otherwise </returns>
-        ///
         /// <remarks>  </remarks>
-        ///
         private void Init()
         {
             if (_isMatch == null)
@@ -357,7 +353,7 @@ namespace System.Management.Automation
             }
 
             return s;
-        } // Unescape
+        }
 
         private static bool IsWildcardChar(char ch)
         {
@@ -408,7 +404,7 @@ namespace System.Management.Automation
         internal WildcardPatternException(ErrorRecord errorRecord)
             : base(RetrieveMessage(errorRecord))
         {
-            if (null == errorRecord)
+            if (errorRecord == null)
             {
                 throw new ArgumentNullException("errorRecord");
             }

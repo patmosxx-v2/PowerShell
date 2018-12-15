@@ -1,13 +1,16 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+#if !UNIX
 
 #region Using directives
 
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Management.Automation;
 using System.Management.Automation.Internal;
 
@@ -41,7 +44,7 @@ namespace Microsoft.PowerShell.Commands
         /// The literal path of the file to unblock
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "ByLiteralPath", ValueFromPipelineByPropertyName = true)]
-        [Alias("PSPath")]
+        [Alias("PSPath", "LP")]
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public string[] LiteralPath
         {
@@ -113,7 +116,14 @@ namespace Microsoft.PowerShell.Commands
             {
                 if (ShouldProcess(path))
                 {
-                    AlternateDataStreamUtilities.DeleteFileStream(path, "Zone.Identifier");
+                    try
+                    {
+                        AlternateDataStreamUtilities.DeleteFileStream(path, "Zone.Identifier");
+                    }
+                    catch (Exception e)
+                    {
+                        WriteError(new ErrorRecord(e, "RemoveItemUnableToAccessFile", ErrorCategory.ResourceUnavailable, path));
+                    }
                 }
             }
         }
@@ -153,3 +163,4 @@ namespace Microsoft.PowerShell.Commands
         }
     }
 }
+#endif

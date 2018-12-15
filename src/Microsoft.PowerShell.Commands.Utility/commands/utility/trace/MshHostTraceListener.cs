@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Text;
@@ -15,12 +14,10 @@ namespace Microsoft.PowerShell.Commands
     /// coming from a System.Management.Automation.TraceSwitch
     /// to be passed to the Msh host's RawUI methods.
     /// </summary>
-    ///
     /// <remarks>
     /// This trace listener cannot be specified in the app.config file.
     /// It must be added through the add-tracelistener cmdlet.
     /// </remarks>
-    ///
     internal class PSHostTraceListener
         : System.Diagnostics.TraceListener
     {
@@ -30,7 +27,7 @@ namespace Microsoft.PowerShell.Commands
         /// Default constructor used if no.
         /// </summary>
         internal PSHostTraceListener(PSCmdlet cmdlet)
-            : base("")
+            : base(string.Empty)
         {
             if (cmdlet == null)
             {
@@ -50,21 +47,14 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Closes the TraceListenerDialog so that it no longer
-        /// receives trace output.
+        /// Closes the TraceListenerDialog so that it no longer receives trace output.
         /// </summary>
-        ///
         /// <param name="disposing">
-        /// true if the TraceListener is being disposed, false
-        /// otherwise.
+        /// True if the TraceListener is being disposed, false otherwise.
         /// </param>
-        ///
         [SecurityPermission(SecurityAction.LinkDemand)]
         protected override void Dispose(bool disposing)
         {
-#if CORECLR
-            base.Dispose(disposing);
-#else
             try
             {
                 if (disposing)
@@ -76,31 +66,16 @@ namespace Microsoft.PowerShell.Commands
             {
                 base.Dispose(disposing);
             }
-#endif
         }
-
-#if !CORECLR
-        /// <summary>
-        /// Closes the dialog and then calls the base class Close
-        /// </summary>
-        [SecurityPermission(SecurityAction.LinkDemand)]
-        public override void Close()
-        {
-            // Call the base class close
-
-            base.Close();
-        }
-#endif
 
         #endregion TraceListener constructors and disposer
 
         /// <summary>
-        /// Sends the given output string to the host for processing
+        /// Sends the given output string to the host for processing.
         /// </summary>
         /// <param name="output">
-        /// The trace output to be written
+        /// The trace output to be written.
         /// </param>
-        ///
         [SecurityPermission(SecurityAction.LinkDemand)]
         public override void Write(string output)
         {
@@ -117,10 +92,10 @@ namespace Microsoft.PowerShell.Commands
         private StringBuilder _cachedWrite = new StringBuilder();
 
         /// <summary>
-        /// Sends the given output string to the host for processing
+        /// Sends the given output string to the host for processing.
         /// </summary>
         /// <param name="output">
-        /// The trace output to be written
+        /// The trace output to be written.
         /// </param>
         [SecurityPermission(SecurityAction.LinkDemand)]
         public override void WriteLine(string output)
@@ -143,5 +118,5 @@ namespace Microsoft.PowerShell.Commands
         /// The host interface to write the debug line to.
         /// </summary>
         private InternalHostUserInterface _ui;
-    } // class PSHostTraceListener
-} // namespace System.Management.Automation
+    }
+}

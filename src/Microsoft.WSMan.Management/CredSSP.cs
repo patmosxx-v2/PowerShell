@@ -1,6 +1,6 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 using System;
 using System.IO;
 using System.Reflection;
@@ -18,9 +18,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Security;
 using System.Threading;
-#if CORECLR
-using System.Xml.XPath;
-#endif
 
 using Dbg = System.Management.Automation;
 
@@ -55,35 +52,11 @@ namespace Microsoft.WSMan.Management
             set { role = value; }
         }
         private string role;
-
-        /*/// <summary>
-        /// Role can either "Client" or "Server".
-        /// </summary>
-        [Parameter(ParameterSetName = Client, Mandatory = true, Position = 0)]
-        public SwitchParameter ClientRole
-        {
-            get { return isClient; }
-            set { isClient = value; }
-        }
-        private bool isClient;
-
-        /// <summary>
-        ///
-        /// </summary>
-        [Parameter(ParameterSetName = Server, Mandatory = true, Position = 0)]
-        public SwitchParameter ServerRole
-        {
-            get { return isServer; }
-            set { isServer = value; }
-        }
-        private bool isServer;*/
-
         #endregion
 
         #region Utilities
 
         /// <summary>
-        ///
         /// </summary>
         /// <returns>
         /// Returns a session object upon successful creation..otherwise
@@ -122,7 +95,6 @@ namespace Microsoft.WSMan.Management
     /// access a second hop
     /// </summary>
 
-
     [Cmdlet(VerbsLifecycle.Disable, "WSManCredSSP", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=141438")]
     [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Cred")]
     [SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "SSP")]
@@ -138,7 +110,7 @@ namespace Microsoft.WSMan.Management
         {
             WSManHelper helper = new WSManHelper(this);
             IWSManSession m_SessionObj = CreateWSManSession();
-            if (null == m_SessionObj)
+            if (m_SessionObj == null)
             {
                 return;
             }
@@ -165,7 +137,6 @@ namespace Microsoft.WSMan.Management
                 }
                 m_SessionObj.Put(helper.CredSSP_RUri, inputXml, 0);
 
-#if !CORECLR
                 if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
                 {
                     this.DeleteUserDelegateSettings();
@@ -178,14 +149,6 @@ namespace Microsoft.WSMan.Management
                     thread.Start();
                     thread.Join();
                 }
-#else
-                {
-                    ThreadStart start = new ThreadStart(this.DeleteUserDelegateSettings);
-                    Thread thread = new Thread(start);
-                    thread.Start();
-                    thread.Join();
-                }
-#endif
 
                 if (!helper.ValidateCreadSSPRegistryRetry(false, null, applicationname))
                 {
@@ -213,7 +176,7 @@ namespace Microsoft.WSMan.Management
         {
             WSManHelper helper = new WSManHelper(this);
             IWSManSession m_SessionObj = CreateWSManSession();
-            if (null == m_SessionObj)
+            if (m_SessionObj == null)
             {
                 return;
             }
@@ -367,15 +330,6 @@ namespace Microsoft.WSMan.Management
         /// </summary>
         protected override void BeginProcessing()
         {
-#if !CORECLR
-            if (Environment.OSVersion.Version.Major < 6)
-            {
-                //OS is XP/Win2k3. Throw error.
-                WSManHelper helper = new WSManHelper(this);
-                string message = helper.FormatResourceMsgFromResourcetext("CmdletNotAvailable");
-                throw new InvalidOperationException(message);
-            }
-#endif
             //If not running elevated, then throw an "elevation required" error message.
             WSManHelper.ThrowIfNotAdministrator();
 
@@ -436,14 +390,6 @@ namespace Microsoft.WSMan.Management
     [SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "SSP")]
     public class EnableWSManCredSSPCommand : WSManCredSSPCommandBase, IDisposable/*, IDynamicParameters*/
     {
-        #region Private Data
-
-        //private const string DelegateComputerParam = "DelegateComputer";
-        //private String[] delegatecomputer;
-        //private RuntimeDefinedParameterDictionary dynamicParameters = new RuntimeDefinedParameterDictionary();
-
-        #endregion
-
         /// <summary>
         /// delegate parameter
         /// </summary>
@@ -485,16 +431,6 @@ namespace Microsoft.WSMan.Management
             //If not running elevated, then throw an "elevation required" error message.
             WSManHelper.ThrowIfNotAdministrator();
             helper = new WSManHelper(this);
-#if !CORECLR
-            if (Environment.OSVersion.Version.Major < 6)
-            {
-                //OS is XP/Win2k3. Throw error.
-                string message = helper.FormatResourceMsgFromResourcetext("CmdletNotAvailable");
-                throw new InvalidOperationException(message);
-            }
-#endif
-            //If not running elevated, then throw an "elevation required" error message.
-            WSManHelper.ThrowIfNotAdministrator();
 
             // DelegateComputer cannot be specified when Role is other than client
             if ((delegatecomputer != null) && !Role.Equals(Client, StringComparison.OrdinalIgnoreCase))
@@ -530,47 +466,10 @@ namespace Microsoft.WSMan.Management
             }
         }//End BeginProcessing()
 
-        /*
-        /// <summary>
-        /// This method returns DynamicParameters used for Enable-WSManCredSSP cmdlet. Enable-WSManCredSSP
-        /// supports -DelegateComputer parameter when -Role is client.
-        /// </summary>
-        /// <returns>
-        /// An object representing the dynamic parameters for the cmdlet or null if there
-        /// are none.
-        /// </returns>
-        object IDynamicParameters.GetDynamicParameters()
-        {
-            // return null if the role is not client.
-            if (!Role.Equals(ClientRole, StringComparison.OrdinalIgnoreCase))
-            {
-                return dynamicParameters;
-            }
-
-            // Construct attributes for the DelegateComputer parameter
-            Collection<Attribute> delegateComputerAttributeCollection = new Collection<Attribute>();
-            ParameterAttribute paramAttribute = new ParameterAttribute();
-            paramAttribute.Mandatory = true;
-            paramAttribute.Position = 1;
-            ValidateNotNullOrEmptyAttribute notNullAttribute = new ValidateNotNullOrEmptyAttribute();
-            delegateComputerAttributeCollection.Add(paramAttribute);
-            delegateComputerAttributeCollection.Add(notNullAttribute);
-
-            // Construct the parameter and return.
-            RuntimeDefinedParameter delegateComputer = new RuntimeDefinedParameter(
-                DelegateComputerParam,
-                typeof(string[]),
-                delegateComputerAttributeCollection);
-            dynamicParameters.Add(DelegateComputerParam, delegateComputer);
-
-            return dynamicParameters;
-
-        } // GetDynamicParameters*/
 
         #endregion
 
         /// <summary>
-        ///
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// </exception>
@@ -584,7 +483,7 @@ namespace Microsoft.WSMan.Management
             }
 
             IWSManSession m_SessionObj = CreateWSManSession();
-            if (null == m_SessionObj)
+            if (m_SessionObj == null)
             {
                 return;
             }
@@ -602,9 +501,6 @@ namespace Microsoft.WSMan.Management
                     WriteError(er);
                     return;
                 }
-                // Extract delegateComputer information from dynamic parameters collection
-                //RuntimeDefinedParameter delegateComputerParameter = dynamicParameters[DelegateComputerParam];
-                //delegatecomputer = (string[])delegateComputerParameter.Value;
 
                 string newxmlcontent = @"<cfg:Auth xmlns:cfg=""http://schemas.microsoft.com/wbem/wsman/1/config/client/auth""><cfg:CredSSP>true</cfg:CredSSP></cfg:Auth>";
                 try
@@ -613,7 +509,6 @@ namespace Microsoft.WSMan.Management
                     //push the xml string with credssp enabled
                     xmldoc.LoadXml(m_SessionObj.Put(helper.CredSSP_RUri, newxmlcontent, 0));
 
-#if !CORECLR // No ApartmentState In CoreCLR
                     // set the Registry using GroupPolicyObject
                     if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
                     {
@@ -627,14 +522,6 @@ namespace Microsoft.WSMan.Management
                         thread.Start();
                         thread.Join();
                     }
-#else
-                    {
-                        ThreadStart start = new ThreadStart(this.UpdateCurrentUserRegistrySettings);
-                        Thread thread = new Thread(start);
-                        thread.Start();
-                        thread.Join();
-                    }
-#endif
 
                     if (helper.ValidateCreadSSPRegistryRetry(true, delegatecomputer, applicationname))
                     {
@@ -674,7 +561,7 @@ namespace Microsoft.WSMan.Management
             }
 
             IWSManSession m_SessionObj = CreateWSManSession();
-            if (null == m_SessionObj)
+            if (m_SessionObj == null)
             {
                 return;
             }
@@ -725,7 +612,6 @@ namespace Microsoft.WSMan.Management
         }
 
         /// <summary>
-        ///
         /// </summary>
         private void UpdateCurrentUserRegistrySettings()
         {
@@ -768,11 +654,7 @@ namespace Microsoft.WSMan.Management
                 //open the registry key.If key is not present,create a new one
                 Credential_Delegation_Key = rootKey.OpenSubKey(Registry_Path_Credentials_Delegation, true);
                 if (Credential_Delegation_Key == null)
-                    Credential_Delegation_Key = rootKey.CreateSubKey(Registry_Path_Credentials_Delegation
-#if !CORECLR
-                        , RegistryKeyPermissionCheck.ReadWriteSubTree
-#endif
-                        );
+                    Credential_Delegation_Key = rootKey.CreateSubKey(Registry_Path_Credentials_Delegation, RegistryKeyPermissionCheck.ReadWriteSubTree);
 
                 Credential_Delegation_Key.SetValue(helper.Key_Allow_Fresh_Credentials, 1, RegistryValueKind.DWord);
                 Credential_Delegation_Key.SetValue(helper.Key_Concatenate_Defaults_AllowFresh, 1, RegistryValueKind.DWord);
@@ -780,11 +662,7 @@ namespace Microsoft.WSMan.Management
                 // add the delegate value
                 Allow_Fresh_Credential_Key = rootKey.OpenSubKey(Registry_Path_Credentials_Delegation + @"\" + helper.Key_Allow_Fresh_Credentials, true);
                 if (Allow_Fresh_Credential_Key == null)
-                    Allow_Fresh_Credential_Key = rootKey.CreateSubKey(Registry_Path_Credentials_Delegation + @"\" + helper.Key_Allow_Fresh_Credentials
-#if !CORECLR
-                        , RegistryKeyPermissionCheck.ReadWriteSubTree
-#endif
-                        );
+                    Allow_Fresh_Credential_Key = rootKey.CreateSubKey(Registry_Path_Credentials_Delegation + @"\" + helper.Key_Allow_Fresh_Credentials, RegistryKeyPermissionCheck.ReadWriteSubTree);
 
                 if (Allow_Fresh_Credential_Key != null)
                 {
@@ -823,7 +701,6 @@ namespace Microsoft.WSMan.Management
         void
         Dispose()
         {
-            //CleanUp();
             GC.SuppressFinalize(this);
         }
         /// <summary>
@@ -931,19 +808,7 @@ namespace Microsoft.WSMan.Management
         {
             //If not running elevated, then throw an "elevation required" error message.
             WSManHelper.ThrowIfNotAdministrator();
-
             helper = new WSManHelper(this);
-#if !CORECLR
-            if (Environment.OSVersion.Version.Major < 6)
-            {
-                //OS is XP/Win2k3. Throw error.
-                string message = helper.FormatResourceMsgFromResourcetext("CmdletNotAvailable");
-                throw new InvalidOperationException(message);
-            }
-#endif
-            //If not running elevated, then throw an "elevation required" error message.
-            WSManHelper.ThrowIfNotAdministrator();
-
             IWSManSession m_SessionObj = null;
             try
             {
@@ -1034,7 +899,6 @@ namespace Microsoft.WSMan.Management
         void
         Dispose()
         {
-            //CleanUp();
             GC.SuppressFinalize(this);
         }
         /// <summary>
@@ -1050,14 +914,7 @@ namespace Microsoft.WSMan.Management
 
         #endregion IDisposable Members
 
-
-
-
-
     }
-
-
-
 
     #endregion
 }

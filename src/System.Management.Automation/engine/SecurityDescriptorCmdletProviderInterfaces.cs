@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
 using System.Security.AccessControl;
@@ -11,7 +10,6 @@ namespace System.Management.Automation
     /// <summary>
     /// Provides the *-SecurityDescriptor noun for the cmdlet providers.
     /// </summary>
-    ///
     public sealed class SecurityDescriptorCmdletProviderIntrinsics
     {
         #region Constructors
@@ -24,14 +22,12 @@ namespace System.Management.Automation
             Dbg.Diagnostics.Assert(
                 false,
                 "This constructor should never be called. Only the constructor that takes an instance of SessionState should be called.");
-        } // CmdletProviderIntrinsics private
-
+        }
 
         /// <summary>
         /// Initializes a new instance of the SecurityDescriptorCmdletProviderIntrinsics
         /// class, using the Cmdlet parameter to obtain access to the SessionState APIs.
         /// </summary>
-        ///
         /// <param name="cmdlet">
         /// An instance of the cmdlet.
         /// </param>
@@ -44,13 +40,12 @@ namespace System.Management.Automation
 
             _cmdlet = cmdlet;
             _sessionState = cmdlet.Context.EngineSessionState;
-        } // CmdletProviderIntrinsics internal
+        }
 
         /// <summary>
         /// Initializes a new instance of the SecurityDescriptorCmdletProviderIntrinsics
         /// class, using the sessionState parameter to obtain access to the SessionState APIs.
         /// </summary>
-        ///
         /// <param name="sessionState">
         /// An instance of the real session state class.
         /// </param>
@@ -62,7 +57,7 @@ namespace System.Management.Automation
             }
 
             _sessionState = sessionState;
-        } // CmdletProviderIntrinsics internal
+        }
 
         #endregion Constructors
 
@@ -74,7 +69,6 @@ namespace System.Management.Automation
         /// Gets the SecurityDescriptor at the specified path, including only the specified
         /// AccessControlSections.
         /// </summary>
-        ///
         /// <param name="path">
         /// The path of the item to retrieve. It may be a drive or provider-qualified path and may include.
         /// glob characters.
@@ -82,7 +76,6 @@ namespace System.Management.Automation
         /// <param name="includeSections">
         /// The sections of the security descriptor to include.
         /// </param>
-        ///
         /// <returns>
         /// The SecurityDescriptor(s) at the specified path.
         /// </returns>
@@ -94,13 +87,12 @@ namespace System.Management.Automation
 
             // Parameter validation is done in the session state object
             return _sessionState.GetSecurityDescriptor(path, includeSections);
-        } // GetSecurityDescriptor
+        }
 
         /// <summary>
         /// Gets the SecurityDescriptor at the specified path, including only the specified
         /// AccessControlSections, using the provided Context.
         /// </summary>
-        ///
         /// <param name="path">
         /// The path of the item to retrieve. It may be a drive or provider-qualified path and may include
         /// glob characters.
@@ -111,7 +103,6 @@ namespace System.Management.Automation
         /// <param name="context">
         /// The context under which the command is running.
         /// </param>
-        ///
         /// <returns>
         /// Nothing. The object(s) at the specified path are written to the context.
         /// </returns>
@@ -125,7 +116,7 @@ namespace System.Management.Automation
 
             // Parameter validation is done in the session state object
             _sessionState.GetSecurityDescriptor(path, includeSections, context);
-        } // GetSecurityDescriptor
+        }
 
         #endregion GetSecurityDescriptor
 
@@ -134,7 +125,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Sets the provided SecurityDescriptor at the specified path.
         /// </summary>
-        ///
         /// <param name="path">
         /// The path of the item to set. It may be a drive or provider-qualified path and may include
         /// glob characters.
@@ -142,7 +132,6 @@ namespace System.Management.Automation
         /// <param name="sd">
         /// The new security descriptor to set.
         /// </param>
-        ///
         /// <returns>
         /// The SecurityDescriptor(s) set at the specified path.
         /// </returns>
@@ -156,12 +145,11 @@ namespace System.Management.Automation
             Collection<PSObject> result = _sessionState.SetSecurityDescriptor(path, sd);
 
             return result;
-        } // SetSecurityDescriptor
+        }
 
         /// <summary>
         /// Sets the SecurityDescriptor at the specified path, using the provided Context.
         /// </summary>
-        ///
         /// <param name="path">
         /// The path of the item to set. It may be a drive or provider-qualified path and may include
         /// glob characters.
@@ -172,7 +160,6 @@ namespace System.Management.Automation
         /// <param name="context">
         /// The context under which the command is running.
         /// </param>
-        ///
         /// <returns>
         /// Nothing. The object(s) set at the specified path are written to the context.
         /// </returns>
@@ -185,7 +172,7 @@ namespace System.Management.Automation
             // Parameter validation is done in the session state object
 
             _sessionState.SetSecurityDescriptor(path, sd, context);
-        } // SetSecurityDescriptor
+        }
 
         #endregion SetSecurityDescriptor
 
@@ -195,7 +182,6 @@ namespace System.Management.Automation
         /// Creates a new SecurityDescriptor from the item at the specified path, including only the specified
         /// AccessControlSections.
         /// </summary>
-        ///
         /// <param name="path">
         /// The path of the item to retrieve. It may be a drive or provider-qualified path and may include
         /// glob characters.
@@ -203,7 +189,6 @@ namespace System.Management.Automation
         /// <param name="includeSections">
         /// The sections of the security descriptor to include.
         /// </param>
-        ///
         /// <returns>
         /// The SecurityDescriptor(s) at the specified path.
         /// </returns>
@@ -215,14 +200,12 @@ namespace System.Management.Automation
 
             // Parameter validation is done in the session state object
             return _sessionState.NewSecurityDescriptorFromPath(path, includeSections);
-        } // NewSecurityDescriptor
-
+        }
 
         /// <summary>
         /// Creates a new SecurityDescriptor from the specified provider and of the given type,
         /// including only the specified AccessControlSections.
         /// </summary>
-        ///
         /// <param name="providerId">
         /// The name of the provider.
         /// </param>
@@ -233,11 +216,9 @@ namespace System.Management.Automation
         /// <param name="includeSections">
         /// The sections of the security descriptor to include.
         /// </param>
-        ///
         /// <returns>
         /// A new SecurityDescriptor of the specified type.
         /// </returns>
-        ///
         public ObjectSecurity NewOfType(string providerId, string type, AccessControlSections includeSections)
         {
             Dbg.Diagnostics.Assert(
@@ -249,7 +230,7 @@ namespace System.Management.Automation
             return _sessionState.NewSecurityDescriptorOfType(providerId,
                                                             type,
                                                             includeSections);
-        } // NewSecurityDescriptor
+        }
 
         #endregion NewSecurityDescriptor
 
@@ -261,6 +242,6 @@ namespace System.Management.Automation
         private SessionStateInternal _sessionState;
 
         #endregion private data
-    } // SecurityDescriptorCmdletProviderIntrinsics
+    }
 }
 

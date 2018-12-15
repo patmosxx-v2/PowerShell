@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
 using System.Management.Automation.Provider;
@@ -15,7 +14,6 @@ namespace System.Management.Automation
     /// <summary>
     /// Information about a loaded Cmdlet Provider
     /// </summary>
-    ///
     /// <remarks>
     /// A cmdlet provider may want to derive from this class to provide their
     /// own public members to expose to the user or to cache information related to the provider.
@@ -30,13 +28,12 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets the help file path for the provider.
         /// </summary>
-        public string HelpFile { get; } = "";
+        public string HelpFile { get; } = string.Empty;
 
         /// <summary>
         /// The instance of session state the provider belongs to.
         /// </summary>
         private SessionState _sessionState;
-
 
         /// <summary>
         /// Gets the name of the provider.
@@ -46,7 +43,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets the full name of the provider including the pssnapin name if available
         /// </summary>
-        ///
         internal string FullName
         {
             get
@@ -84,7 +80,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets the pssnapin name that the provider is implemented in.
         /// </summary>
-        ///
         internal string PSSnapInName
         {
             get
@@ -105,7 +100,7 @@ namespace System.Management.Automation
                 string psHome = null;
                 try
                 {
-                    psHome = Utils.GetApplicationBase(Utils.DefaultPowerShellShellID);
+                    psHome = Utils.DefaultPowerShellAppBase;
                 }
                 catch (System.Security.SecurityException)
                 {
@@ -175,20 +170,19 @@ namespace System.Management.Automation
                     }
                 }
                 return _capabilities;
-            } // get
-        } // Capabilities
+            }
+        }
         private ProviderCapabilities _capabilities = ProviderCapabilities.None;
         private bool _capabilitiesRead;
 
         /// <summary>
         /// Gets or sets the home for the provider.
         /// </summary>
-        ///
         /// <remarks>
         /// The location can be either a fully qualified provider path
         /// or an Msh path. This is the location that is substituted for the ~.
         /// </remarks>
-        public string Home { get; set; } // Home
+        public string Home { get; set; }
 
         /// <summary>
         /// Gets an enumeration of drives that are available for
@@ -199,8 +193,8 @@ namespace System.Management.Automation
             get
             {
                 return _sessionState.Drive.GetAllForProvider(FullName);
-            } // get
-        } // Drives
+            }
+        }
 
         /// <summary>
         /// A hidden drive for the provider that is used for setting
@@ -212,19 +206,17 @@ namespace System.Management.Automation
         /// Gets the hidden drive for the provider that is used
         /// for setting a location to a provider-qualified path.
         /// </summary>
-        ///
         internal PSDriveInfo HiddenDrive
         {
             get
             {
                 return _hiddenDrive;
-            } // get
-        } // HiddenDrive
+            }
+        }
 
         /// <summary>
         /// Gets the string representation of the instance which is the name of the provider.
         /// </summary>
-        ///
         /// <returns>
         /// The name of the provider. If single-shell, the name is pssnapin-qualified. If custom-shell,
         /// the name is just the provider name.
@@ -258,18 +250,15 @@ namespace System.Management.Automation
         /// Constructs an instance of the class using an existing reference
         /// as a template.
         /// </summary>
-        ///
         /// <param name="providerInfo">
         /// The provider information to copy to this instance.
         /// </param>
-        ///
         /// <remarks>
         /// This constructor should be used by derived types to easily copying
         /// the base class members from an existing ProviderInfo.
         /// This is designed for use by a <see cref="System.Management.Automation.Provider.CmdletProvider"/>
         /// during calls to their <see cref="System.Management.Automation.Provider.CmdletProvider.Start(ProviderInfo)"/> method.
         /// </remarks>
-        ///
         /// <exception cref="ArgumentNullException">
         /// If <paramref name="providerInfo"/> is null.
         /// </exception>
@@ -295,39 +284,30 @@ namespace System.Management.Automation
         /// <summary>
         /// Constructor for the ProviderInfo class.
         /// </summary>
-        ///
         /// <param name="sessionState">
         /// The instance of session state that the provider is being added to.
         /// </param>
-        ///
         /// <param name="implementingType">
         /// The type that implements the provider
         /// </param>
-        ///
         /// <param name="name">
         /// The name of the provider.
         /// </param>
-        ///
         /// <param name="helpFile">
         /// The help file for the provider.
         /// </param>
-        ///
         /// <param name="psSnapIn">
         /// The Snap-In name for the provider.
         /// </param>
-        ///
         /// <exception cref="ArgumentException">
         /// If <paramref name="name"/> is null or empty.
         /// </exception>
-        ///
         /// <exception cref="ArgumentNullException">
         /// If <paramref name="sessionState"/> is null.
         /// </exception>
-        ///
         /// <exception cref="ArgumentNullException">
         /// If <paramref name="implementingType"/> is null.
         /// </exception>
-        ///
         internal ProviderInfo(
             SessionState sessionState,
             Type implementingType,
@@ -338,48 +318,37 @@ namespace System.Management.Automation
         {
         }
 
-
         /// <summary>
         /// Constructor for the ProviderInfo class.
         /// </summary>
-        ///
         /// <param name="sessionState">
         /// The instance of session state that the provider is being added to.
         /// </param>
-        ///
         /// <param name="implementingType">
         /// The type that implements the provider
         /// </param>
-        ///
         /// <param name="name">
         /// The alternate name to use for the provider instead of the one specified
         /// in the .cmdletprovider file.
         /// </param>
-        ///
         /// <param name="description">
         /// The description of the provider.
         /// </param>
-        ///
         /// <param name="home">
         /// The home path for the provider. This must be an MSH path.
         /// </param>
-        ///
         /// <param name="helpFile">
         /// The help file for the provider.
         /// </param>
-        ///
         /// <param name="psSnapIn">
         /// The Snap-In for the provider.
         /// </param>
-        ///
         /// <exception cref="ArgumentNullException">
         /// If <paramref name="implementingType"/> or <paramref name="sessionState"/> is null.
         /// </exception>
-        ///
         /// <exception cref="ArgumentException">
         /// If <paramref name="name"/> is null or empty.
         /// </exception>
-        ///
         internal ProviderInfo(
             SessionState sessionState,
             Type implementingType,
@@ -405,12 +374,6 @@ namespace System.Management.Automation
                 throw PSTraceSource.NewArgumentException("name");
             }
 
-
-            if (String.IsNullOrEmpty(name))
-            {
-                throw PSTraceSource.NewArgumentException("name");
-            }
-
             _sessionState = sessionState;
 
             Name = name;
@@ -420,9 +383,6 @@ namespace System.Management.Automation
             HelpFile = helpFile;
             PSSnapIn = psSnapIn;
 
-#if SUPPORTS_CMDLETPROVIDER_FILE
-            LoadProviderFromPath(path);
-#endif
             // Create the hidden drive. The name doesn't really
             // matter since we are not adding this drive to a scope.
 
@@ -430,8 +390,8 @@ namespace System.Management.Automation
                 new PSDriveInfo(
                     this.FullName,
                     this,
-                    "",
-                    "",
+                    string.Empty,
+                    string.Empty,
                     null);
 
             _hiddenDrive.Hidden = true;
@@ -444,71 +404,16 @@ namespace System.Management.Automation
             }
         }
 
-#if SUPPORTS_CMDLETPROVIDER_FILE
-        /// <summary>
-        /// Loads the provider from the specified path.
-        /// </summary>
-        ///
-        /// <param name="path">
-        /// The path to a .cmdletprovider file to load the provider from.
-        /// </param>
-        ///
-        /// <exception cref="ArgumentException">
-        /// If <paramref name="path"/> is null or empty.
-        /// </exception>
-        ///
-        /// <exception cref="FileLoadException">
-        /// The file specified by <paramref name="path"/> could
-        /// not be loaded as an XML document.
-        /// </exception>
-        ///
-        /// <exception cref="FormatException">
-        /// If <paramref name="path"/> refers to a file that does
-        /// not adhere to the appropriate CmdletProvider file format.
-        /// </exception>
-        ///
-        private void LoadProviderFromPath(string path)
-        {
-            if (String.IsNullOrEmpty(path))
-            {
-                throw tracer.NewArgumentException("path");
-            }
-
-            Internal.CmdletProviderFileReader reader =
-                Internal.CmdletProviderFileReader.CreateCmdletProviderFileReader(path);
-
-            // Read the assembly info from the file
-            assemblyInfo = reader.AssemblyInfo;
-
-            // Read the type name from the file
-            providerImplementationClassName = reader.TypeName;
-
-            helpFile = reader.HelpFilePath;
-
-            // Read the capabilities from the file
-            capabilities = reader.Capabilities;
-            capabilitiesRead = true;
-
-            if (String.IsNullOrEmpty(name))
-            {
-                name = reader.Name;
-            }
-        } // LoadProviderFromPath
-#endif
-
         /// <summary>
         /// Determines if the passed in name is either the fully-qualified pssnapin name or
         /// short name of the provider.
         /// </summary>
-        ///
         /// <param name="providerName">
         /// The name to compare with the provider name.
         /// </param>
-        ///
         /// <returns>
         /// True if the name is the fully-qualified pssnapin name or the short name of the provider.
         /// </returns>
-        ///
         internal bool NameEquals(string providerName)
         {
             PSSnapinQualifiedName qualifiedProviderName = PSSnapinQualifiedName.GetInstance(providerName);
@@ -596,16 +501,13 @@ namespace System.Management.Automation
         /// <summary>
         /// Creates an instance of the provider
         /// </summary>
-        ///
         /// <returns>
         /// An instance of the provider or null if one could not be created.
         /// </returns>
-        ///
         /// <exception cref="ProviderNotFoundException">
         /// If an instance of the provider could not be created because the
         /// type could not be found in the assembly.
         /// </exception>
-        ///
         internal Provider.CmdletProvider CreateInstance()
         {
             // It doesn't really seem that using thread local storage to store an
@@ -739,7 +641,6 @@ namespace System.Management.Automation
             }
             return _noteProperty;
         }
-    } // class ProviderInfo
-} // namespace System.Management.Automation
-
+    }
+}
 

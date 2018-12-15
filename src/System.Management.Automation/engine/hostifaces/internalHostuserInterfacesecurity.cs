@@ -1,7 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
-
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Management.Automation.Host;
 using System.Management.Automation.Runspaces;
@@ -13,9 +11,7 @@ namespace System.Management.Automation.Internal.Host
     class InternalHostUserInterface : PSHostUserInterface
     {
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
 
         public override
@@ -35,9 +31,7 @@ namespace System.Management.Automation.Internal.Host
         }
 
         /// <summary>
-        ///
         /// See base class
-        ///
         /// </summary>
 
         public override

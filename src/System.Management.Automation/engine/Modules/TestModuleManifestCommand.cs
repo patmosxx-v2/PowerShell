@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.ObjectModel;
@@ -24,6 +23,19 @@ namespace Microsoft.PowerShell.Commands
     [OutputType(typeof(PSModuleInfo))]
     public sealed class TestModuleManifestCommand : ModuleCmdletBase
     {
+        /// <summary>
+        /// Creates an instance of the Test-ModuleManifest command.
+        /// </summary>
+        public TestModuleManifestCommand()
+        {
+            // Test-ModuleManifest reads a manifest with ModuleCmdletBase.LoadModuleManifest().
+            // This will error on an edition-incompatible manifest loaded from the System32 path,
+            // unless BaseSkipEditionCheck is true. Since Test-ModuleManifest shouldn't care about
+            // module edition (it just tests manifest validity), we always want to set this rather
+            // than provide it as a switch on the cmdlet.
+            BaseSkipEditionCheck = true;
+        }
+
         /// <summary>
         /// The output path for the generated file...
         /// </summary>
@@ -132,7 +144,7 @@ namespace Microsoft.PowerShell.Commands
                         }
 
                         //RootModule can be null, empty string or point to a valid .psm1, , .cdxml, .xaml or .dll.  Anything else is invalid.
-                        if (module.RootModule != null && module.RootModule != "")
+                        if (module.RootModule != null && module.RootModule != string.Empty)
                         {
                             string rootModuleExt = System.IO.Path.GetExtension(module.RootModule);
                             if ((!IsValidFilePath(module.RootModule, module, true) && !IsValidGacAssembly(module.RootModule)) ||
@@ -145,7 +157,7 @@ namespace Microsoft.PowerShell.Commands
                                 string errorMsg = StringUtil.Format(Modules.InvalidModuleManifest, module.RootModule, filePath);
                                 var errorRecord = new ErrorRecord(new ArgumentException(errorMsg), "Modules_InvalidRootModuleInModuleManifest",
                                         ErrorCategory.InvalidArgument, _path);
-                                WriteError(errorRecord);                            
+                                WriteError(errorRecord);
                             }
                         }
 
@@ -160,7 +172,7 @@ namespace Microsoft.PowerShell.Commands
                             foreach (ModuleSpecification nestedModule in nestedModules)
                             {
                                 if (!IsValidFilePath(nestedModule.Name, module, true)
-                                    && !IsValidFilePath(nestedModule.Name + StringLiterals.DependentWorkflowAssemblyExtension, module, true)
+                                    && !IsValidFilePath(nestedModule.Name + StringLiterals.PowerShellILAssemblyExtension, module, true)
                                     && !IsValidFilePath(nestedModule.Name + StringLiterals.PowerShellNgenAssemblyExtension, module, true)
                                     && !IsValidFilePath(nestedModule.Name + StringLiterals.PowerShellModuleFileExtension, module, true)
                                     && !IsValidGacAssembly(nestedModule.Name))
@@ -183,7 +195,7 @@ namespace Microsoft.PowerShell.Commands
                         {
                             foreach (ModuleSpecification requiredModule in requiredModules)
                             {
-                                var modules = GetModule(new[] { requiredModule.Name }, false, true);
+                                var modules = GetModule(new[] { requiredModule.Name }, all: false, refresh: true);
                                 if (modules.Count == 0)
                                 {
                                     string errorMsg = StringUtil.Format(Modules.InvalidRequiredModulesinModuleManifest, requiredModule.Name, filePath);
@@ -216,7 +228,7 @@ namespace Microsoft.PowerShell.Commands
                         {
                             foreach (ModuleSpecification moduleListModule in moduleListModules)
                             {
-                                var modules = GetModule(new[] { moduleListModule.Name }, true, true);
+                                var modules = GetModule(new[] { moduleListModule.Name }, all: false, refresh: true);
                                 if (modules.Count == 0)
                                 {
                                     string errorMsg = StringUtil.Format(Modules.InvalidModuleListinModuleManifest, moduleListModule.Name, filePath);
@@ -310,11 +322,11 @@ namespace Microsoft.PowerShell.Commands
                     string message = StringUtil.Format(Modules.InvalidModuleManifestPath, path);
                     InvalidOperationException ioe = new InvalidOperationException(message);
                     ErrorRecord er = new ErrorRecord(ioe, "Modules_InvalidModuleManifestPath", ErrorCategory.InvalidArgument, path);
-                    ThrowTerminatingError(er);                    
+                    ThrowTerminatingError(er);
                 }
                 path = pathInfos[0].Path;
 
-                // First, we validate if the path  does exist.
+                // First, we validate if the path does exist.
                 if (!File.Exists(path) && !Directory.Exists(path))
                 {
                     return false;
@@ -350,9 +362,9 @@ namespace Microsoft.PowerShell.Commands
             string gacPath = System.Environment.GetEnvironmentVariable("windir") + "\\Microsoft.NET\\assembly";
             string assemblyFile = assemblyName;
             string ngenAssemblyFile = assemblyName;
-            if (!assemblyName.EndsWith(StringLiterals.DependentWorkflowAssemblyExtension, StringComparison.OrdinalIgnoreCase))
+            if (!assemblyName.EndsWith(StringLiterals.PowerShellILAssemblyExtension, StringComparison.OrdinalIgnoreCase))
             {
-                assemblyFile = assemblyName + StringLiterals.DependentWorkflowAssemblyExtension;
+                assemblyFile = assemblyName + StringLiterals.PowerShellILAssemblyExtension;
                 ngenAssemblyFile = assemblyName + StringLiterals.PowerShellNgenAssemblyExtension;
             }
             try
@@ -379,4 +391,4 @@ namespace Microsoft.PowerShell.Commands
     }
 
     #endregion
-} // Microsoft.PowerShell.Commands
+}

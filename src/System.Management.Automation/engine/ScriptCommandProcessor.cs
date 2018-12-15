@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -18,10 +17,9 @@ namespace System.Management.Automation
     internal abstract class ScriptCommandProcessorBase : CommandProcessorBase
     {
         protected ScriptCommandProcessorBase(ScriptBlock scriptBlock, ExecutionContext context, bool useLocalScope, CommandOrigin origin, SessionStateInternal sessionState)
+            : base(new ScriptInfo(String.Empty, scriptBlock, context))
         {
             this._dontUseScopeCommandOrigin = false;
-            this.CommandInfo = new ScriptInfo(String.Empty, scriptBlock, context);
-
             this._fromScriptFile = false;
 
             CommonInitialization(scriptBlock, context, useLocalScope, origin, sessionState);
@@ -164,7 +162,6 @@ namespace System.Management.Automation
     /// This class implements a command processor for script related commands.
     /// </summary>
     /// <remarks>
-    ///
     /// 1. Usage scenarios
     ///
     /// ScriptCommandProcessor is used for four kinds of commands.
@@ -228,7 +225,6 @@ namespace System.Management.Automation
     /// If the command processor is created based on a script file, its exit exception
     /// handling is different in the sense that it indicates an exitcode instead of killing
     /// current powershell session.
-    ///
     /// </remarks>
     internal sealed class DlrScriptCommandProcessor : ScriptCommandProcessorBase
     {
@@ -269,6 +265,12 @@ namespace System.Management.Automation
             _obsoleteAttribute = _scriptBlock.ObsoleteAttribute;
             _runOptimizedCode = _scriptBlock.Compile(optimized: _context._debuggingMode > 0 ? false : UseLocalScope);
             _localsTuple = _scriptBlock.MakeLocalsTuple(_runOptimizedCode);
+
+            if (UseLocalScope)
+            {
+                Diagnostics.Assert(CommandScope.LocalsTuple == null, "a newly created scope shouldn't have it's tuple set.");
+                CommandScope.LocalsTuple = _localsTuple;
+            }
         }
 
         /// <summary>
@@ -282,12 +284,6 @@ namespace System.Management.Automation
 
         internal override void Prepare(IDictionary psDefaultParameterValues)
         {
-            if (UseLocalScope)
-            {
-                Diagnostics.Assert(CommandScope.LocalsTuple == null, "a newly created scope shouldn't have it's tuple set.");
-                CommandScope.LocalsTuple = _localsTuple;
-            }
-
             _localsTuple.SetAutomaticVariable(AutomaticVariable.MyInvocation, this.Command.MyInvocation, _context);
             _scriptBlock.SetPSScriptRootAndPSCommandPath(_localsTuple, _context);
             _functionContext = new FunctionContext
@@ -480,7 +476,26 @@ namespace System.Management.Automation
                         Context.LanguageMode = newLanguageMode.Value;
                     }
 
-                    EnterScope();
+                    bool? oldLangModeTransitionStatus = null;
+                    try
+                    {
+                        // If it's from ConstrainedLanguage to FullLanguage, indicate the transition before parameter binding takes place.
+                        if (oldLanguageMode == PSLanguageMode.ConstrainedLanguage && newLanguageMode == PSLanguageMode.FullLanguage)
+                        {
+                            oldLangModeTransitionStatus = Context.LanguageModeTransitionInParameterBinding;
+                            Context.LanguageModeTransitionInParameterBinding = true;
+                        }
+
+                        EnterScope();
+                    }
+                    finally
+                    {
+                        if (oldLangModeTransitionStatus.HasValue)
+                        {
+                            // Revert the transition state to old value after doing the parameter binding
+                            Context.LanguageModeTransitionInParameterBinding = oldLangModeTransitionStatus.Value;
+                        }
+                    }
 
                     if (commandRuntime.ErrorMergeTo == MshCommandRuntime.MergeDataStream.Output)
                     {
@@ -585,6 +600,8 @@ namespace System.Management.Automation
 
         protected override void OnSetCurrentScope()
         {
+            // When dotting a script, push the locals of automatic variables to
+            // the 'DottedScopes' of the current scope.
             if (!UseLocalScope)
             {
                 CommandSessionState.CurrentScope.DottedScopes.Push(_localsTuple);
@@ -593,6 +610,8 @@ namespace System.Management.Automation
 
         protected override void OnRestorePreviousScope()
         {
+            // When dotting a script, pop the locals of automatic variables from
+            // the 'DottedScopes' of the current scope.
             if (!UseLocalScope)
             {
                 CommandSessionState.CurrentScope.DottedScopes.Pop();

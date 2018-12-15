@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections;
@@ -132,7 +131,6 @@ namespace Microsoft.PowerShell.Commands
         }
         private long[] _instanceIds = null;
 
-
         /// <summary>
         /// match eventlog entries by the Index
         /// gets or sets an array of indexes
@@ -151,7 +149,6 @@ namespace Microsoft.PowerShell.Commands
             }
         }
         private int[] _indexes = null;
-
 
         /// <summary>
         /// match eventlog entries by the EntryType
@@ -223,7 +220,6 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(ParameterSetName = "List")]
         public SwitchParameter List { get; set; }
-
 
         /// <summary>
         /// Return the log names rather than the EventLog objects
@@ -311,7 +307,7 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
             }
-        } // ProcessRecord
+        }
         #endregion Overrides
 
         #region Private
@@ -407,7 +403,7 @@ namespace Microsoft.PowerShell.Commands
                         + ": " + e.Message);
                     throw;
                 }
-                if ((null != entry) &&
+                if ((entry != null) &&
                 ((lastindex == Int32.MinValue
                   || lastindex - entry.Index == 1)))
                 {
@@ -437,12 +433,10 @@ namespace Microsoft.PowerShell.Commands
             }
             if (!matchesfound && _isThrowError)
             {
-                Exception Ex = new ArgumentException(StringUtil.Format(EventlogResources.NoEntriesFound, log.Log, ""));
+                Exception Ex = new ArgumentException(StringUtil.Format(EventlogResources.NoEntriesFound, log.Log, string.Empty));
                 WriteError(new ErrorRecord(Ex, "GetEventLogNoEntriesFound", ErrorCategory.ObjectNotFound, null));
             }
         }
-
-
 
         private bool FiltersMatch(EventLogEntry entry)
         {
@@ -465,7 +459,7 @@ namespace Microsoft.PowerShell.Commands
                 bool entrymatch = false;
                 foreach (string type in _entryTypes)
                 {
-                    if (type.Equals(entry.EntryType.ToString(), StringComparison.CurrentCultureIgnoreCase))
+                    if (type.Equals(entry.EntryType.ToString(), StringComparison.OrdinalIgnoreCase))
                     {
                         entrymatch = true;
                         break;
@@ -614,7 +608,6 @@ namespace Microsoft.PowerShell.Commands
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public string[] LogName { get; set; }
 
-
         /// <summary>
         /// Clear eventlog entries from these Computers.
         /// </summary>
@@ -636,7 +629,7 @@ namespace Microsoft.PowerShell.Commands
             string computer = string.Empty;
             foreach (string compName in ComputerName)
             {
-                if ((compName.Equals("localhost", StringComparison.CurrentCultureIgnoreCase)) || (compName.Equals(".", StringComparison.OrdinalIgnoreCase)))
+                if ((compName.Equals("localhost", StringComparison.OrdinalIgnoreCase)) || (compName.Equals(".", StringComparison.OrdinalIgnoreCase)))
                 {
                     computer = "localhost";
                 }
@@ -706,7 +699,6 @@ namespace Microsoft.PowerShell.Commands
         [ValidateNotNullOrEmpty]
         public string LogName { get; set; }
 
-
         /// <summary>
         /// The source by which the application is registered on the specified computer.
         /// </summary>
@@ -748,7 +740,6 @@ namespace Microsoft.PowerShell.Commands
         [ValidateLength(0, 32766)]
         public string Message { get; set; }
 
-
         /// <summary>
         /// Write eventlog entries of this log
         /// </summary>
@@ -786,7 +777,7 @@ namespace Microsoft.PowerShell.Commands
         protected override void BeginProcessing()
         {
             string _computerName = string.Empty;
-            if ((ComputerName.Equals("localhost", StringComparison.CurrentCultureIgnoreCase)) || (ComputerName.Equals(".", StringComparison.OrdinalIgnoreCase)))
+            if ((ComputerName.Equals("localhost", StringComparison.OrdinalIgnoreCase)) || (ComputerName.Equals(".", StringComparison.OrdinalIgnoreCase)))
             {
                 _computerName = "localhost";
             }
@@ -942,7 +933,7 @@ namespace Microsoft.PowerShell.Commands
             string computer = string.Empty;
             foreach (string compname in ComputerName)
             {
-                if ((compname.Equals("localhost", StringComparison.CurrentCultureIgnoreCase)) || (compname.Equals(".", StringComparison.OrdinalIgnoreCase)))
+                if ((compname.Equals("localhost", StringComparison.OrdinalIgnoreCase)) || (compname.Equals(".", StringComparison.OrdinalIgnoreCase)))
                 {
                     computer = "localhost";
                 }
@@ -1150,7 +1141,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// The following is the definition of the input parameter "LogName".
         /// Specifies the name of the log
-        ///
         /// </summary>
         [Parameter(Mandatory = true,
                    Position = 0)]
@@ -1212,7 +1202,7 @@ namespace Microsoft.PowerShell.Commands
             string computer = string.Empty;
             foreach (string compname in ComputerName)
             {
-                if ((compname.Equals("localhost", StringComparison.CurrentCultureIgnoreCase)) || (compname.Equals(".", StringComparison.OrdinalIgnoreCase)))
+                if ((compname.Equals("localhost", StringComparison.OrdinalIgnoreCase)) || (compname.Equals(".", StringComparison.OrdinalIgnoreCase)))
                 {
                     computer = "localhost";
                 }
@@ -1318,7 +1308,6 @@ namespace Microsoft.PowerShell.Commands
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public String[] Source { get; set; }
 
-
         /// <summary>
         /// BeginProcessing method.
         /// </summary>
@@ -1329,7 +1318,7 @@ namespace Microsoft.PowerShell.Commands
                 string computer = string.Empty;
                 foreach (string compName in ComputerName)
                 {
-                    if ((compName.Equals("localhost", StringComparison.CurrentCultureIgnoreCase)) || (compName.Equals(".", StringComparison.OrdinalIgnoreCase)))
+                    if ((compName.Equals("localhost", StringComparison.OrdinalIgnoreCase)) || (compName.Equals(".", StringComparison.OrdinalIgnoreCase)))
                     {
                         computer = "localhost";
                     }
@@ -1382,7 +1371,7 @@ namespace Microsoft.PowerShell.Commands
                                 }
                                 else
                                 {
-                                    ErrorRecord er = new ErrorRecord(new InvalidOperationException(StringUtil.Format(EventlogResources.SourceDoesNotExist, "", computer, src)), null, ErrorCategory.InvalidOperation, null);
+                                    ErrorRecord er = new ErrorRecord(new InvalidOperationException(StringUtil.Format(EventlogResources.SourceDoesNotExist, string.Empty, computer, src)), null, ErrorCategory.InvalidOperation, null);
                                     WriteError(er);
                                     continue;
                                 }

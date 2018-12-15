@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -8,11 +7,9 @@ using System.Collections.Generic;
 namespace System.Management.Automation
 {
     /// <summary>
-    ///
     /// Class HelpProviderWithCache provides a pseudo implementation of HelpProvider
     /// at which results are cached in a hashtable so that later retrieval can be
     /// faster.
-    ///
     /// </summary>
     internal abstract class HelpProviderWithCache : HelpProvider
     {
@@ -124,7 +121,7 @@ namespace System.Management.Automation
             if (!this.CacheFullyLoaded)
             {
                 IEnumerable<HelpInfo> result = DoSearchHelp(searchHelpRequest);
-                if (null != result)
+                if (result != null)
                 {
                     foreach (HelpInfo helpInfoToReturn in result)
                     {

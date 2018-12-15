@@ -1,6 +1,5 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
@@ -10,8 +9,8 @@ using System.Reflection;
 namespace Microsoft.PowerShell.Commands
 {
     /// <summary>
-    /// The ConvertFrom-Json command
-    /// This command convert a Json string representation to a JsonObject
+    /// The ConvertFrom-Json command.
+    /// This command converts a Json string representation to a JsonObject.
     /// </summary>
     [Cmdlet(VerbsData.ConvertFrom, "Json", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=217031", RemotingCapability = RemotingCapability.None)]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
@@ -20,43 +19,26 @@ namespace Microsoft.PowerShell.Commands
         #region parameters
 
         /// <summary>
-        /// gets or sets the InputString property
+        /// Gets or sets the InputString property.
         /// </summary>
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         [AllowEmptyString]
         public string InputObject { get; set; }
 
         /// <summary>
-        /// inputObjectBuffer buffers all InputObjet contents available in the pipeline.
+        /// InputObjectBuffer buffers all InputObject contents available in the pipeline.
         /// </summary>
         private List<string> _inputObjectBuffer = new List<string>();
+
+        /// <summary>
+        /// Returned data structure is a Hashtable instead a CustomPSObject.
+        /// </summary>
+        [Parameter()]
+        public SwitchParameter AsHashtable { get; set; }
 
         #endregion parameters
 
         #region overrides
-
-        /// <summary>
-        /// Prerequisite checks
-        /// </summary>
-        protected override void BeginProcessing()
-        {
-#if CORECLR
-            JsonObject.ImportJsonDotNetModule(this);
-#else
-            try
-            {
-                System.Reflection.Assembly.Load(new AssemblyName("System.Web.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"));
-            }
-            catch (System.IO.FileNotFoundException)
-            {
-                ThrowTerminatingError(new ErrorRecord(
-                    new NotSupportedException(WebCmdletStrings.ExtendedProfileRequired),
-                    "ExtendedProfileRequired",
-                    ErrorCategory.NotInstalled,
-                    null));
-            }
-#endif
-        }
 
         /// <summary>
         ///  Buffers InputObjet contents available in the pipeline.
@@ -67,7 +49,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// the main execution method for the convertfrom-json command
+        /// The main execution method for the ConvertFrom-Json command.
         /// </summary>
         protected override void EndProcessing()
         {
@@ -118,7 +100,7 @@ namespace Microsoft.PowerShell.Commands
         private bool ConvertFromJsonHelper(string input)
         {
             ErrorRecord error = null;
-            object result = JsonObject.ConvertFromJson(input, out error);
+            object result = JsonObject.ConvertFromJson(input, AsHashtable.IsPresent, out error);
 
             if (error != null)
             {

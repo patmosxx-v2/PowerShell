@@ -1,8 +1,5 @@
-#pragma warning disable 1634, 1691
-
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
 #pragma warning disable 56523
@@ -27,71 +24,116 @@ namespace System.Management.Automation.Security
     // Safer native constants
     internal partial class NativeConstants
     {
+        /// <Summary>
         /// SAFER_TOKEN_NULL_IF_EQUAL -> 0x00000001
+        /// </Summary>
         public const int SAFER_TOKEN_NULL_IF_EQUAL = 1;
 
+        /// <Summary>
         /// SAFER_TOKEN_COMPARE_ONLY -> 0x00000002
+        /// </Summary>
         public const int SAFER_TOKEN_COMPARE_ONLY = 2;
 
+        /// <Summary>
         /// SAFER_TOKEN_MAKE_INERT -> 0x00000004
+        /// </Summary>
         public const int SAFER_TOKEN_MAKE_INERT = 4;
 
-
+        /// <Summary>
         /// SAFER_CRITERIA_IMAGEPATH -> 0x00001
+        /// </Summary>
         public const int SAFER_CRITERIA_IMAGEPATH = 1;
 
+        /// <Summary>
         /// SAFER_CRITERIA_NOSIGNEDHASH -> 0x00002
+        /// </Summary>
         public const int SAFER_CRITERIA_NOSIGNEDHASH = 2;
 
+        /// <Summary>
         /// SAFER_CRITERIA_IMAGEHASH -> 0x00004
+        /// </Summary>
         public const int SAFER_CRITERIA_IMAGEHASH = 4;
 
+        /// <Summary>
         /// SAFER_CRITERIA_AUTHENTICODE -> 0x00008
+        /// </Summary>
         public const int SAFER_CRITERIA_AUTHENTICODE = 8;
 
+        /// <Summary>
         /// SAFER_CRITERIA_URLZONE -> 0x00010
+        /// </Summary>
         public const int SAFER_CRITERIA_URLZONE = 16;
 
+        /// <Summary>
         /// SAFER_CRITERIA_IMAGEPATH_NT -> 0x01000
+        /// </Summary>
         public const int SAFER_CRITERIA_IMAGEPATH_NT = 4096;
 
+        /// <Summary>
         /// WTD_UI_NONE -> 0x00002
+        /// </Summary>
         public const int WTD_UI_NONE = 2;
 
+        /// <Summary>
         /// S_OK -> ((HRESULT)0L)
+        /// </Summary>
         public const int S_OK = 0;
 
+        /// <Summary>
         /// S_FALSE -> ((HRESULT)1L)
+        /// </Summary>
         public const int S_FALSE = 1;
 
+        /// <Summary>
         /// ERROR_MORE_DATA -> 234L
+        /// </Summary>
         public const int ERROR_MORE_DATA = 234;
 
+        /// <Summary>
         /// ERROR_ACCESS_DISABLED_BY_POLICY -> 1260L
+        /// </Summary>
         public const int ERROR_ACCESS_DISABLED_BY_POLICY = 1260;
 
+        /// <Summary>
         /// ERROR_ACCESS_DISABLED_NO_SAFER_UI_BY_POLICY -> 786L
+        /// </Summary>
         public const int ERROR_ACCESS_DISABLED_NO_SAFER_UI_BY_POLICY = 786;
 
+        /// <Summary>
         /// SAFER_MAX_HASH_SIZE -> 64
+        /// </Summary>
         public const int SAFER_MAX_HASH_SIZE = 64;
 
+        /// <Summary>
         /// SRP_POLICY_SCRIPT -> L"SCRIPT"
+        /// </Summary>
         public const string SRP_POLICY_SCRIPT = "SCRIPT";
 
+        /// <Summary>
         /// SIGNATURE_DISPLAYNAME_LENGTH -> MAX_PATH
+        /// </Summary>
         internal const int SIGNATURE_DISPLAYNAME_LENGTH = NativeConstants.MAX_PATH;
 
+        /// <Summary>
         /// SIGNATURE_PUBLISHER_LENGTH -> 128
+        /// </Summary>
         internal const int SIGNATURE_PUBLISHER_LENGTH = 128;
 
+        /// <Summary>
         /// SIGNATURE_HASH_LENGTH -> 64
+        /// </Summary>
         internal const int SIGNATURE_HASH_LENGTH = 64;
 
+        /// <Summary>
         /// MAX_PATH -> 260
+        /// </Summary>
         internal const int MAX_PATH = 260;
-    }
 
+        /// <Summary>
+        /// This function is not supported on this system
+        /// </Summary>
+        internal const int FUNCTION_NOT_SUPPORTED = 120;
+    }
 
     /// <summary>
     /// pinvoke methods from crypt32.dll
@@ -127,7 +169,6 @@ namespace System.Management.Automation.Security
         internal static extern
         IntPtr CertEnumCertificatesInStore(IntPtr storeHandle,
                                             IntPtr certContext);
-
 
         /// <summary>
         /// signature of cert find function
@@ -170,8 +211,6 @@ namespace System.Management.Automation.Security
             CERT_SYSTEM_STORE_LOCAL_MACHINE_GROUP_POLICY = 8 << 16,
             CERT_SYSTEM_STORE_LOCAL_MACHINE_ENTERPRISE = 9 << 16,
         }
-
-
 
         [DllImport("crypt32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern
@@ -521,7 +560,6 @@ namespace System.Management.Automation.Security
             // other flags not used
         };
 
-
         [StructLayout(LayoutKind.Sequential)]
         internal struct CRYPTUI_WIZ_DIGITAL_SIGN_INFO
         {
@@ -600,7 +638,6 @@ namespace System.Management.Automation.Security
             {
                 siex.pszHashAlg = hashAlgorithm;
             }
-
 
             return siex;
         }
@@ -682,7 +719,6 @@ namespace System.Management.Automation.Security
             System.IntPtr pvKey,
             uint dwGroupId);
 
-
         [ArchitectureSensitive]
         internal static DWORD GetCertChoiceFromSigningOption(
             SigningOption option)
@@ -730,7 +766,7 @@ namespace System.Management.Automation.Security
             si.dwAdditionalCertChoice = GetCertChoiceFromSigningOption(option);
 
             CRYPTUI_WIZ_DIGITAL_SIGN_EXTENDED_INFO siex =
-                InitSignInfoExtendedStruct("", "", hashAlgorithm);
+                InitSignInfoExtendedStruct(string.Empty, string.Empty, hashAlgorithm);
             IntPtr pSiexBuffer = Marshal.AllocCoTaskMem(Marshal.SizeOf(siex));
             Marshal.StructureToPtr(siex, pSiexBuffer, false);
             si.pSignExtInfo = pSiexBuffer;
@@ -1033,13 +1069,13 @@ namespace System.Management.Automation.Security
                     wtdBuffer);
 #pragma warning enable 56523
 
-                wtd = ClrFacade.PtrToStructure<WINTRUST_DATA>(wtdBuffer);
+                wtd = Marshal.PtrToStructure<WINTRUST_DATA>(wtdBuffer);
             }
             finally
             {
-                ClrFacade.DestroyStructure<WINTRUST_DATA>(wtdBuffer);
+                Marshal.DestroyStructure<WINTRUST_DATA>(wtdBuffer);
                 Marshal.FreeCoTaskMem(wtdBuffer);
-                ClrFacade.DestroyStructure<Guid>(WINTRUST_ACTION_GENERIC_VERIFY_V2);
+                Marshal.DestroyStructure<Guid>(WINTRUST_ACTION_GENERIC_VERIFY_V2);
                 Marshal.FreeCoTaskMem(WINTRUST_ACTION_GENERIC_VERIFY_V2);
             }
 
@@ -1048,15 +1084,15 @@ namespace System.Management.Automation.Security
             if (wtd.dwUnionChoice == (DWORD)WintrustUnionChoice.WTD_CHOICE_BLOB)
             {
                 WINTRUST_BLOB_INFO originalBlob =
-                    (WINTRUST_BLOB_INFO)ClrFacade.PtrToStructure<WINTRUST_BLOB_INFO>(wtd.Choice.pBlob);
+                    (WINTRUST_BLOB_INFO)Marshal.PtrToStructure<WINTRUST_BLOB_INFO>(wtd.Choice.pBlob);
                 Marshal.FreeCoTaskMem(originalBlob.pbMemObject);
 
-                ClrFacade.DestroyStructure<WINTRUST_BLOB_INFO>(wtd.Choice.pBlob);
+                Marshal.DestroyStructure<WINTRUST_BLOB_INFO>(wtd.Choice.pBlob);
                 Marshal.FreeCoTaskMem(wtd.Choice.pBlob);
             }
             else
             {
-                ClrFacade.DestroyStructure<WINTRUST_FILE_INFO>(wtd.Choice.pFile);
+                Marshal.DestroyStructure<WINTRUST_FILE_INFO>(wtd.Choice.pFile);
                 Marshal.FreeCoTaskMem(wtd.Choice.pFile);
             }
 
@@ -1170,9 +1206,9 @@ namespace System.Management.Automation.Security
             }
             finally
             {
-                ClrFacade.DestroyStructure<WINTRUST_DATA>(wtdBuffer);
+                Marshal.DestroyStructure<WINTRUST_DATA>(wtdBuffer);
                 Marshal.FreeCoTaskMem(wtdBuffer);
-                ClrFacade.DestroyStructure<Guid>(WINTRUST_ACTION_GENERIC_VERIFY_V2);
+                Marshal.DestroyStructure<Guid>(WINTRUST_ACTION_GENERIC_VERIFY_V2);
                 Marshal.FreeCoTaskMem(WINTRUST_ACTION_GENERIC_VERIFY_V2);
             }
         }
@@ -1786,8 +1822,8 @@ namespace System.Management.Automation.Security
             uint nAclLength,
             uint dwAclRevision);
 
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        internal static extern uint RtlAddScopedPolicyIDAce(
+        [DllImport("api-ms-win-security-base-l1-2-0.dll", CharSet = CharSet.Unicode)]
+        internal static extern uint AddScopedPolicyIDAce(
             IntPtr Acl,
             uint AceRevision,
             uint AceFlags,
@@ -1849,7 +1885,6 @@ namespace System.Management.Automation.Security
             string DllName,
             IntPtr reserved,
             uint Flags);
-
 
         [DllImport(PinvokeDllNames.FreeLibrary, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool FreeLibrary(

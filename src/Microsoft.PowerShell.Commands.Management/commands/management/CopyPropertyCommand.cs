@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Management.Automation;
 using Dbg = System.Management.Automation;
@@ -32,7 +31,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter(ParameterSetName = "LiteralPath",
                    Mandatory = true, ValueFromPipeline = false, ValueFromPipelineByPropertyName = true)]
-        [Alias("PSPath")]
+        [Alias("PSPath", "LP")]
         public string[] LiteralPath
         {
             get { return paths; }
@@ -46,7 +45,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// The name of the property to create on the item
         /// </summary>
-        ///
         [Parameter(Position = 2, Mandatory = true, ValueFromPipelineByPropertyName = true)]
         [Alias("PSProperty")]
         public string Name { get; set; }
@@ -54,7 +52,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// The path to the destination item to copy the property to.
         /// </summary>
-        ///
         [Parameter(Mandatory = true, Position = 1, ValueFromPipelineByPropertyName = true)]
         public string Destination { get; set; }
 
@@ -63,16 +60,13 @@ namespace Microsoft.PowerShell.Commands
         /// that require dynamic parameters should override this method and return the
         /// dynamic parameter object.
         /// </summary>
-        ///
         /// <param name="context">
         /// The context under which the command is running.
         /// </param>
-        ///
         /// <returns>
         /// An object representing the dynamic parameters for the cmdlet or null if there
         /// are none.
         /// </returns>
-        ///
         internal override object GetDynamicParameters(CmdletProviderContext context)
         {
             if (Path != null && Path.Length > 0)
@@ -90,7 +84,7 @@ namespace Microsoft.PowerShell.Commands
                 Destination,
                 Name,
                 context);
-        } // GetDynamicParameters
+        }
 
         #endregion Parameters
 
@@ -149,9 +143,8 @@ namespace Microsoft.PowerShell.Commands
                     continue;
                 }
             }
-        } // ProcessRecord
+        }
         #endregion Command code
 
-
-    } // CopyItemPropertyCommand
-} // namespace Microsoft.PowerShell.Commands
+    }
+}

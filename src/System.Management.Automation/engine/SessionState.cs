@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Management.Automation.Language;
 using System.Security;
@@ -8,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Management.Automation.Internal;
 using System.Management.Automation.Runspaces;
 using Dbg = System.Management.Automation;
 using System.Diagnostics.CodeAnalysis;
@@ -41,15 +41,12 @@ namespace System.Management.Automation
         /// <summary>
         /// Constructor for session state object
         /// </summary>
-        ///
         /// <param name="context">
         /// The context for the runspace to which this session state object belongs.
         /// </param>
-        ///
         /// <exception cref="ArgumentNullException">
         /// if <paramref name="context"/> is null.
         /// </exception>
-        ///
         internal SessionStateInternal(ExecutionContext context) : this(null, false, context)
         {
         }
@@ -67,6 +64,10 @@ namespace System.Management.Automation
 
             _workingLocationStack = new Dictionary<String, Stack<PathInfo>>(StringComparer.OrdinalIgnoreCase);
 
+            // Conservative choice to limit the Set-Location history in order to limit memory impact in case of a regression.
+            const uint locationHistoryLimit = 20;
+            _setLocationHistory = new HistoryStack<PathInfo>(locationHistoryLimit);
+
             GlobalScope = new SessionStateScope(null);
             ModuleScope = GlobalScope;
             _currentScope = GlobalScope;
@@ -77,7 +78,6 @@ namespace System.Management.Automation
             // the starting script scope.  That way, if you dot-source a script
             // that uses variables qualified by script: it works.
             GlobalScope.ScriptScope = GlobalScope;
-
 
             if (parent != null)
             {
@@ -123,7 +123,6 @@ namespace System.Management.Automation
             PSVariable errorvariable = new PSVariable("Error", new ArrayList(), ScopedItemOptions.Constant);
             GlobalScope.SetVariable(errorvariable.Name, errorvariable, false, false, this, fastPath: true);
 
-
             // Set variable $PSDefaultParameterValues
             Collection<Attribute> attributes = new Collection<Attribute>();
             attributes.Add(new ArgumentTypeConverterAttribute(typeof(System.Management.Automation.DefaultParameterDictionary)));
@@ -134,7 +133,6 @@ namespace System.Management.Automation
             GlobalScope.SetVariable(psDefaultParameterValuesVariable.Name, psDefaultParameterValuesVariable, false, false, this, fastPath: true);
         }
 
-
         #endregion Constructor
 
         #region Private data
@@ -142,7 +140,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Provides all the path manipulation and globbing for Monad paths.
         /// </summary>
-        ///
         internal LocationGlobber Globber
         {
             get { return _globberPrivate ?? (_globberPrivate = ExecutionContext.LocationGlobber); }
@@ -169,7 +166,7 @@ namespace System.Management.Automation
         /// </summary>
         internal ProviderIntrinsics InvokeProvider
         {
-            get { return _invokeProvider ?? (_invokeProvider = new ProviderIntrinsics(this)); } // get
+            get { return _invokeProvider ?? (_invokeProvider = new ProviderIntrinsics(this)); }
         }
         private ProviderIntrinsics _invokeProvider;
 
@@ -234,7 +231,6 @@ namespace System.Management.Automation
         /// is in the list, then all applications can be run. (This is the default.)
         /// </summary>
         public List<string> Applications { get; } = new List<string>(new string[] { "*" });
-
 
         /// <summary>
         /// List of functions/filters to export from this session state object...
@@ -301,7 +297,7 @@ namespace System.Management.Automation
                     ExecutionContext.EngineHostInterface,
                     ScopedItemOptions.Constant | ScopedItemOptions.AllScope,
                     RunspaceInit.PSHostDescription);
-            this.GlobalScope.SetVariable(v.Name, v, false, true, this, CommandOrigin.Internal, fastPath: true);
+            this.GlobalScope.SetVariable(v.Name, v, asValue: false, force: true, this, CommandOrigin.Internal, fastPath: true);
 
             // $HOME - indicate where a user's home directory is located in the file system.
             //    -- %USERPROFILE% on windows
@@ -311,28 +307,28 @@ namespace System.Management.Automation
                     home,
                     ScopedItemOptions.ReadOnly | ScopedItemOptions.AllScope,
                     RunspaceInit.HOMEDescription);
-            this.GlobalScope.SetVariable(v.Name, v, false, true, this, CommandOrigin.Internal, fastPath: true);
+            this.GlobalScope.SetVariable(v.Name, v, asValue: false, force: true, this, CommandOrigin.Internal, fastPath: true);
 
             // $ExecutionContext
             v = new PSVariable(SpecialVariables.ExecutionContext,
                     ExecutionContext.EngineIntrinsics,
                     ScopedItemOptions.Constant | ScopedItemOptions.AllScope,
                     RunspaceInit.ExecutionContextDescription);
-            this.GlobalScope.SetVariable(v.Name, v, false, true, this, CommandOrigin.Internal, fastPath: true);
+            this.GlobalScope.SetVariable(v.Name, v, asValue: false, force: true, this, CommandOrigin.Internal, fastPath: true);
 
             // $PSVersionTable
             v = new PSVariable(SpecialVariables.PSVersionTable,
                     PSVersionInfo.GetPSVersionTable(),
                     ScopedItemOptions.Constant | ScopedItemOptions.AllScope,
                     RunspaceInit.PSVersionTableDescription);
-            this.GlobalScope.SetVariable(v.Name, v, false, true, this, CommandOrigin.Internal, fastPath: true);
+            this.GlobalScope.SetVariable(v.Name, v, asValue: false, force: true, this, CommandOrigin.Internal, fastPath: true);
 
             // $PSEdition
             v = new PSVariable(SpecialVariables.PSEdition,
                     PSVersionInfo.PSEditionValue,
                     ScopedItemOptions.Constant | ScopedItemOptions.AllScope,
                     RunspaceInit.PSEditionDescription);
-            this.GlobalScope.SetVariable(v.Name, v, false, true, this, CommandOrigin.Internal, fastPath: true);
+            this.GlobalScope.SetVariable(v.Name, v, asValue: false, force: true, this, CommandOrigin.Internal, fastPath: true);
 
             // $PID
             Process currentProcess = Process.GetCurrentProcess();
@@ -341,15 +337,15 @@ namespace System.Management.Automation
                     currentProcess.Id,
                     ScopedItemOptions.Constant | ScopedItemOptions.AllScope,
                     RunspaceInit.PIDDescription);
-            this.GlobalScope.SetVariable(v.Name, v, false, true, this, CommandOrigin.Internal, fastPath: true);
+            this.GlobalScope.SetVariable(v.Name, v, asValue: false, force: true, this, CommandOrigin.Internal, fastPath: true);
 
             // $PSCulture
             v = new PSCultureVariable();
-            this.GlobalScope.SetVariable(v.Name, v, false, true, this, CommandOrigin.Internal, fastPath: true);
+            this.GlobalScope.SetVariable(v.Name, v, asValue: false, force: true, this, CommandOrigin.Internal, fastPath: true);
 
             // $PSUICulture
             v = new PSUICultureVariable();
-            this.GlobalScope.SetVariable(v.Name, v, false, true, this, CommandOrigin.Internal, fastPath: true);
+            this.GlobalScope.SetVariable(v.Name, v, asValue: false, force: true, this, CommandOrigin.Internal, fastPath: true);
 
             // $?
             v = new QuestionMarkVariable(this.ExecutionContext);
@@ -357,99 +353,24 @@ namespace System.Management.Automation
 
             // $ShellId - if there is no runspace config, use the default string
             string shellId = ExecutionContext.ShellID;
-
             v = new PSVariable(SpecialVariables.ShellId, shellId,
                    ScopedItemOptions.Constant | ScopedItemOptions.AllScope,
                     RunspaceInit.MshShellIdDescription);
-            this.GlobalScope.SetVariable(v.Name, v, false, true, this, CommandOrigin.Internal, fastPath: true);
+            this.GlobalScope.SetVariable(v.Name, v, asValue: false, force: true, this, CommandOrigin.Internal, fastPath: true);
 
             // $PSHOME
-            // This depends on the shellId. If we cannot read the application base
-            // registry key, set the variable to empty string
-            string applicationBase = "";
-            try
-            {
-                applicationBase = Utils.GetApplicationBase(shellId);
-            }
-            catch (SecurityException)
-            {
-            }
+            string applicationBase = Utils.DefaultPowerShellAppBase;
             v = new PSVariable(SpecialVariables.PSHome, applicationBase,
                     ScopedItemOptions.Constant | ScopedItemOptions.AllScope,
                     RunspaceInit.PSHOMEDescription);
+            this.GlobalScope.SetVariable(v.Name, v, asValue: false, force: true, this, CommandOrigin.Internal, fastPath: true);
 
-            this.GlobalScope.SetVariable(v.Name, v, false, true, this, CommandOrigin.Internal, fastPath: true);
-
-            // $Console - set the console file for this shell, if there is one, "" otherwise...
-            SetConsoleVariable();
-        }
-
-        /// <summary>
-        /// Set the $Console variable in this session state instance...
-        /// </summary>
-        internal void SetConsoleVariable()
-        {
-            // $Console - set the console file for this shell, if there is one, "" otherwise...
-            string consoleFileName = string.Empty;
-            RunspaceConfigForSingleShell rcss = ExecutionContext.RunspaceConfiguration as RunspaceConfigForSingleShell;
-            if (rcss != null && rcss.ConsoleInfo != null && !string.IsNullOrEmpty(rcss.ConsoleInfo.Filename))
-            {
-                consoleFileName = rcss.ConsoleInfo.Filename;
-            }
-            PSVariable v = new PSVariable(SpecialVariables.ConsoleFileName,
-                    consoleFileName,
-                    ScopedItemOptions.ReadOnly | ScopedItemOptions.AllScope,
-                    RunspaceInit.ConsoleDescription);
-            this.GlobalScope.SetVariable(v.Name, v, false, true, this, CommandOrigin.Internal, fastPath: true);
-        }
-
-        /// <summary>
-        /// Add all of the default built-in functions to this session state instance...
-        /// </summary>
-        internal void AddBuiltInEntries(bool addSetStrictMode)
-        {
-            // Other built-in variables
-            AddBuiltInVariables();
-            AddBuiltInFunctions();
-            AddBuiltInAliases();
-            if (addSetStrictMode)
-            {
-                SessionStateFunctionEntry f = new SessionStateFunctionEntry("Set-StrictMode", "");
-                this.AddSessionStateEntry(f);
-            }
-        }
-
-        /// <summary>
-        /// Add the built-in variables to this instance of session state...
-        /// </summary>
-        internal void AddBuiltInVariables()
-        {
-            foreach (SessionStateVariableEntry e in InitialSessionState.BuiltInVariables)
-            {
-                this.AddSessionStateEntry(e);
-            }
-        }
-
-        /// <summary>
-        /// Add the built-in functions to this instance of session state...
-        /// </summary>
-        internal void AddBuiltInFunctions()
-        {
-            foreach (SessionStateFunctionEntry f in InitialSessionState.BuiltInFunctions)
-            {
-                this.AddSessionStateEntry(f);
-            }
-        }
-
-        /// <summary>
-        /// Add the built-in aliases to this instance of session state...
-        /// </summary>
-        internal void AddBuiltInAliases()
-        {
-            foreach (SessionStateAliasEntry ae in InitialSessionState.BuiltInAliases)
-            {
-                this.AddSessionStateEntry(ae, StringLiterals.Global);
-            }
+            // $EnabledExperimentalFeatures
+            v = new PSVariable(SpecialVariables.EnabledExperimentalFeatures,
+                               ExperimentalFeature.EnabledExperimentalFeatureNames,
+                               ScopedItemOptions.Constant | ScopedItemOptions.AllScope,
+                               RunspaceInit.EnabledExperimentalFeatures);
+            this.GlobalScope.SetVariable(v.Name, v, asValue: false, force: true, this, CommandOrigin.Internal, fastPath: true);
         }
 
         /// <summary>
@@ -485,27 +406,12 @@ namespace System.Management.Automation
             return SessionStateEntryVisibility.Private;
         }
 
-#if RELATIONSHIP_SUPPORTED
-        // 2004/11/24-JeffJon - Relationships have been removed from the Exchange release
-
-        /// <summary>
-        /// Gets the collection of relationship providers
-        /// </summary>
-        ///
-        internal RelationshipProviderCollection Relationships
-        {
-            get { return relationships; }
-        }
-        private RelationshipProviderCollection relationships = null;
-#endif
-
         #endregion Private data
 
         /// <summary>
         /// Notification for SessionState to do cleanup
         /// before runspace is closed.
         /// </summary>
-        ///
         internal void RunspaceClosingNotification()
         {
             if (this != ExecutionContext.TopLevelSessionState && Providers.Count > 0)
@@ -514,13 +420,7 @@ namespace System.Management.Automation
 
                 CmdletProviderContext context = new CmdletProviderContext(this.ExecutionContext);
 
-                Collection<string> keys = new Collection<string>();
-                foreach (string key in Providers.Keys)
-                {
-                    keys.Add(key);
-                }
-
-                foreach (string providerName in keys)
+                foreach (string providerName in Providers.Keys)
                 {
                     // All errors are ignored.
 
@@ -535,38 +435,30 @@ namespace System.Management.Automation
         /// Constructs a new instance of a ProviderInvocationException
         /// using the specified data
         /// </summary>
-        ///
         /// <param name="resourceId">
         /// The resource ID to use as the format message for the error.
         /// </param>
-        ///
         /// <param name="resourceStr">
         /// This is the message template string.
         /// </param>
-        ///
         /// <param name="provider">
         /// The provider information used when formatting the error message.
         /// </param>
-        ///
         /// <param name="path">
         /// The path used when formatting the error message.
         /// </param>
-        ///
         /// <param name="e">
         /// The exception that was thrown by the provider. This will be set as
         /// the ProviderInvocationException's InnerException and the message will
         /// be used when formatting the error message.
         /// </param>
-        ///
         /// <returns>
         /// A new instance of a ProviderInvocationException.
         /// </returns>
-        ///
         /// <exception cref="ProviderInvocationException">
         /// Wraps <paramref name="e"/> in a ProviderInvocationException
         /// and then throws it.
         /// </exception>
-        ///
         internal ProviderInvocationException NewProviderInvocationException(
             string resourceId,
             string resourceStr,
@@ -577,48 +469,38 @@ namespace System.Management.Automation
             return NewProviderInvocationException(resourceId, resourceStr, provider, path, e, true);
         }
 
-
         /// <summary>
         /// Constructs a new instance of a ProviderInvocationException
         /// using the specified data
         /// </summary>
-        ///
         /// <param name="resourceId">
         /// The resource ID to use as the format message for the error.
         /// </param>
-        ///
         /// <param name="resourceStr">
         /// This is the message template string.
         /// </param>
-        ///
         /// <param name="provider">
         /// The provider information used when formatting the error message.
         /// </param>
-        ///
         /// <param name="path">
         /// The path used when formatting the error message.
         /// </param>
-        ///
         /// <param name="e">
         /// The exception that was thrown by the provider. This will be set as
         /// the ProviderInvocationException's InnerException and the message will
         /// be used when formatting the error message.
         /// </param>
-        ///
         /// <param name="useInnerExceptionErrorMessage">
         /// If true, the error record from the inner exception will be used if it contains one.
         /// If false, the error message specified by the resourceId will be used.
         /// </param>
-        ///
         /// <returns>
         /// A new instance of a ProviderInvocationException.
         /// </returns>
-        ///
         /// <exception cref="ProviderInvocationException">
         /// Wraps <paramref name="e"/> in a ProviderInvocationException
         /// and then throws it.
         /// </exception>
-        ///
         internal ProviderInvocationException NewProviderInvocationException(
             string resourceId,
             string resourceStr,
@@ -632,7 +514,7 @@ namespace System.Management.Automation
             //  ProviderInvocationException, and we don't want to
             //  re-wrap it.
             ProviderInvocationException pie = e as ProviderInvocationException;
-            if (null != pie)
+            if (pie != null)
             {
                 pie._providerInfo = provider;
                 return pie;
@@ -651,5 +533,5 @@ namespace System.Management.Automation
             return pie;
         }
         #endregion Errors
-    } // SessionStateInternal class
+    }
 }

@@ -1,9 +1,10 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Management.Automation.Configuration;
 using System.Management.Automation.Internal;
 using System.Management.Automation.Language;
 using Microsoft.PowerShell.Commands;
@@ -30,6 +31,11 @@ namespace System.Management.Automation
         [TraceSource("Modules", "Module loading and analysis")]
         internal static PSTraceSource Tracer = PSTraceSource.GetTracer("Modules", "Module loading and analysis");
 
+        // The %WINDIR%\System32\WindowsPowerShell\v1.0\Modules module path,
+        // to load forward compatible Windows PowerShell modules from
+        private static readonly string s_windowsPowerShellPSHomeModulePath =
+            Path.Combine(System.Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "Modules");
+
         internal ModuleIntrinsics(ExecutionContext context)
         {
             _context = context;
@@ -43,6 +49,15 @@ namespace System.Management.Automation
         internal Dictionary<string, PSModuleInfo> ModuleTable { get; } = new Dictionary<string, PSModuleInfo>(StringComparer.OrdinalIgnoreCase);
 
         private const int MaxModuleNestingDepth = 10;
+
+        /// <summary>
+        /// Gets and sets boolean that indicates when an implicit remoting module is loaded.
+        /// </summary>
+        internal bool IsImplicitRemotingModuleLoaded
+        {
+            get;
+            set;
+        }
 
         internal void IncrementModuleNestingDepth(PSCmdlet cmdlet, string path)
         {
@@ -179,6 +194,7 @@ namespace System.Management.Automation
                     throw PSTraceSource.NewInvalidOperationException();
 
                 sb.SessionStateInternal = ss.Internal;
+                module.LanguageMode = sb.LanguageMode;
 
                 InvocationInfo invocationInfo = new InvocationInfo(scriptInfo, scriptPosition);
 
@@ -395,81 +411,468 @@ namespace System.Management.Automation
             return modulesMatched.OrderBy(m => m.Name).ToList();
         }
 
+
+        /// <summary>
+        /// Check if a given module info object matches a given module specification.
+        /// </summary>
+        /// <param name="moduleInfo">The module info object to check.</param>
+        /// <param name="moduleSpec">The module specification to match the module info object against.</param>
+        /// <returns>True if the module info object meets all the constraints on the module specification, false otherwise.</returns>
         internal static bool IsModuleMatchingModuleSpec(PSModuleInfo moduleInfo, ModuleSpecification moduleSpec)
         {
-            if (moduleInfo != null && moduleSpec != null &&
-                moduleInfo.Name.Equals(moduleSpec.Name, StringComparison.OrdinalIgnoreCase) &&
-                (!moduleSpec.Guid.HasValue || moduleSpec.Guid.Equals(moduleInfo.Guid)) &&
-                ((moduleSpec.Version == null && moduleSpec.RequiredVersion == null && moduleSpec.MaximumVersion == null)
-                 || (moduleSpec.RequiredVersion != null && moduleSpec.RequiredVersion.Equals(moduleInfo.Version))
-                 || (moduleSpec.MaximumVersion == null && moduleSpec.Version != null && moduleSpec.RequiredVersion == null && moduleSpec.Version <= moduleInfo.Version)
-                 || (moduleSpec.MaximumVersion != null && moduleSpec.Version == null && moduleSpec.RequiredVersion == null && ModuleCmdletBase.GetMaximumVersion(moduleSpec.MaximumVersion) >= moduleInfo.Version)
-                 || (moduleSpec.MaximumVersion != null && moduleSpec.Version != null && moduleSpec.RequiredVersion == null && ModuleCmdletBase.GetMaximumVersion(moduleSpec.MaximumVersion) >= moduleInfo.Version && moduleSpec.Version <= moduleInfo.Version)))
+            return IsModuleMatchingModuleSpec(out ModuleMatchFailure matchFailureReason, moduleInfo, moduleSpec);
+        }
+
+        /// <summary>
+        /// Check if a given module info object matches a given module specification.
+        /// </summary>
+        /// <param name="matchFailureReason">The constraint that caused the match failure, if any.</param>
+        /// <param name="moduleInfo">The module info object to check.</param>
+        /// <param name="moduleSpec">The module specification to match the module info object against.</param>
+        /// <returns>True if the module info object meets all the constraints on the module specification, false otherwise.</returns>
+        internal static bool IsModuleMatchingModuleSpec(out ModuleMatchFailure matchFailureReason, PSModuleInfo moduleInfo, ModuleSpecification moduleSpec)
+        {
+            if (moduleSpec == null)
+            {
+                matchFailureReason = ModuleMatchFailure.NullModuleSpecification;
+                return false;
+            }
+
+            return IsModuleMatchingConstraints(
+                out matchFailureReason,
+                moduleInfo,
+                moduleSpec.Name,
+                moduleSpec.Guid,
+                moduleSpec.RequiredVersion,
+                moduleSpec.Version,
+                moduleSpec.MaximumVersion == null ? null : ModuleCmdletBase.GetMaximumVersion(moduleSpec.MaximumVersion));
+        }
+
+        /// <summary>
+        /// Check if a given module info object matches the given constraints.
+        /// Constraints given as null are ignored.
+        /// </summary>
+        /// <param name="moduleInfo">The module info object to check.</param>
+        /// <param name="name">The name or normalized absolute path of the expected module.</param>
+        /// <param name="guid">The guid of the expected module.</param>
+        /// <param name="requiredVersion">The required version of the expected module.</param>
+        /// <param name="minimumVersion">The minimum required version of the expected module.</param>
+        /// <param name="maximumVersion">The maximum required version of the expected module.</param>
+        /// <returns>True if the module info object matches all given constraints, false otherwise.</returns>
+        internal static bool IsModuleMatchingConstraints(
+            PSModuleInfo moduleInfo,
+            string name = null,
+            Guid? guid = null,
+            Version requiredVersion = null,
+            Version minimumVersion = null,
+            Version maximumVersion = null)
+        {
+            return IsModuleMatchingConstraints(
+                out ModuleMatchFailure matchFailureReason,
+                moduleInfo,
+                name,
+                guid,
+                requiredVersion,
+                minimumVersion,
+                maximumVersion);
+        }
+
+        /// <summary>
+        /// Check if a given module info object matches the given constraints.
+        /// Constraints given as null are ignored.
+        /// </summary>
+        /// <param name="matchFailureReason">The reason for the module constraint match failing.</param>
+        /// <param name="moduleInfo">The module info object to check.</param>
+        /// <param name="name">The name or normalized absolute path of the expected module.</param>
+        /// <param name="guid">The guid of the expected module.</param>
+        /// <param name="requiredVersion">The required version of the expected module.</param>
+        /// <param name="minimumVersion">The minimum required version of the expected module.</param>
+        /// <param name="maximumVersion">The maximum required version of the expected module.</param>
+        /// <returns>True if the module info object matches all given constraints, false otherwise.</returns>
+        internal static bool IsModuleMatchingConstraints(
+            out ModuleMatchFailure matchFailureReason,
+            PSModuleInfo moduleInfo,
+            string name,
+            Guid? guid,
+            Version requiredVersion,
+            Version minimumVersion,
+            Version maximumVersion)
+        {
+            // Define that a null module does not meet any constraints
+            if (moduleInfo == null)
+            {
+                matchFailureReason = ModuleMatchFailure.NullModule;
+                return false;
+            }
+
+            return AreModuleFieldsMatchingConstraints(
+                out matchFailureReason,
+                moduleInfo.Name,
+                moduleInfo.Path,
+                moduleInfo.Guid,
+                moduleInfo.Version,
+                name,
+                guid,
+                requiredVersion,
+                minimumVersion,
+                maximumVersion
+            );
+        }
+
+        /// <summary>
+        /// Check that given module fields meet any given constraints.
+        /// </summary>
+        /// <param name="moduleName">The name of the module to check.</param>
+        /// <param name="modulePath">The path of the module to check.</param>
+        /// <param name="moduleGuid">The GUID of the module to check.</param>
+        /// <param name="moduleVersion">The version of the module to check.</param>
+        /// <param name="requiredName">The name or normalized absolute path the module must have, if any.</param>
+        /// <param name="requiredGuid">The GUID the module must have, if any.</param>
+        /// <param name="requiredVersion">The exact version the module must have, if any.</param>
+        /// <param name="minimumRequiredVersion">The minimum version the module may have, if any.</param>
+        /// <param name="maximumRequiredVersion">The maximum version the module may have, if any.</param>
+        /// <returns>True if the module parameters match all given constraints, false otherwise.</returns>
+        internal static bool AreModuleFieldsMatchingConstraints(
+            string moduleName = null,
+            string modulePath = null,
+            Guid? moduleGuid = null,
+            Version moduleVersion = null,
+            string requiredName = null,
+            Guid? requiredGuid = null,
+            Version requiredVersion = null,
+            Version minimumRequiredVersion = null,
+            Version maximumRequiredVersion = null)
+        {
+            return AreModuleFieldsMatchingConstraints(
+                out ModuleMatchFailure matchFailureReason,
+                moduleName,
+                modulePath,
+                moduleGuid,
+                moduleVersion,
+                requiredName,
+                requiredGuid,
+                requiredVersion,
+                minimumRequiredVersion,
+                maximumRequiredVersion);
+        }
+
+        /// <summary>
+        /// Check that given module fields meet any given constraints.
+        /// </summary>
+        /// <param name="matchFailureReason">The reason the match failed, if any.</param>
+        /// <param name="moduleName">The name of the module to check.</param>
+        /// <param name="modulePath">The path of the module to check.</param>
+        /// <param name="moduleGuid">The GUID of the module to check.</param>
+        /// <param name="moduleVersion">The version of the module to check.</param>
+        /// <param name="requiredName">The name or normalized absolute path the module must have, if any.</param>
+        /// <param name="requiredGuid">The GUID the module must have, if any.</param>
+        /// <param name="requiredVersion">The exact version the module must have, if any.</param>
+        /// <param name="minimumRequiredVersion">The minimum version the module may have, if any.</param>
+        /// <param name="maximumRequiredVersion">The maximum version the module may have, if any.</param>
+        /// <returns>True if the module parameters match all given constraints, false otherwise.</returns>
+        internal static bool AreModuleFieldsMatchingConstraints(
+            out ModuleMatchFailure matchFailureReason,
+            string moduleName,
+            string modulePath,
+            Guid? moduleGuid,
+            Version moduleVersion,
+            string requiredName,
+            Guid? requiredGuid,
+            Version requiredVersion,
+            Version minimumRequiredVersion,
+            Version maximumRequiredVersion)
+        {
+            // If a name is required, check that it matches.
+            // A required module name may also be an absolute path, so check it against the given module's path as well.
+            if (requiredName != null
+                && !requiredName.Equals(moduleName, StringComparison.OrdinalIgnoreCase)
+                && !MatchesModulePath(modulePath, requiredName))
+            {
+                matchFailureReason = ModuleMatchFailure.Name;
+                return false;
+            }
+
+            // If a GUID is required, check it matches
+            if (requiredGuid != null && !requiredGuid.Equals(moduleGuid))
+            {
+                matchFailureReason = ModuleMatchFailure.Guid;
+                return false;
+            }
+
+            // Check the versions
+            return IsVersionMatchingConstraints(out matchFailureReason, moduleVersion, requiredVersion, minimumRequiredVersion, maximumRequiredVersion);
+        }
+
+        /// <summary>
+        /// Check that a given module version matches the required or minimum/maximum version constraints.
+        /// Null constraints are not checked.
+        /// </summary>
+        /// <param name="version">The module version to check. Must not be null</param>
+        /// <param name="requiredVersion">The version that the given version must be, if not null.</param>
+        /// <param name="minimumVersion">The minimum version that the given version must be greater than or equal to, if not null.</param>
+        /// <param name="maximumVersion">The maximum version that the given version must be less then or equal to, if not null.</param>
+        /// <returns>
+        /// True if the version matches the required version, or if it is absent, is between the minimum and maximum versions, and false otherwise.
+        /// </returns>
+        internal static bool IsVersionMatchingConstraints(
+            Version version,
+            Version requiredVersion = null,
+            Version minimumVersion = null,
+            Version maximumVersion = null)
+        {
+            return IsVersionMatchingConstraints(out ModuleMatchFailure matchFailureReason, version, requiredVersion, minimumVersion, maximumVersion);
+        }
+
+        /// <summary>
+        /// Check that a given module version matches the required or minimum/maximum version constraints.
+        /// Null constraints are not checked.
+        /// </summary>
+        /// <param name="matchFailureReason">The reason why the match failed.</param>
+        /// <param name="version">The module version to check. Must not be null</param>
+        /// <param name="requiredVersion">The version that the given version must be, if not null.</param>
+        /// <param name="minimumVersion">The minimum version that the given version must be greater than or equal to, if not null.</param>
+        /// <param name="maximumVersion">The maximum version that the given version must be less then or equal to, if not null.</param>
+        /// <returns>
+        /// True if the version matches the required version, or if it is absent, is between the minimum and maximum versions, and false otherwise.
+        /// </returns>
+        internal static bool IsVersionMatchingConstraints(
+            out ModuleMatchFailure matchFailureReason,
+            Version version,
+            Version requiredVersion = null,
+            Version minimumVersion = null,
+            Version maximumVersion = null)
+        {
+            Dbg.Assert(version != null, $"Caller to verify that {nameof(version)} is not null");
+
+            // If a RequiredVersion is given it overrides other version settings
+            if (requiredVersion != null)
+            {
+                matchFailureReason = ModuleMatchFailure.RequiredVersion;
+                return requiredVersion.Equals(version);
+            }
+
+            // Check the version is at least the minimum version
+            if (minimumVersion != null && version < minimumVersion)
+            {
+                matchFailureReason = ModuleMatchFailure.MinimumVersion;
+                return false;
+            }
+
+            // Check the version is at most the maximum version
+            if (maximumVersion != null && version > maximumVersion)
+            {
+                matchFailureReason = ModuleMatchFailure.MaximumVersion;
+                return false;
+            }
+
+            matchFailureReason = ModuleMatchFailure.None;
+            return true;
+        }
+
+        /// <summary>
+        /// Checks whether a given module path is the same as
+        /// a required path.
+        /// </summary>
+        /// <param name="modulePath">The path of the module whose path to check. This must be the path to the module file (.psd1, .psm1, .dll, etc).</param>
+        /// <param name="requiredPath">The path of the required module. This may be the module directory path or the file path. Only normalized absolute paths will work for this.</param>
+        /// <returns>True if the module path matches the required path, false otherwise.</returns>
+        internal static bool MatchesModulePath(string modulePath, string requiredPath)
+        {
+            Dbg.Assert(requiredPath != null, $"Caller to verify that {nameof(requiredPath)} is not null");
+
+            if (modulePath == null)
+            {
+                return false;
+            }
+
+#if UNIX
+            StringComparison strcmp = StringComparison.Ordinal;
+#else
+            StringComparison strcmp = StringComparison.OrdinalIgnoreCase;
+#endif
+
+            // We must check modulePath (e.g. /path/to/module/module.psd1) against several possibilities:
+            // 1. "/path/to/module"                 - Module dir path
+            // 2. "/path/to/module/module.psd1"     - Module root file path
+            // 3. "/path/to/module/2.1/module.psd1" - Versioned module path
+
+            // If the required module just matches the module path (case 1), we are done
+            if (modulePath.Equals(requiredPath, strcmp))
             {
                 return true;
             }
 
-            return false;
+            // At this point we are looking for the module directory (case 2 or 3).
+            // We can some allocations here if module path doesn't sit under the required path
+            // (the required path may still refer to some nested module though)
+            if (!modulePath.StartsWith(requiredPath, strcmp))
+            {
+                return false;
+            }
+
+            string moduleDirPath = Path.GetDirectoryName(modulePath);
+
+            // The module itself may be in a versioned directory (case 3)
+            if (Version.TryParse(Path.GetFileName(moduleDirPath), out Version unused))
+            {
+                moduleDirPath = Path.GetDirectoryName(moduleDirPath);
+            }
+
+            return moduleDirPath.Equals(requiredPath, strcmp);
+        }
+
+        /// <summary>
+        /// Takes the name of a module as used in a module specification
+        /// and either returns it as a simple name (if it was a simple name)
+        /// or a fully qualified, PowerShell-resolved path.
+        /// </summary>
+        /// <param name="moduleName">The name or path of the module from the specification.</param>
+        /// <param name="basePath">The path to base relative paths off.</param>
+        /// <param name="executionContext">The current execution context.</param>
+        /// <returns>
+        /// The simple module name if the given one was simple,
+        /// otherwise a fully resolved, absolute path to the module.
+        /// </returns>
+        /// <remarks>
+        /// 2018-11-09 rjmholt:
+        /// There are several, possibly inconsistent, path handling mechanisms
+        /// in the module cmdlets. After looking through all of them and seeing
+        /// they all make some assumptions about their caller I wrote this method.
+        /// Hopefully we can find a standard path resolution API to settle on.
+        /// </remarks>
+        internal static string NormalizeModuleName(
+            string moduleName,
+            string basePath,
+            ExecutionContext executionContext)
+        {
+            if (moduleName == null)
+            {
+                return null;
+            }
+
+            // Check whether the module is a path -- if not, it is a simple name and we just return it.
+            if (!IsModuleNamePath(moduleName))
+            {
+                return moduleName;
+            }
+
+            // Standardize directory separators -- Path.IsPathRooted() will return false for "\path\here" on *nix and for "/path/there" on Windows
+            moduleName = moduleName.Replace(StringLiterals.AlternatePathSeparator, StringLiterals.DefaultPathSeparator);
+
+            // Note: Path.IsFullyQualified("\default\root") is false on Windows, but Path.IsPathRooted returns true
+            if (!Path.IsPathRooted(moduleName))
+            {
+                moduleName = Path.Join(basePath, moduleName);
+            }
+
+            // Use the PowerShell filesystem provider to fully resolve the path
+            // If there is a problem, null could be returned -- so default back to the pre-normalized path
+            string normalizedPath = ModuleCmdletBase.GetResolvedPath(moduleName, executionContext)?.TrimEnd(StringLiterals.DefaultPathSeparator);
+
+            // ModuleCmdletBase.GetResolvePath will return null in the unlikely event that it failed.
+            // If it does, we return the fully qualified path generated before.
+            return normalizedPath ?? Path.GetFullPath(moduleName);
+        }
+
+        /// <summary>
+        /// Check if a given module name is a path to a module rather than a simple name.
+        /// </summary>
+        /// <param name="moduleName">The module name to check.</param>
+        /// <returns>True if the module name is a path, false otherwise.</returns>
+        internal static bool IsModuleNamePath(string moduleName)
+        {
+            return moduleName.Contains(StringLiterals.DefaultPathSeparator)
+                || moduleName.Contains(StringLiterals.AlternatePathSeparator)
+                || moduleName.Equals("..")
+                || moduleName.Equals(".");
         }
 
         internal static Version GetManifestModuleVersion(string manifestPath)
         {
-            if (manifestPath != null &&
-                manifestPath.EndsWith(StringLiterals.PowerShellDataFileExtension, StringComparison.OrdinalIgnoreCase))
+            try
             {
-                try
-                {
-                    var dataFileSetting =
-                        PsUtils.GetModuleManifestProperties(
-                            manifestPath,
-                            PsUtils.ManifestModuleVersionPropertyName);
+                Hashtable dataFileSetting =
+                    PsUtils.GetModuleManifestProperties(
+                        manifestPath,
+                        PsUtils.ManifestModuleVersionPropertyName);
 
-                    var versionValue = dataFileSetting["ModuleVersion"];
-                    if (versionValue != null)
+                object versionValue = dataFileSetting["ModuleVersion"];
+                if (versionValue != null)
+                {
+                    Version moduleVersion;
+                    if (LanguagePrimitives.TryConvertTo(versionValue, out moduleVersion))
                     {
-                        Version moduleVersion;
-                        if (LanguagePrimitives.TryConvertTo(versionValue, out moduleVersion))
-                        {
-                            return moduleVersion;
-                        }
+                        return moduleVersion;
                     }
                 }
-                catch (PSInvalidOperationException)
-                {
-                }
             }
+            catch (PSInvalidOperationException) { }
 
             return new Version(0, 0);
         }
 
         internal static Guid GetManifestGuid(string manifestPath)
         {
-            if (manifestPath != null &&
-                manifestPath.EndsWith(StringLiterals.PowerShellDataFileExtension, StringComparison.OrdinalIgnoreCase))
+            try
             {
-                try
-                {
-                    var dataFileSetting =
-                        PsUtils.GetModuleManifestProperties(
-                            manifestPath,
-                            PsUtils.ManifestGuidPropertyName);
+                Hashtable dataFileSetting =
+                    PsUtils.GetModuleManifestProperties(
+                        manifestPath,
+                        PsUtils.ManifestGuidPropertyName);
 
-                    var guidValue = dataFileSetting["GUID"];
-                    if (guidValue != null)
+                object guidValue = dataFileSetting["GUID"];
+                if (guidValue != null)
+                {
+                    Guid guidID;
+                    if (LanguagePrimitives.TryConvertTo(guidValue, out guidID))
                     {
-                        Guid guidID;
-                        if (LanguagePrimitives.TryConvertTo(guidValue, out guidID))
-                        {
-                            return guidID;
-                        }
+                        return guidID;
                     }
                 }
-                catch (PSInvalidOperationException)
-                {
-                }
             }
+            catch (PSInvalidOperationException) { }
 
             return new Guid();
+        }
+
+        internal static ExperimentalFeature[] GetExperimentalFeature(string manifestPath)
+        {
+            try
+            {
+                Hashtable dataFileSetting =
+                    PsUtils.GetModuleManifestProperties(
+                        manifestPath,
+                        PsUtils.ManifestPrivateDataPropertyName);
+
+                object privateData = dataFileSetting["PrivateData"];
+                if (privateData is Hashtable hashData && hashData["PSData"] is Hashtable psData)
+                {
+                    object expFeatureValue = psData["ExperimentalFeatures"];
+                    if (expFeatureValue != null &&
+                        LanguagePrimitives.TryConvertTo(expFeatureValue, out Hashtable[] features) &&
+                        features.Length > 0)
+                    {
+                        string moduleName = ModuleIntrinsics.GetModuleName(manifestPath);
+                        var expFeatureList = new List<ExperimentalFeature>();
+                        foreach (Hashtable feature in features)
+                        {
+                            string featureName = feature["Name"] as string;
+                            if (String.IsNullOrEmpty(featureName)) { continue; }
+
+                            if (ExperimentalFeature.IsModuleFeatureName(featureName, moduleName))
+                            {
+                                string featureDescription = feature["Description"] as string;
+                                expFeatureList.Add(new ExperimentalFeature(featureName, featureDescription, manifestPath,
+                                                                           ExperimentalFeature.IsEnabled(featureName)));
+                            }
+                        }
+                        return expFeatureList.ToArray();
+                    }
+                }
+            }
+            catch (PSInvalidOperationException) { }
+
+            return Utils.EmptyArray<ExperimentalFeature>();
         }
 
         // The extensions of all of the files that can be processed with Import-Module, put the ni.dll in front of .dll to have higher priority to be loaded.
@@ -480,7 +883,7 @@ namespace System.Management.Automation
                             StringLiterals.PowerShellCmdletizationFileExtension,
                             StringLiterals.WorkflowFileExtension,
                             StringLiterals.PowerShellNgenAssemblyExtension,
-                            StringLiterals.DependentWorkflowAssemblyExtension};
+                            StringLiterals.PowerShellILAssemblyExtension};
 
         // A list of the extensions to check for implicit module loading and discovery, put the ni.dll in front of .dll to have higher priority to be loaded.
         internal static string[] PSModuleExtensions = new string[] {
@@ -489,7 +892,7 @@ namespace System.Management.Automation
                             StringLiterals.PowerShellCmdletizationFileExtension,
                             StringLiterals.WorkflowFileExtension,
                             StringLiterals.PowerShellNgenAssemblyExtension,
-                            StringLiterals.DependentWorkflowAssemblyExtension};
+                            StringLiterals.PowerShellILAssemblyExtension};
 
         /// <summary>
         /// Returns true if the extension is one of the module extensions...
@@ -503,6 +906,7 @@ namespace System.Management.Automation
                 if (extension.Equals(ext, StringComparison.OrdinalIgnoreCase))
                     return true;
             }
+
             return false;
         }
 
@@ -553,11 +957,13 @@ namespace System.Management.Automation
         internal static string GetPSHomeModulePath()
         {
             if (s_psHomeModulePath != null)
+            {
                 return s_psHomeModulePath;
+            }
 
             try
             {
-                string psHome = Utils.GetApplicationBase(Utils.DefaultPowerShellShellID);
+                string psHome = Utils.DefaultPowerShellAppBase;
                 if (!string.IsNullOrEmpty(psHome))
                 {
                     // Win8: 584267 Powershell Modules are listed twice in x86, and cannot be removed
@@ -573,7 +979,9 @@ namespace System.Management.Automation
                     Interlocked.CompareExchange(ref s_psHomeModulePath, Path.Combine(psHome, "Modules"), null);
                 }
             }
-            catch (System.Security.SecurityException) { }
+            catch (System.Security.SecurityException)
+            {
+            }
 
             return s_psHomeModulePath;
         }
@@ -585,20 +993,38 @@ namespace System.Management.Automation
         /// It's known as "Program Files" module path in windows powershell.
         /// </summary>
         /// <returns></returns>
-        internal static string GetSharedModulePath()
+        private static string GetSharedModulePath()
         {
 #if UNIX
             return Platform.SelectProductNameForDirectory(Platform.XDG_Type.SHARED_MODULES);
 #else
-            string sharedModulePath = null;
-            string programFilesPath = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-            if (!string.IsNullOrEmpty(programFilesPath))
+            string sharedModulePath = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+
+            if (!string.IsNullOrEmpty(sharedModulePath))
             {
-                sharedModulePath = Path.Combine(programFilesPath, Utils.ModuleDirectory);
+                sharedModulePath = Path.Combine(sharedModulePath, Utils.ModuleDirectory);
             }
+
             return sharedModulePath;
 #endif
         }
+
+#if !UNIX
+        /// <summary>
+        /// Get the path to the Windows PowerShell module directory under the
+        /// System32 directory on Windows (the Windows PowerShell $PSHOME).
+        /// </summary>
+        /// <returns>The path of the Windows PowerShell system module directory.</returns>
+        internal static string GetWindowsPowerShellPSHomeModulePath()
+        {
+            if (!String.IsNullOrEmpty(InternalTestHooks.TestWindowsPowerShellPSHomeLocation))
+            {
+                return InternalTestHooks.TestWindowsPowerShellPSHomeLocation;
+            }
+
+            return s_windowsPowerShellPSHomeModulePath;
+        }
+#endif
 
         /// <summary>
         /// Combine the PS system-wide module path and the DSC module path
@@ -690,9 +1116,9 @@ namespace System.Management.Automation
                 foreach (string subPathToAdd in pathToAdd.Split(Utils.Separators.PathSeparator, StringSplitOptions.RemoveEmptyEntries)) // in case pathToAdd is a 'combined path' (semicolon-separated)
                 {
                     int position = PathContainsSubstring(result.ToString(), subPathToAdd); // searching in effective 'result' value ensures that possible duplicates in pathsToAdd are handled correctly
-                    if (-1 == position) // subPathToAdd not found - add it
+                    if (position == -1) // subPathToAdd not found - add it
                     {
-                        if (-1 == insertPosition) // append subPathToAdd to the end
+                        if (insertPosition == -1) // append subPathToAdd to the end
                         {
                             bool endsWithPathSeparator = false;
                             if (result.Length > 0) endsWithPathSeparator = (result[result.Length - 1] == Path.PathSeparator);
@@ -715,48 +1141,35 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Check if the current powershell is likely running in following scenarios:
-        ///  - sxs ps started on windows [machine-wide env:PSModulePath will influence]
-        ///  - sxs ps started from full ps
-        ///  - sxs ps started from inbox nano/iot ps
-        ///  - full ps started from sxs ps
-        ///  - inbox nano/iot ps started from sxs ps
+        ///  - PSCore started on windows [machine-wide env:PSModulePath will influence]
+        ///  - PSCore started from full ps
+        ///  - PSCore started from inbox nano/iot ps
         /// If it's likely one of them, then we need to clear the current process module path.
         /// </summary>
-        private static bool NeedToClearProcessModulePath(string currentProcessModulePath, string personalModulePath, string sharedModulePath, bool runningSxS)
+        private static bool NeedToClearProcessModulePath(string currentProcessModulePath, string personalModulePath, string sharedModulePath)
         {
 #if UNIX
             return false;
 #else
-            Dbg.Assert(!string.IsNullOrEmpty(personalModulePath), "caller makes sure it's not null or empty");
-            Dbg.Assert(!string.IsNullOrEmpty(sharedModulePath), "caller makes sure it's not null or empty");
+            Dbg.Assert(!string.IsNullOrEmpty(personalModulePath), "caller makes sure personalModulePath not null or empty");
+            Dbg.Assert(sharedModulePath != null, "caller makes sure sharedModulePath is not null");
 
             const string winSxSModuleDirectory = @"PowerShell\Modules";
             const string winLegacyModuleDirectory = @"WindowsPowerShell\Modules";
 
-            if (runningSxS)
-            {
-                // The machine-wide and user-wide environment variables are only meaningful for full ps,
-                // so if the current process module path contains any of them, it's likely that the sxs
-                // ps was started directly on windows, or from full ps. The same goes for the legacy personal
-                // and shared module paths.
-                string hklmModulePath = GetExpandedEnvironmentVariable(Constants.PSModulePathEnvVar, EnvironmentVariableTarget.Machine);
-                string hkcuModulePath = GetExpandedEnvironmentVariable(Constants.PSModulePathEnvVar, EnvironmentVariableTarget.User);
-                string legacyPersonalModulePath = personalModulePath.Replace(winSxSModuleDirectory, winLegacyModuleDirectory);
-                string legacyProgramFilesModulePath = sharedModulePath.Replace(winSxSModuleDirectory, winLegacyModuleDirectory);
+            // The machine-wide and user-wide environment variables are only meaningful for full ps,
+            // so if the current process module path contains any of them, it's likely that the sxs
+            // ps was started directly on windows, or from full ps. The same goes for the legacy personal
+            // and shared module paths.
+            string hklmModulePath = GetExpandedEnvironmentVariable(Constants.PSModulePathEnvVar, EnvironmentVariableTarget.Machine);
+            string hkcuModulePath = GetExpandedEnvironmentVariable(Constants.PSModulePathEnvVar, EnvironmentVariableTarget.User);
+            string legacyPersonalModulePath = personalModulePath.Replace(winSxSModuleDirectory, winLegacyModuleDirectory);
+            string legacyProgramFilesModulePath = sharedModulePath.Replace(winSxSModuleDirectory, winLegacyModuleDirectory);
 
-                return (!string.IsNullOrEmpty(hklmModulePath) && currentProcessModulePath.IndexOf(hklmModulePath, StringComparison.OrdinalIgnoreCase) != -1) ||
-                       (!string.IsNullOrEmpty(hkcuModulePath) && currentProcessModulePath.IndexOf(hkcuModulePath, StringComparison.OrdinalIgnoreCase) != -1) ||
-                       currentProcessModulePath.IndexOf(legacyPersonalModulePath, StringComparison.OrdinalIgnoreCase) != -1 ||
-                       currentProcessModulePath.IndexOf(legacyProgramFilesModulePath, StringComparison.OrdinalIgnoreCase) != -1;
-            }
-
-            // The sxs personal and shared module paths are only meaningful for sxs ps, so if they appear
-            // in the current process module path, it's likely the running ps was started from a sxs ps.
-            string sxsPersonalModulePath = personalModulePath.Replace(winLegacyModuleDirectory, winSxSModuleDirectory);
-            string sxsProgramFilesModulePath = sharedModulePath.Replace(winLegacyModuleDirectory, winSxSModuleDirectory);
-
-            return currentProcessModulePath.IndexOf(sxsPersonalModulePath, StringComparison.OrdinalIgnoreCase) != -1 ||
-                   currentProcessModulePath.IndexOf(sxsProgramFilesModulePath, StringComparison.OrdinalIgnoreCase) != -1;
+            return (!string.IsNullOrEmpty(hklmModulePath) && currentProcessModulePath.IndexOf(hklmModulePath, StringComparison.OrdinalIgnoreCase) != -1) ||
+                   (!string.IsNullOrEmpty(hkcuModulePath) && currentProcessModulePath.IndexOf(hkcuModulePath, StringComparison.OrdinalIgnoreCase) != -1) ||
+                   currentProcessModulePath.IndexOf(legacyPersonalModulePath, StringComparison.OrdinalIgnoreCase) != -1 ||
+                   currentProcessModulePath.IndexOf(legacyProgramFilesModulePath, StringComparison.OrdinalIgnoreCase) != -1;
 #endif
         }
 
@@ -768,10 +1181,12 @@ namespace System.Management.Automation
         private static string RemoveSxSPsHomeModulePath(string currentProcessModulePath, string personalModulePath, string sharedModulePath, string psHomeModulePath)
         {
 #if UNIX
-            const string powershellExeName = "powershell";
+            const string powershellExeName = "pwsh";
 #else
-            const string powershellExeName = "powershell.exe";
+            const string powershellExeName = "pwsh.exe";
 #endif
+            const string powershellDepsName = "pwsh.deps.json";
+
             StringBuilder modulePathString = new StringBuilder(currentProcessModulePath.Length);
             char[] invalidPathChars = Path.GetInvalidPathChars();
 
@@ -791,8 +1206,8 @@ namespace System.Management.Automation
                 {
                     string parentDir = Path.GetDirectoryName(trimedPath);
                     string psExePath = Path.Combine(parentDir, powershellExeName);
-                    string psDepsPath = Path.Combine(parentDir, "powershell.deps.json");
-                    if (File.Exists(psExePath) && File.Exists(psDepsPath))
+                    string psDepsPath = Path.Combine(parentDir, powershellDepsName);
+                    if ((File.Exists(psExePath) && File.Exists(psDepsPath)))
                     {
                         // Path is a PSHome module path from a different powershell core instance. Ignore it.
                         continue;
@@ -820,20 +1235,13 @@ namespace System.Management.Automation
             string sharedModulePath = GetSharedModulePath(); // aka <Program Files> location
             string psHomeModulePath = GetPSHomeModulePath(); // $PSHome\Modules location
 
-#if CORECLR
-            bool runningSxS = Platform.IsInbox ? false : true;
-#else
-            bool runningSxS = false;
-#endif
             if (!string.IsNullOrEmpty(currentProcessModulePath) &&
-                NeedToClearProcessModulePath(currentProcessModulePath, personalModulePath, sharedModulePath, runningSxS))
+                NeedToClearProcessModulePath(currentProcessModulePath, personalModulePath, sharedModulePath))
             {
                 // Clear the current process module path in the following cases
-                //  - start sxs ps on windows [machine-wide env:PSModulePath will influence]
-                //  - start sxs ps from full ps
-                //  - start sxs ps from inbox nano/iot ps
-                //  - start full ps from sxs ps
-                //  - start inbox nano/iot ps from sxs ps
+                //  - start PSCore on windows [machine-wide env:PSModulePath will influence]
+                //  - start PSCore from full ps
+                //  - start PSCore from inbox nano/iot ps
                 currentProcessModulePath = null;
             }
 
@@ -862,7 +1270,7 @@ namespace System.Management.Automation
             }
             // EVT.Process exists
             // Now handle the case where the environment variable is already set.
-            else if (runningSxS) // The running powershell is an SxS PS instance
+            else
             {
                 // When SxS PS instance A starts SxS PS instance B, A's PSHome module path might be inherited by B. We need to remove that path from B
                 currentProcessModulePath = RemoveSxSPsHomeModulePath(currentProcessModulePath, personalModulePath, sharedModulePath, psHomeModulePath);
@@ -871,97 +1279,23 @@ namespace System.Management.Automation
                 string systemModulePathToUse = string.IsNullOrEmpty(hklmMachineModulePath) ? psHomeModulePath : hklmMachineModulePath;
 
                 currentProcessModulePath = AddToPath(currentProcessModulePath, personalModulePathToUse, 0);
-                currentProcessModulePath = AddToPath(currentProcessModulePath, systemModulePathToUse, -1);
-            }
-            else // The running powershell is Full PS or inbox Core PS
-            {
-                // If there is no personal path key, then if the env variable doesn't match the system variable,
-                // the user modified it somewhere, else prepend the default personal module path
-                if (hklmMachineModulePath != null) // EVT.Machine exists
-                {
-                    if (hkcuUserModulePath == null) // EVT.User does Not exist
-                    {
-                        if (!(hklmMachineModulePath).Equals(currentProcessModulePath, StringComparison.OrdinalIgnoreCase))
-                        {
-                            // before returning, use <presence of Windows module path> heuristic to conditionally add <Program Files> location
-                            int psHomePosition = PathContainsSubstring(currentProcessModulePath, psHomeModulePath); // index of $PSHome\Modules in currentProcessModulePath
-                            if (psHomePosition >= 0) // if $PSHome\Modules IS found - insert <Program Files> location before $PSHome\Modules
-                            {
-#if !CORECLR
-                                // for bug 6678623, if we are running wow64 process (x86 32-bit process on 64-bit (amd64) OS), then ensure that <SpecialFolder.MyDocuments> exists in currentProcessModulePath / return value
-                                if (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess)
-                                {
-                                    currentProcessModulePath = AddToPath(currentProcessModulePath, personalModulePath, psHomePosition);
-                                    psHomePosition = PathContainsSubstring(currentProcessModulePath, psHomeModulePath);
-                                }
+
+                int insertIndex = -1;
+#if !UNIX
+                string windowsPowerShellModulePath = GetWindowsPowerShellPSHomeModulePath();
+                // If the Windows PowerShell Module path is already present, insert the system module path
+                // ($PSHOME/Modules) before it.
+                insertIndex = PathContainsSubstring(currentProcessModulePath, windowsPowerShellModulePath);
 #endif
-                                return AddToPath(currentProcessModulePath, sharedModulePath, psHomePosition);
-                            } // if $PSHome\Modules NOT found = <scenario 4> = 'PSModulePath has been constrained by a user to create a sand boxed environment without including System Modules'
-
-                            return null;
-                        }
-                        currentProcessModulePath = personalModulePath + Path.PathSeparator + hklmMachineModulePath; // <SpecialFolder.MyDocuments> + EVT.Machine + inserted <ProgramFiles> later in this function
-                    }
-                    else // EVT.User exists
-                    {
-                        // PSModulePath is designed to have behaviour like 'Path' var in a sense that EVT.User + EVT.Machine are merged to get final value of PSModulePath
-                        string combined = string.Concat(hkcuUserModulePath, Path.PathSeparator, hklmMachineModulePath); // EVT.User + EVT.Machine
-                        if (!((combined).Equals(currentProcessModulePath, StringComparison.OrdinalIgnoreCase) ||
-                            (hklmMachineModulePath).Equals(currentProcessModulePath, StringComparison.OrdinalIgnoreCase) ||
-                            (hkcuUserModulePath).Equals(currentProcessModulePath, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            // before returning, use <presence of Windows module path> heuristic to conditionally add <Program Files> location
-                            int psHomePosition = PathContainsSubstring(currentProcessModulePath, psHomeModulePath); // index of $PSHome\Modules in currentProcessModulePath
-                            if (psHomePosition >= 0) // if $PSHome\Modules IS found - insert <Program Files> location before $PSHome\Modules
-                            {
-                                return AddToPath(currentProcessModulePath, sharedModulePath, psHomePosition);
-                            } // if $PSHome\Modules NOT found = <scenario 4> = 'PSModulePath has been constrained by a user to create a sand boxed environment without including System Modules'
-
-                            return null;
-                        }
-                        currentProcessModulePath = combined; // = EVT.User + EVT.Machine + inserted <ProgramFiles> later in this function
-                    }
-                }
-                else // EVT.Machine does Not exist
-                {
-                    // If there is no system path key, then if the env variable doesn't match the user variable,
-                    // the user modified it somewhere, otherwise append the default system path
-                    if (hkcuUserModulePath != null) // EVT.User exists
-                    {
-                        if (hkcuUserModulePath.Equals(currentProcessModulePath, StringComparison.OrdinalIgnoreCase))
-                        {
-                            currentProcessModulePath = hkcuUserModulePath + Path.PathSeparator + CombineSystemModulePaths(); // = EVT.User + (SharedModulePath + $PSHome\Modules)
-                        }
-                        else
-                        {
-                            // before returning, use <presence of Windows module path> heuristic to conditionally add <Program Files> location
-                            int psHomePosition = PathContainsSubstring(currentProcessModulePath, psHomeModulePath); // index of $PSHome\Modules in currentProcessModulePath
-                            if (psHomePosition >= 0) // if $PSHome\Modules IS found - insert <Program Files> location before $PSHome\Modules
-                            {
-                                return AddToPath(currentProcessModulePath, sharedModulePath, psHomePosition);
-                            } // if $PSHome\Modules NOT found = <scenario 4> = 'PSModulePath has been constrained by a user to create a sand boxed environment without including System Modules'
-
-                            return null;
-                        }
-                    }
-                    else // EVT.User does Not exist
-                    {
-                        // before returning, use <presence of Windows module path> heuristic to conditionally add <Program Files> location
-                        int psHomePosition = PathContainsSubstring(currentProcessModulePath, psHomeModulePath); // index of $PSHome\Modules in currentProcessModulePath
-                        if (psHomePosition >= 0) // if $PSHome\Modules IS found - insert <Program Files> location before $PSHome\Modules
-                        {
-                            return AddToPath(currentProcessModulePath, sharedModulePath, psHomePosition);
-                        } // if $PSHome\Modules NOT found = <scenario 4> = 'PSModulePath has been constrained by a user to create a sand boxed environment without including System Modules'
-
-                        // Neither key is set so go with what the environment variable is already set to
-                        return null;
-                    }
-                }
+                currentProcessModulePath = AddToPath(currentProcessModulePath, systemModulePathToUse, insertIndex);
             }
 
             // if we reached this point - always add <Program Files> location to EVT.Process
             // everything below is the same behaviour as WMF 4 code
-            int indexOfPSHomeModulePath = PathContainsSubstring(currentProcessModulePath, psHomeModulePath); // index of $PSHome\Modules in currentProcessModulePath
+
+            // index of $PSHome\Modules in currentProcessModulePath
+            int indexOfPSHomeModulePath = PathContainsSubstring(currentProcessModulePath, psHomeModulePath);
+
             // if $PSHome\Modules not found (psHomePosition == -1) - append <Program Files> location to the end;
             // if $PSHome\Modules IS found (psHomePosition >= 0) - insert <Program Files> location before $PSHome\Modules
             currentProcessModulePath = AddToPath(currentProcessModulePath, sharedModulePath, indexOfPSHomeModulePath);
@@ -979,21 +1313,32 @@ namespace System.Management.Automation
             string currentModulePath = GetExpandedEnvironmentVariable(Constants.PSModulePathEnvVar, EnvironmentVariableTarget.Process);
             return currentModulePath;
         }
+
         /// <summary>
         /// Checks if $env:PSModulePath is not set and sets it as appropriate. Note - because these
         /// strings go through the provider, we need to escape any wildcards before passing them
         /// along.
         /// </summary>
-        internal static string SetModulePath()
+        private static string SetModulePath()
         {
             string currentModulePath = GetExpandedEnvironmentVariable(Constants.PSModulePathEnvVar, EnvironmentVariableTarget.Process);
-            string systemWideModulePath = ConfigPropertyAccessor.Instance.GetModulePath(ConfigPropertyAccessor.PropertyScope.SystemWide);
-            string personalModulePath = ConfigPropertyAccessor.Instance.GetModulePath(ConfigPropertyAccessor.PropertyScope.CurrentUser);
+            string allUsersModulePath = PowerShellConfig.Instance.GetModulePath(ConfigScope.AllUsers);
+            string personalModulePath = PowerShellConfig.Instance.GetModulePath(ConfigScope.CurrentUser);
 
-            string newModulePathString = GetModulePath(currentModulePath, systemWideModulePath, personalModulePath);
+            string newModulePathString = GetModulePath(currentModulePath, allUsersModulePath, personalModulePath);
 
             if (!string.IsNullOrEmpty(newModulePathString))
             {
+#if !UNIX
+                // If on Windows, we want to add the System32 Windows PowerShell module directory
+                // so that Windows modules are discoverable
+                string windowsPowerShellModulePath = GetWindowsPowerShellPSHomeModulePath();
+                if (!newModulePathString.Contains(windowsPowerShellModulePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    newModulePathString += Path.PathSeparator + windowsPowerShellModulePath;
+                }
+#endif
+
                 // Set the environment variable...
                 Environment.SetEnvironmentVariable(Constants.PSModulePathEnvVar, newModulePathString);
             }
@@ -1110,6 +1455,29 @@ namespace System.Management.Automation
             return null;
         }
 
+        /// <summary>
+        /// Removes all functions not belonging to the parent module.
+        /// </summary>
+        /// <param name="module">Parent module</param>
+        static internal void RemoveNestedModuleFunctions(PSModuleInfo module)
+        {
+            var input = module.SessionState?.Internal?.ExportedFunctions;
+            if ((input == null) || (input.Count == 0))
+            { return; }
+
+            List<FunctionInfo> output = new List<FunctionInfo>(input.Count);
+            foreach (var fnInfo in input)
+            {
+                if (module.Name.Equals(fnInfo.ModuleName, StringComparison.OrdinalIgnoreCase))
+                {
+                    output.Add(fnInfo);
+                }
+            }
+
+            input.Clear();
+            input.AddRange(output);
+        }
+
         private static void SortAndRemoveDuplicates<T>(List<T> input, Func<T, string> keyGetter)
         {
             Dbg.Assert(input != null, "Caller should verify that input != null");
@@ -1151,11 +1519,15 @@ namespace System.Management.Automation
         /// <param name="cmdletPatterns">Patterns describing the cmdlets to export</param>
         /// <param name="aliasPatterns">Patterns describing the aliases to export</param>
         /// <param name="variablePatterns">Patterns describing the variables to export</param>
-        /// <param name="doNotExportCmdlets">List of Cmdlets that will not be exported,
-        ///     even if they match in cmdletPatterns.</param>
-        internal static void ExportModuleMembers(PSCmdlet cmdlet, SessionStateInternal sessionState,
-            List<WildcardPattern> functionPatterns, List<WildcardPattern> cmdletPatterns,
-            List<WildcardPattern> aliasPatterns, List<WildcardPattern> variablePatterns, List<string> doNotExportCmdlets)
+        /// <param name="doNotExportCmdlets">List of Cmdlets that will not be exported, even if they match in cmdletPatterns.</param>
+        internal static void ExportModuleMembers(
+            PSCmdlet cmdlet,
+            SessionStateInternal sessionState,
+            List<WildcardPattern> functionPatterns,
+            List<WildcardPattern> cmdletPatterns,
+            List<WildcardPattern> aliasPatterns,
+            List<WildcardPattern> variablePatterns,
+            List<string> doNotExportCmdlets)
         {
             // If this cmdlet is called, then mark that the export list should be used for exporting
             // module members...
@@ -1164,6 +1536,12 @@ namespace System.Management.Automation
 
             if (functionPatterns != null)
             {
+                sessionState.FunctionsExported = true;
+                if (PatternContainsWildcard(functionPatterns))
+                {
+                    sessionState.FunctionsExportedWithWildcard = true;
+                }
+
                 IDictionary<string, FunctionInfo> ft = sessionState.ModuleScope.FunctionTable;
 
                 foreach (KeyValuePair<string, FunctionInfo> entry in ft)
@@ -1176,24 +1554,12 @@ namespace System.Management.Automation
 
                     if (SessionStateUtilities.MatchesAnyWildcardPattern(entry.Key, functionPatterns, false))
                     {
-                        string message;
-
-                        if (entry.Value.CommandType == CommandTypes.Workflow)
-                        {
-                            message = StringUtil.Format(Modules.ExportingWorkflow, entry.Key);
-                            sessionState.ExportedWorkflows.Add((WorkflowInfo)entry.Value);
-                        }
-                        else
-                        {
-                            message = StringUtil.Format(Modules.ExportingFunction, entry.Key);
-                            sessionState.ExportedFunctions.Add(entry.Value);
-                        }
-
+                        sessionState.ExportedFunctions.Add(entry.Value);
+                        string message = StringUtil.Format(Modules.ExportingFunction, entry.Key);
                         cmdlet.WriteVerbose(message);
                     }
                 }
                 SortAndRemoveDuplicates(sessionState.ExportedFunctions, delegate (FunctionInfo ci) { return ci.Name; });
-                SortAndRemoveDuplicates(sessionState.ExportedWorkflows, delegate (WorkflowInfo ci) { return ci.Name; });
             }
 
             if (cmdletPatterns != null)
@@ -1314,6 +1680,27 @@ namespace System.Management.Automation
             }
         }
 
+        /// <summary>
+        /// Checks pattern list for wildcard characters.
+        /// </summary>
+        /// <param name="list">Pattern list</param>
+        /// <returns>True if pattern contains '*'</returns>
+        internal static bool PatternContainsWildcard(List<WildcardPattern> list)
+        {
+            if (list != null)
+            {
+                foreach (var item in list)
+                {
+                    if (WildcardPattern.ContainsWildcardCharacters(item.Pattern))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         private static AliasInfo NewAliasInfo(AliasInfo alias, SessionStateInternal sessionState)
         {
             Dbg.Assert(alias != null, "alias should not be null");
@@ -1327,7 +1714,37 @@ namespace System.Management.Automation
             };
             return aliasCopy;
         }
-    } // ModuleIntrinsics
+    }
+
+    /// <summary>
+    /// Enumeration of reasons for a failure to match a module by constraints.
+    /// </summary>
+    internal enum ModuleMatchFailure
+    {
+        /// <summary>Match did not fail.</summary>
+        None,
+
+        /// <summary>Match failed because the module was null.</summary>
+        NullModule,
+
+        /// <summary>Module name did not match.</summary>
+        Name,
+
+        /// <summary>Module GUID did not match.</summary>
+        Guid,
+
+        /// <summary>Module version did not match the required version.</summary>
+        RequiredVersion,
+
+        /// <summary>Module version was lower than the minimum version.</summary>
+        MinimumVersion,
+
+        /// <summary>Module version was greater than the maximum version.</summary>
+        MaximumVersion,
+
+        /// <summary>The module specifcation passed in was null.</summary>
+        NullModuleSpecification,
+    }
 
     /// <summary>
     /// Used by Modules/Snapins to provide a hook to the engine for startup initialization
@@ -1352,4 +1769,4 @@ namespace System.Management.Automation
         /// </summary>
         void OnRemove(PSModuleInfo psModuleInfo);
     }
-} // System.Management.Automation
+}

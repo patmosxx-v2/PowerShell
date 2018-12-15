@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Globalization;
 using System.Linq;
@@ -166,6 +165,13 @@ namespace System.Management.Automation
                 throw new ArgumentTransformationMetadataException(e.Message, e);
             }
 
+            // Track the flow of untrusted object during the conversion when it's called directly from ParameterBinderBase.
+            // When it's called from the override Transform method, the tracking is taken care of in the base type.
+            if (bindingParameters || bindingScriptCmdlet)
+            {
+                ExecutionContext.PropagateInputSource(inputData, result, engineIntrinsics.SessionState.Internal.LanguageMode);
+            }
+
             return result;
         }
 
@@ -186,7 +192,7 @@ namespace System.Management.Automation
             }
             else
             {
-                bool isNullable = boolType.GetTypeInfo().IsGenericType &&
+                bool isNullable = boolType.IsGenericType &&
                     boolType.GetGenericTypeDefinition() == typeof(Nullable<>);
 
                 if (!isNullable && LanguagePrimitives.IsBooleanType(boolType))

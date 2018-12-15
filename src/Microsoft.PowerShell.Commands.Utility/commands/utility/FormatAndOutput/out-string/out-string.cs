@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Text;
@@ -11,20 +10,19 @@ using Microsoft.PowerShell.Commands.Internal.Format;
 namespace Microsoft.PowerShell.Commands
 {
     /// <summary>
-    /// implementation for the out-string command
+    /// Implementation for the out-string command.
     /// </summary>
-    [Cmdlet(VerbsData.Out, "String", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113368", RemotingCapability = RemotingCapability.None)]
+    [Cmdlet(VerbsData.Out, "String", DefaultParameterSetName = "NoNewLineFormatting", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113368", RemotingCapability = RemotingCapability.None)]
     [OutputType(typeof(string))]
     public class OutStringCommand : FrontEndCommandBase
     {
         #region Command Line Parameters
         /// <summary>
-        /// optional, non positional parameter to specify the
-        /// streaming behavior
-        /// FALSE: accumulate all the data, then write a single string
-        /// TRUE: write one line at the time
+        /// Optional, non positional parameter to specify the streaming behavior.
+        /// FALSE: accumulate all the data, then write a single string.
+        /// TRUE: write one line at the time.
         /// </summary>
-        [Parameter]
+        [Parameter(ParameterSetName = "StreamFormatting")]
         public SwitchParameter Stream
         {
             get { return _stream; }
@@ -34,7 +32,7 @@ namespace Microsoft.PowerShell.Commands
         private bool _stream;
 
         /// <summary>
-        /// optional, number of columns to use when writing to device
+        /// Optional, number of columns to use when writing to device.
         /// </summary>
         [ValidateRangeAttribute(2, int.MaxValue)]
         [Parameter]
@@ -45,10 +43,23 @@ namespace Microsoft.PowerShell.Commands
         }
 
         private Nullable<int> _width = null;
+
+        /// <summary>
+        /// False to add a newline to the end of the output string, true if not.
+        /// </summary>
+        [Parameter(ParameterSetName = "NoNewLineFormatting")]
+        public SwitchParameter NoNewline
+        {
+            get { return _noNewLine; }
+            set { _noNewLine = value; }
+        }
+
+        private bool _noNewLine = false;
+
         #endregion
 
         /// <summary>
-        /// set inner command
+        /// Set inner command.
         /// </summary>
         public OutStringCommand()
         {
@@ -56,7 +67,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// read command line parameters
+        /// Read command line parameters.
         /// </summary>
         protected override void BeginProcessing()
         {
@@ -70,8 +81,8 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// one time initialization: acquire a screen host interface
-        /// by creating one on top of a stream
+        /// One-time initialization: acquire a screen host interface
+        /// by creating one on top of a stream.
         /// </summary>
         private LineOutput InstantiateLineOutputInterface()
         {
@@ -81,30 +92,12 @@ namespace Microsoft.PowerShell.Commands
             _writer = new StreamingTextWriter(callback, Host.CurrentCulture);
 
             // compute the # of columns available
-            int computedWidth = 120;
+            int computedWidth = int.MaxValue;
 
             if (_width != null)
             {
                 // use the value from the command line
                 computedWidth = _width.Value;
-            }
-            else
-            {
-                // use the value we get from the console
-                try
-                {
-                    // NOTE: we subtract 1 because we want to properly handle
-                    // the following scenario:
-                    // MSH>get-foo|format-table|out-string
-                    // in this case, if the computed width is (say) 80, get-content
-                    // would cause a wrapping of the 80 column long raw strings.
-                    // Hence we set the width to 79.
-                    computedWidth = this.Host.UI.RawUI.BufferSize.Width - 1;
-                }
-                catch (HostException)
-                {
-                    // non interactive host
-                }
             }
 
             // use it to create and initialize the Line Output writer
@@ -115,20 +108,30 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// callback to add lines to the buffer or to write them to
-        /// the output stream
+        /// Callback to add lines to the buffer or to write them to the output stream.
         /// </summary>
         /// <param name="s"></param>
         private void OnWriteLine(string s)
         {
             if (_stream)
+            {
                 this.WriteObject(s);
+            }
             else
-                _buffer.AppendLine(s);
+            {
+                if (_noNewLine)
+                {
+                    _buffer.Append(s);
+                }
+                else
+                {
+                    _buffer.AppendLine(s);
+                }
+            }
         }
 
         /// <summary>
-        /// execution entry point
+        /// Execution entry point.
         /// </summary>
         protected override void ProcessRecord()
         {
@@ -137,7 +140,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// execution entry point
+        /// Execution entry point.
         /// </summary>
         protected override void EndProcessing()
         {
@@ -152,14 +155,13 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// writer used by the LineOutput
+        /// Writer used by the LineOutput.
         /// </summary>
         private StreamingTextWriter _writer = null;
 
         /// <summary>
-        ///  buffer used when buffering until the end
+        ///  Buffer used when buffering until the end.
         /// </summary>
         private StringBuilder _buffer = new StringBuilder();
     }
 }
-

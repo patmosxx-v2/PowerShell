@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Diagnostics;
@@ -19,6 +18,7 @@ using System.Management.Automation.Internal;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.PowerShell.Commands.Internal.Format;
 
 namespace System.Management.Automation
 {
@@ -217,49 +217,6 @@ namespace System.Management.Automation
 
     #endregion
 
-    #region DebugSource
-
-    /// <summary>
-    /// Contains debugger script and script file information.
-    /// </summary>
-    public sealed class DebugSource
-    {
-        /// <summary>
-        /// Full script.
-        /// </summary>
-        public string Script { get; private set; }
-
-        /// <summary>
-        /// Script file for script or null.
-        /// </summary>
-        public string ScriptFile { get; private set; }
-
-        /// <summary>
-        /// Xaml definition for Workflow script or null.
-        /// </summary>
-        public string XamlDefinition { get; private set; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="script">Script text</param>
-        /// <param name="scriptFile">Script file</param>
-        /// <param name="xamlDefinition">Xaml definition</param>
-        public DebugSource(
-            string script,
-            string scriptFile,
-            string xamlDefinition)
-        {
-            Script = script;
-            ScriptFile = scriptFile;
-            XamlDefinition = xamlDefinition;
-        }
-
-        private DebugSource() { }
-    }
-
-    #endregion
-
     #region Runspace Debug Processing
 
     /// <summary>
@@ -411,7 +368,7 @@ namespace System.Management.Automation
         public event EventHandler<ProcessRunspaceDebugEndEventArgs> RunspaceDebugProcessingCompleted;
 
         /// <summary>
-        /// Event raised to indicate that the debugging session is over and runspace debuggers queued for 
+        /// Event raised to indicate that the debugging session is over and runspace debuggers queued for
         /// processing should be released.
         /// </summary>
         public event EventHandler<EventArgs> CancelRunspaceDebugProcessing;
@@ -623,7 +580,7 @@ namespace System.Management.Automation
         public abstract DebuggerStopEventArgs GetDebuggerStopArgs();
 
         /// <summary>
-        /// Sets the parent debugger and breakpoints.
+        /// Sets the parent debugger, breakpoints and other debugging context information.
         /// </summary>
         /// <param name="parent">Parent debugger</param>
         /// <param name="breakPoints">List of breakpoints</param>
@@ -636,27 +593,6 @@ namespace System.Management.Automation
             DebuggerResumeAction? startAction,
             PSHost host,
             PathInfo path)
-        {
-            throw new PSNotImplementedException();
-        }
-
-        /// <summary>
-        /// Sets the parent debugger, breakpoints, function source and other
-        /// debugging context information.
-        /// </summary>
-        /// <param name="parent">Parent debugger</param>
-        /// <param name="breakPoints">List of breakpoints</param>
-        /// <param name="startAction">Debugger mode</param>
-        /// <param name="host">PowerShell host</param>
-        /// <param name="path">Current path</param>
-        /// <param name="functionSourceMap">Function to source map</param>
-        public virtual void SetParent(
-            Debugger parent,
-            IEnumerable<Breakpoint> breakPoints,
-            DebuggerResumeAction? startAction,
-            PSHost host,
-            PathInfo path,
-            Dictionary<string, DebugSource> functionSourceMap)
         {
             throw new PSNotImplementedException();
         }
@@ -1508,13 +1444,7 @@ namespace System.Management.Automation
                 _currentDebuggerAction = DebuggerResumeAction.Continue;
                 ResumeExecution(DebuggerResumeAction.Stop);
             }
-#if !CORECLR // Workflow Not Supported on OneCore PS
-            // Lazily subscribe to workflow start engine event for workflow debugging.
-            if (!_wfStartEventSubscribed && IsJobDebuggingMode())
-            {
-                SubscribeToEngineWFJobStartEvent();
-            }
-#endif
+
             UpdateBreakpoints(functionContext);
 
             if (_steppingMode == SteppingMode.StepIn &&
@@ -1696,9 +1626,6 @@ namespace System.Management.Automation
         private PowerShell _psDebuggerCommand;
 
         // Job debugger integration.
-#if !CORECLR // Workflow Not Supported on OneCore PS
-        private bool _wfStartEventSubscribed;
-#endif
         private bool _nestedDebuggerStop;
         private bool _writeWFErrorOnce;
         private Dictionary<Guid, PSJobStartEventArgs> _runningJobs;
@@ -1790,6 +1717,22 @@ namespace System.Management.Automation
                 // Ignore, it means they don't have the default prompt
             }
 
+            // Change the context language mode before updating the prompt script.
+            // This way the new prompt scriptblock will pick up the current context language mode.
+            PSLanguageMode? originalLanguageMode = null;
+            if (_context.UseFullLanguageModeInDebugger &&
+                (_context.LanguageMode != PSLanguageMode.FullLanguage))
+            {
+                originalLanguageMode = _context.LanguageMode;
+                _context.LanguageMode = PSLanguageMode.FullLanguage;
+            }
+            else if (System.Management.Automation.Security.SystemPolicy.GetSystemLockdownPolicy() ==
+                System.Management.Automation.Security.SystemEnforcementMode.Enforce)
+            {
+                // If there is a system lockdown in place, enforce it
+                originalLanguageMode = Utils.EnforceSystemLockDownLanguageMode(this._context);
+            }
+
             // Update the prompt to the debug prompt
             if (hadDefaultPrompt)
             {
@@ -1806,21 +1749,6 @@ namespace System.Management.Automation
                 {
                     hadDefaultPrompt = false;
                 }
-            }
-
-            PSLanguageMode? originalLanguageMode = null;
-            if (_context.UseFullLanguageModeInDebugger &&
-                (_context.LanguageMode != PSLanguageMode.FullLanguage))
-            {
-                originalLanguageMode = _context.LanguageMode;
-                _context.LanguageMode = PSLanguageMode.FullLanguage;
-            }
-            else if (System.Management.Automation.Security.SystemPolicy.GetSystemLockdownPolicy() ==
-                System.Management.Automation.Security.SystemEnforcementMode.Enforce)
-            {
-                // If there is a system lockdown in place, enforce it
-                originalLanguageMode = _context.LanguageMode;
-                _context.LanguageMode = PSLanguageMode.ConstrainedLanguage;
             }
 
             RunspaceAvailability previousAvailability = _context.CurrentRunspace.RunspaceAvailability;
@@ -1924,7 +1852,7 @@ namespace System.Management.Automation
                     break;
 
                 case DebuggerResumeAction.Continue:
-                    // nothing to  do, just continue
+                    // nothing to do, just continue
                     _steppingMode = SteppingMode.None;
                     _overOrOutFrame = null;
                     break;
@@ -2162,14 +2090,7 @@ namespace System.Management.Automation
                     ResumeExecution(DebuggerResumeAction.StepInto);
                 }
             }
-#if !CORECLR
-            // Workflow Not Supported on OneCore PS
-            // Look for any running workflow jobs and set to step mode.
-            if ((nestedType & EnableNestedType.NestedJob) == EnableNestedType.NestedJob)
-            {
-                EnableRunningWorkflowJobsForStepping();
-            }
-#endif
+
             // Look for any runspaces with debuggers and set to setp mode.
             if ((nestedType & EnableNestedType.NestedRunspace) == EnableNestedType.NestedRunspace)
             {
@@ -2877,62 +2798,6 @@ namespace System.Management.Automation
 
         #region Job debugger integration
 
-#if !CORECLR // Workflow Not Supported on OneCore PS
-        private void SubscribeToEngineWFJobStartEvent()
-        {
-            Diagnostics.Assert(_context.Events != null, "Event manager cannot be null.");
-
-            _context.Events.SubscribeEvent(
-                    source: null,
-                    eventName: null,
-                    sourceIdentifier: PSEngineEvent.WorkflowJobStartEvent,
-                    data: null,
-                    handlerDelegate: HandleJobStartEvent,
-                    supportEvent: true,
-                    forwardEvent: false);
-
-            _wfStartEventSubscribed = true;
-        }
-
-        private void UnsubscribeFromEngineWFJobStartEvent()
-        {
-            PSEventManager eventManager = _context.Events;
-            Diagnostics.Assert(eventManager != null, "Event manager cannot be null.");
-
-            foreach (var subscriber in eventManager.GetEventSubscribers(PSEngineEvent.WorkflowJobStartEvent))
-            {
-                eventManager.UnsubscribeEvent(subscriber);
-            }
-
-            _wfStartEventSubscribed = false;
-        }
-
-        private void HandleJobStartEvent(object sender, PSEventArgs args)
-        {
-            Diagnostics.Assert(args.SourceArgs.Length == 1, "WF Job Started engine event SourceArgs should have a single element.");
-            PSJobStartEventArgs jobStartedArgs = args.SourceArgs[0] as PSJobStartEventArgs;
-            Diagnostics.Assert(jobStartedArgs != null, "WF Job Started engine event args cannot be null.");
-            Diagnostics.Assert(jobStartedArgs.Job != null, "WF Job to start cannot be null.");
-            Diagnostics.Assert(jobStartedArgs.Debugger != null, "WF Job Started Debugger object cannot be null.");
-
-            if (!(jobStartedArgs.Debugger.GetType().FullName.Equals("Microsoft.PowerShell.Workflow.PSWorkflowDebugger",
-                StringComparison.OrdinalIgnoreCase)))
-            {
-                // Check to ensure only PS workflow debuggers can be passed in.
-                throw new PSInvalidOperationException();
-            }
-
-            // At this point the script debugger stack frame must be the Workflow execution function which is DebuggerHidden.
-            // The internal debugger resume action is set to StepOut, *if* the user selected StepIn, so as to skip this frame
-            // since debugging the workflow execution function is turned off.  We look at the previous resume action to see
-            // what the user intended.  If it is StepIn then we start the workflow job debugger in step mode.
-            Diagnostics.Assert(_callStack.LastFunctionContext()._debuggerHidden, "Current stack frame must be WF function DebuggerHidden");
-            DebuggerResumeAction startAction = (_previousDebuggerAction == DebuggerResumeAction.StepInto) ?
-                DebuggerResumeAction.StepInto : DebuggerResumeAction.Continue;
-            AddToJobRunningList(jobStartedArgs, startAction);
-        }
-#endif
-
         private void AddToJobRunningList(PSJobStartEventArgs jobArgs, DebuggerResumeAction startAction)
         {
             bool newJob = false;
@@ -2971,8 +2836,7 @@ namespace System.Management.Automation
                     _idToBreakpoint.Values.ToArray<Breakpoint>(),
                     startAction,
                     _context.EngineHostInterface.ExternalHost,
-                    _context.SessionState.Path.CurrentLocation,
-                    GetFunctionToSourceMap());
+                    _context.SessionState.Path.CurrentLocation);
             }
             else
             {
@@ -3023,57 +2887,6 @@ namespace System.Management.Automation
             }
         }
 
-        private Dictionary<string, DebugSource> GetFunctionToSourceMap()
-        {
-            Dictionary<string, DebugSource> fnToSource = new Dictionary<string, DebugSource>();
-
-            // Get workflow function source information for workflow debugger.
-            Collection<PSObject> items = _context.SessionState.InvokeProvider.Item.Get("function:\\*");
-            foreach (var item in items)
-            {
-                var funcItem = item.BaseObject as WorkflowInfo;
-                if ((funcItem != null) &&
-                    (!string.IsNullOrEmpty(funcItem.Name)))
-                {
-                    if ((funcItem.Module != null) && (funcItem.Module.Path != null))
-                    {
-                        string scriptFile = funcItem.Module.Path;
-                        string scriptSource = GetFunctionSource(scriptFile);
-                        if (scriptSource != null)
-                        {
-                            fnToSource.Add(
-                                funcItem.Name,
-                                new DebugSource(
-                                    scriptSource,
-                                    scriptFile,
-                                    funcItem.XamlDefinition));
-                        }
-                    }
-                }
-            }
-
-            return fnToSource;
-        }
-
-        private string GetFunctionSource(
-            string scriptFile)
-        {
-            if (System.IO.File.Exists(scriptFile))
-            {
-                try
-                {
-                    return System.IO.File.ReadAllText(scriptFile);
-                }
-                catch (ArgumentException) { }
-                catch (System.IO.IOException) { }
-                catch (UnauthorizedAccessException) { }
-                catch (NotSupportedException) { }
-                catch (System.Security.SecurityException) { }
-            }
-
-            return null;
-        }
-
         private void RemoveFromRunningJobList(Job job)
         {
             job.StateChanged -= HandleJobStateChanged;
@@ -3109,9 +2922,6 @@ namespace System.Management.Automation
 
         private void ClearRunningJobList()
         {
-#if !CORECLR // Workflow Not Supported on OneCore PS
-            UnsubscribeFromEngineWFJobStartEvent();
-#endif
             PSJobStartEventArgs[] runningJobs = null;
             lock (_syncObject)
             {
@@ -3264,12 +3074,6 @@ namespace System.Management.Automation
         {
             if (!IsJobDebuggingMode())
             {
-#if !CORECLR    // Workflow Not Supported on OneCore PS
-                // Remove workflow job callback.
-                UnsubscribeFromEngineWFJobStartEvent();
-                // Write warning to user.
-                WriteWorkflowDebugNotSupportedError();
-#endif
                 // Ignore job debugger stop.
                 args.ResumeAction = DebuggerResumeAction.Continue;
                 return;
@@ -3403,7 +3207,7 @@ namespace System.Management.Automation
                          (command.Commands[0].CommandText.IndexOf(".EnterNestedPrompt()", StringComparison.OrdinalIgnoreCase) > 0))
                 {
                     // Prevent a host EnterNestedPrompt() call from occuring in an active debugger.
-                    // Host nested prompt makes no sense in this case and can cause hangs depending on host implementation.
+                    // Host nested prompt makes no sense in this case and can cause host to stop responding depending on host implementation.
                     throw new PSNotSupportedException();
                 }
 
@@ -3473,57 +3277,6 @@ namespace System.Management.Automation
             }
         }
 
-#if !CORECLR // Workflow Not Supported on OneCore PS
-        private void EnableRunningWorkflowJobsForStepping()
-        {
-            // Make sure workflow job start callback is set to pick
-            // up any newly starting jobs.
-            if (!_wfStartEventSubscribed)
-            {
-                lock (_syncObject)
-                {
-                    if (!_wfStartEventSubscribed)
-                    {
-                        SubscribeToEngineWFJobStartEvent();
-                    }
-                }
-            }
-
-            // Get list of workflow jobs
-            Collection<Job> jobs;
-            using (PowerShell ps = PowerShell.Create())
-            {
-                ps.Commands.Clear();
-                ps.AddScript(@"Get-Job | ? {$_.PSJobTypeName -eq 'PSWorkflowJob'}");
-                jobs = ps.Invoke<Job>();
-            }
-
-            // Add debuggable workflow jobs to running Job list
-            // and set debugger to step mode.
-            foreach (var parentJob in jobs)
-            {
-                if (parentJob != null)
-                {
-                    foreach (var childJob in parentJob.ChildJobs)
-                    {
-                        IJobDebugger debuggableJob = childJob as IJobDebugger;
-                        if (debuggableJob != null)
-                        {
-                            AddToJobRunningList(
-                                new PSJobStartEventArgs(
-                                    childJob,
-                                    debuggableJob.Debugger,
-                                    debuggableJob.IsAsync),
-                                    DebuggerResumeAction.StepInto);
-                        }
-                    }
-                }
-            }
-
-            // Ensure existing running jobs in list are also set to step mode.
-            SetRunningJobListToStep(true);
-        }
-#endif
         #endregion
 
         #region Runspace debugger integration
@@ -3961,9 +3714,6 @@ namespace System.Management.Automation
         /// </summary>
         public void Dispose()
         {
-#if !CORECLR // Workflow Not Supported on OneCore PS
-            UnsubscribeFromEngineWFJobStartEvent();
-#endif
             // Ensure all job event handlers are removed.
             PSJobStartEventArgs[] runningJobs;
             lock (_syncObject)
@@ -4033,7 +3783,7 @@ namespace System.Management.Automation
             ActionPreference pref = ActionPreference.Continue;
 
             string message;
-            if (null == args || 0 == args.Length)
+            if (args == null || args.Length == 0)
             {
                 // Don't format in case the string contains literal curly braces
                 message = resourceString;
@@ -4100,7 +3850,7 @@ namespace System.Management.Automation
 
             if (valAsString.Length > msgLength)
             {
-                valAsString = valAsString.Substring(0, msgLength) + "...";
+                valAsString = valAsString.Substring(0, msgLength) + PSObjectHelper.Ellipsis;
             }
             Trace("TraceVariableAssignment", ParserStrings.TraceVariableAssignment, varName, valAsString);
         }
@@ -5073,28 +4823,28 @@ namespace System.Management.Automation
         /// </summary>
         private void DisplayHelp(PSHost host, IList<PSObject> output)
         {
-            WriteLine("", host, output);
+            WriteLine(string.Empty, host, output);
             WriteLine(StringUtil.Format(DebuggerStrings.StepHelp, StepShortcut, StepCommand), host, output);
             WriteLine(StringUtil.Format(DebuggerStrings.StepOverHelp, StepOverShortcut, StepOverCommand), host, output);
             WriteLine(StringUtil.Format(DebuggerStrings.StepOutHelp, StepOutShortcut, StepOutCommand), host, output);
-            WriteLine("", host, output);
+            WriteLine(string.Empty, host, output);
             WriteLine(StringUtil.Format(DebuggerStrings.ContinueHelp, ContinueShortcut, ContinueCommand), host, output);
             WriteLine(StringUtil.Format(DebuggerStrings.StopHelp, StopShortcut, StopCommand), host, output);
             WriteLine(StringUtil.Format(DebuggerStrings.DetachHelp, DetachShortcut, DetachCommand), host, output);
-            WriteLine("", host, output);
+            WriteLine(string.Empty, host, output);
             WriteLine(StringUtil.Format(DebuggerStrings.GetStackTraceHelp, GetStackTraceShortcut), host, output);
-            WriteLine("", host, output);
+            WriteLine(string.Empty, host, output);
             WriteLine(StringUtil.Format(DebuggerStrings.ListHelp, ListShortcut, ListCommand), host, output);
             WriteLine(StringUtil.Format(DebuggerStrings.AdditionalListHelp1), host, output);
             WriteLine(StringUtil.Format(DebuggerStrings.AdditionalListHelp2), host, output);
             WriteLine(StringUtil.Format(DebuggerStrings.AdditionalListHelp3), host, output);
-            WriteLine("", host, output);
+            WriteLine(string.Empty, host, output);
             WriteLine(StringUtil.Format(DebuggerStrings.EnterHelp, StepCommand, StepOverCommand, ListCommand), host, output);
-            WriteLine("", host, output);
+            WriteLine(string.Empty, host, output);
             WriteLine(StringUtil.Format(DebuggerStrings.HelpCommandHelp, HelpShortcut, HelpCommand), host, output);
             WriteLine("\n", host, output);
             WriteLine(StringUtil.Format(DebuggerStrings.PromptHelp), host, output);
-            WriteLine("", host, output);
+            WriteLine(string.Empty, host, output);
         }
 
         /// <summary>
@@ -5531,7 +5281,7 @@ namespace System.Management.Automation.Internal
             [CmdletBinding()]
             param()
 
-            if ($PSWorkflowDebugger -ne $null)
+            if ($null -ne $PSWorkflowDebugger)
             {
                 foreach ($frame in $PSWorkflowDebugger.GetCallStack())
                 {
